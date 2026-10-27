@@ -4,7 +4,31 @@
 
 const MAX_SCORE = 95;
 
-type FitScore = { score: number; reasons: string[] };
+/**
+ * 무엇이 맞았는지. 알림·홈 화면이 '50% 매치' 같은 숫자 대신
+ * "20대 여성 배역", "서울·촬영 가능일" 처럼 근거를 말하는 데 쓴다. 맞은 것만 담긴다.
+ */
+export type MatchFacts = {
+  gender?: 'male' | 'female';
+  /** 맞은 연령 조건: '20대', '20~35세' */
+  age?: string;
+  /** 촬영 지역 시·도: '서울' */
+  region?: string;
+  /** 촬영일이 모두 출연 가능일 */
+  dates?: boolean;
+  tags?: string[];
+  skills?: string[];
+};
+
+type FitScore = { score: number; reasons: string[]; facts: MatchFacts };
+
+/** 배역 연령대 표시: 20~29세는 '20대'로, 나머지는 '20~35세', '20세 이상'. */
+function ageLabel(min: number, max: number) {
+  if (min > 0 && max === min + 9 && min % 10 === 0) return `${min}대`;
+  if (min > 0 && max > 0) return min === max ? `${min}세` : `${min}~${max}세`;
+  if (min > 0) return `${min}세 이상`;
+  return `${max}세 이하`;
+}
 
 function koreanAge(birthYear: number | null, currentYear = new Date().getFullYear()) {
   return birthYear ? currentYear - birthYear + 1 : null;
@@ -47,6 +71,7 @@ export function matchRoleForActor(
   const text = `${role.title} ${role.description} ${role.requirement}`;
   let score = 0;
   const reasons: string[] = [];
+  const facts: MatchFacts = {};
 
   // 성별: 배역에 적은 조건이 있으면 그것만 본다. '성별 무관'이면 설명 글에서도 추측하지 않는다.
   const wantedGender = role.gender === 'male' || role.gender === 'female' ? role.gender : '';
@@ -54,6 +79,7 @@ export function matchRoleForActor(
     if (profile.gender === wantedGender) {
       score += 12;
       reasons.push('성별 조건 부합');
+      facts.gender = wantedGender;
     } else {
       score -= 12;
     }
@@ -65,6 +91,7 @@ export function matchRoleForActor(
     if (matches) {
       score += 12;
       reasons.push('성별 조건 부합');
+      facts.gender = profile.gender as 'male' | 'female';
     } else if (wantsMale !== wantsFemale) {
       score -= 12;
     }
@@ -79,6 +106,7 @@ export function matchRoleForActor(
     if ((!minAge || age >= minAge) && (!maxAge || age <= maxAge)) {
       score += 12;
       reasons.push('연령 조건 부합');
+      facts.age = ageLabel(minAge, maxAge);
     } else {
       score -= 8;
     }
@@ -86,6 +114,7 @@ export function matchRoleForActor(
     if (decadeOf(age) === Number(decadeMatch[1]) * 10) {
       score += 12;
       reasons.push(`${decadeMatch[1]}0대 조건 부합`);
+      facts.age = `${decadeMatch[1]}0대`;
     } else {
       score -= 8;
     }
@@ -94,12 +123,14 @@ export function matchRoleForActor(
   if (profile.region && role.location.startsWith(profile.region.slice(0, 2))) {
     score += 15;
     reasons.push(`지역 일치 (${role.location})`);
+    facts.region = role.location.trim().split(/\s+/)[0];
   }
 
   const matchedTags = [...new Set(profile.tags)].filter((tag) => tag && text.includes(tag));
   if (matchedTags.length) {
     score += Math.min(matchedTags.length * 8, 32);
     reasons.push(`이미지 태그 일치 (${matchedTags.slice(0, 3).join('·')})`);
+    facts.tags = matchedTags;
   }
 
   const matchedSkills = [...new Set(profile.skills)].filter(
@@ -108,6 +139,7 @@ export function matchRoleForActor(
   if (matchedSkills.length) {
     score += Math.min(matchedSkills.length * 6, 18);
     reasons.push(`특기 일치 (${matchedSkills.slice(0, 3).join('·')})`);
+    facts.skills = matchedSkills;
   }
 
   const shootDays = role.shootDates?.length
@@ -126,8 +158,46 @@ export function matchRoleForActor(
       );
     } else {
       score += 5;
+      facts.dates = true;
     }
   }
 
-  return { score: Math.max(0, Math.min(MAX_SCORE, Math.round(score))), reasons };
+  return { score: Math.max(0, Math.min(MAX_SCORE, Math.round(score))), reasons, facts };
+}
+
+const GENDER_WORD = { male: '남성', female: '여성' } as const;
+
+/** 받침이 있으면 '이', 없으면 '가'. ('촬영 가능일이', '대구가') */
+function subjectParticle(text: string) {
+  const code = text.charCodeAt(text.length - 1) - 0xac00;
+  if (code < 0 || code > 11171) return '이';
+  return code % 28 === 0 ? '가' : '이';
+}
+
+/** 맞는 근거를 짧은 표시 목록으로: ['20대 여성', '서울', '촬영 가능일', '이미지 청순한·밝은'] */
+export function matchHighlights(facts: MatchFacts): string[] {
+  const who = [facts.age, facts.gender && GENDER_WORD[facts.gender]].filter(Boolean).join(' ');
+  return [
+    who,
+    facts.region ?? '',
+    facts.dates ? '촬영 가능일' : '',
+    facts.tags?.length ? `이미지 ${facts.tags.slice(0, 2).join('·')}` : '',
+    facts.skills?.length ? `특기 ${facts.skills.slice(0, 2).join('·')}` : '',
+  ].filter(Boolean);
+}
+
+/**
+ * 맞춤 공고 알림 문구. 이름과 맞는 근거를 함께 말한다.
+ * - 연령·성별이 맞으면: "김하나 배우님께 맞는 20대 여성 배역 공고가 올라왔어요"
+ * - 아니면 지역·촬영일: "김하나 배우님, 서울·촬영 가능일이 맞는 새 공고가 있어요"
+ */
+export function matchMessage(name: string, facts: MatchFacts) {
+  const honor = name.trim() ? `${name.trim()} 배우님` : '배우님';
+  const who = [facts.age, facts.gender && GENDER_WORD[facts.gender]].filter(Boolean).join(' ');
+  if (who) return `${honor}께 맞는 ${who} 배역 공고가 올라왔어요`;
+  const basis = [facts.region, facts.dates ? '촬영 가능일' : ''].filter(Boolean).join('·');
+  if (basis) return `${honor}, ${basis}${subjectParticle(basis)} 맞는 새 공고가 있어요`;
+  if (facts.tags?.length || facts.skills?.length)
+    return `${honor}의 이미지·특기와 맞는 새 공고가 있어요`;
+  return `${honor} 프로필과 맞는 새 공고가 있어요`;
 }

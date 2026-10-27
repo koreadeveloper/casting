@@ -512,6 +512,8 @@ function roleFromRow(row: Record<string, unknown>): Role {
     ownerId: row.owner_id ? String(row.owner_id) : null,
     projectId: row.project_id ? String(row.project_id) : null,
     posterUrl: row.poster_url ? String(row.poster_url) : '',
+    projectFormat: row.project_format ? String(row.project_format) : '',
+    projectGenres: stringList(row.project_genres),
   };
 }
 
@@ -584,8 +586,10 @@ const CHAT_SUMMARY = `
   (SELECT m.status FROM chat_messages m WHERE m.application_id=applications.id AND m.kind='offer' ORDER BY m.created_at DESC LIMIT 1) offer_status,
   (SELECT m.selected_slot FROM chat_messages m WHERE m.application_id=applications.id AND m.kind='offer' AND m.status='confirmed' ORDER BY m.created_at DESC LIMIT 1) confirmed_slot`;
 
-// 작품 포스터는 projects에 있어서 배역 행마다 함께 읽어 온다.
-const POSTER = `(SELECT projects.poster_url FROM projects WHERE projects.id=roles.project_id) poster_url`;
+// 작품 포스터·형식·장르는 projects에 있어서 배역 행마다 함께 읽어 온다(배우의 공고 검색·필터).
+const POSTER = `(SELECT projects.poster_url FROM projects WHERE projects.id=roles.project_id) poster_url,
+  (SELECT projects.genre FROM projects WHERE projects.id=roles.project_id) project_format,
+  (SELECT projects.genres FROM projects WHERE projects.id=roles.project_id) project_genres`;
 
 const ROLE_STATS = `SELECT roles.*, ${POSTER}, COUNT(applications.id) application_count,
       SUM(CASE WHEN applications.status='new' THEN 1 ELSE 0 END) new_count,

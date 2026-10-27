@@ -5,9 +5,12 @@ import BackButton from '@/components/back-button';
 import ProducerNav from '@/components/producer-nav';
 import {
   applyPick,
+  canDefer,
   champion,
   createState,
   currentMatch,
+  deferMatch,
+  deferredCount,
   progress,
   roundName,
   roundProgress,
@@ -197,6 +200,17 @@ export default function CompareClient() {
       setPicked(null);
       if (champion(next)) setStage('done');
     }, PICK_DELAY_MS);
+  }
+
+  // 보류: 두 후보를 지금 못 고르겠으면 이 경기를 뒤로 미루고 다른 경기를 먼저 한다.
+  // 대진은 그대로라 결국 다시 나온다(남은 경기가 이것뿐이면 그때 고른다).
+  function hold() {
+    if (!state || !match || picked) return;
+    try {
+      setState(deferMatch(state, match.roundIndex, match.pairIndex));
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : '보류하지 못했습니다.');
+    }
   }
 
   useEffect(
@@ -423,7 +437,10 @@ export default function CompareClient() {
                 {roundName(state, match.roundIndex)} · {round ? round.done + 1 : 1}/
                 {round?.total ?? 1} 경기
               </span>
-              <span className={styles.progressText}>{overall?.percent ?? 0}%</span>
+              <span className={styles.progressText}>
+                {state && deferredCount(state) > 0 && `보류 ${deferredCount(state)} · `}
+                {overall?.percent ?? 0}%
+              </span>
             </div>
             <div className={styles.progressBar}>
               <div className={styles.progressFill} style={{ width: `${overall?.percent ?? 0}%` }} />
@@ -454,7 +471,28 @@ export default function CompareClient() {
                 VS
               </span>
             </div>
+            {match.deferred && (
+              <p className={styles.heldNote}>
+                보류했던 대결이에요. 다른 대결을 모두 마쳤으니 이제 골라 주세요.
+              </p>
+            )}
             <p className={styles.hint}>더 어울리는 후보를 탭해 주세요.</p>
+            <div className={styles.holdRow}>
+              <button
+                type="button"
+                className="button button-outline"
+                onClick={hold}
+                disabled={Boolean(picked) || !canDefer(state, match.roundIndex, match.pairIndex)}
+              >
+                보류 · 나중에 고르기
+              </button>
+              <small>
+                {canDefer(state, match.roundIndex, match.pairIndex)
+                  ? '둘 다 놓치기 아까우면 이 대결을 뒤로 미뤄요. 다른 대결을 먼저 하고 다시 나와요.'
+                  : '남은 대결이 이것뿐이라 지금 골라야 해요.'}
+              </small>
+            </div>
+            {notice && <p className={styles.notice}>{notice}</p>}
           </section>
         )}
 
