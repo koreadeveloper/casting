@@ -23,7 +23,20 @@ export type CompareState = {
   candidates: string[];
   /** rounds[0] = 첫 라운드 … 마지막 = 결승(경기 1개) */
   rounds: BracketPair[][];
+  /**
+   * 보류한 경기("라운드:경기"), 보류한 순서대로. 보류한 경기는 다른 경기를 먼저 치르고
+   * 남은 게 보류한 경기뿐일 때 다시 나온다. 대진은 바꾸지 않는다. (예전 저장 결과에는 없다)
+   */
+  deferred?: string[];
 };
+
+function matchKey(roundIndex: number, pairIndex: number) {
+  return `${roundIndex}:${pairIndex}`;
+}
+
+function isPlayable(pair: BracketPair) {
+  return pair.a !== null && pair.b !== null && pair.winner === null;
+}
 
 /** 부전승 자동 진출을 포함해 만들어진 대진의 첫 라운드 경기 수로 라운드 이름을 구한다. */
 export function roundLabel(pairCount: number) {
@@ -148,18 +161,61 @@ export function isCompareState(value: unknown): value is CompareState {
   );
 }
 
-/** 아직 승자를 고르지 않은 다음 경기를 찾는다. 모두 끝났으면 null. */
+/**
+ * 아직 승자를 고르지 않은 다음 경기를 찾는다. 모두 끝났으면 null.
+ * 보류한 경기는 건너뛰고, 보류하지 않은 경기가 없을 때만 먼저 보류한 것부터 다시 낸다.
+ */
 export function currentMatch(state: CompareState) {
+  const deferred = state.deferred ?? [];
+  let held: { roundIndex: number; pairIndex: number; pair: BracketPair; order: number } | null =
+    null;
   for (let roundIndex = 0; roundIndex < state.rounds.length; roundIndex += 1) {
     const round = state.rounds[roundIndex];
     for (let pairIndex = 0; pairIndex < round.length; pairIndex += 1) {
       const pair = round[pairIndex];
-      if (pair.a !== null && pair.b !== null && pair.winner === null) {
-        return { roundIndex, pairIndex, pair };
-      }
+      if (!isPlayable(pair)) continue;
+      const order = deferred.indexOf(matchKey(roundIndex, pairIndex));
+      if (order === -1) return { roundIndex, pairIndex, pair, deferred: false };
+      if (!held || order < held.order) held = { roundIndex, pairIndex, pair, order };
     }
   }
-  return null;
+  return held
+    ? { roundIndex: held.roundIndex, pairIndex: held.pairIndex, pair: held.pair, deferred: true }
+    : null;
+}
+
+/** 지금 치를 수 있는 다른 경기가 있어야 보류할 수 있다(없으면 같은 경기가 바로 다시 나온다). */
+export function canDefer(state: CompareState, roundIndex: number, pairIndex: number) {
+  return state.rounds.some((round, r) =>
+    round.some((pair, p) => isPlayable(pair) && !(r === roundIndex && p === pairIndex)),
+  );
+}
+
+/** 경기를 보류한다(새 상태 반환, 원본 불변). 이미 보류한 경기면 보류 순서의 맨 뒤로 보낸다. */
+export function deferMatch(
+  state: CompareState,
+  roundIndex: number,
+  pairIndex: number,
+): CompareState {
+  const pair = state.rounds[roundIndex]?.[pairIndex];
+  if (!pair) throw new Error('경기를 찾을 수 없습니다.');
+  if (!isPlayable(pair)) throw new Error('보류할 수 없는 경기입니다.');
+  if (!canDefer(state, roundIndex, pairIndex))
+    throw new Error('남은 경기가 이것뿐이라 보류할 수 없습니다.');
+  const key = matchKey(roundIndex, pairIndex);
+  return {
+    ...state,
+    deferred: [...(state.deferred ?? []).filter((item) => item !== key), key],
+  };
+}
+
+/** 아직 결과를 내지 않은 보류 경기 수 */
+export function deferredCount(state: CompareState) {
+  return (state.deferred ?? []).filter((key) => {
+    const [r, p] = key.split(':').map(Number);
+    const pair = state.rounds[r]?.[p];
+    return pair ? pair.winner === null : false;
+  }).length;
 }
 
 /**
@@ -181,7 +237,9 @@ export function applyPick(
   const rounds = cloneRounds(state.rounds);
   rounds[roundIndex][pairIndex].winner = winnerId;
   advance(rounds, roundIndex, pairIndex, winnerId);
-  return { ...state, rounds };
+  const key = matchKey(roundIndex, pairIndex);
+  const deferred = state.deferred?.filter((item) => item !== key);
+  return { ...state, rounds, ...(deferred ? { deferred } : {}) };
 }
 
 /** 우승자 id. 아직 결승이 끝나지 않았으면 null. */

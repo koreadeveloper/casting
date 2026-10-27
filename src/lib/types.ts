@@ -43,6 +43,11 @@ export type Role = {
   shortlistCount?: number;
   ownerId?: string | null;
   projectId?: string | null;
+  /** 작품 포스터 이미지 주소. 비어 있으면 기본 커버를 그린다. */
+  posterUrl?: string;
+  /** 작품 형식(단편영화·웹드라마 등)과 장르 태그. 배우의 공고 검색 필터에 쓴다. */
+  projectFormat?: string;
+  projectGenres?: string[];
 };
 
 export type Application = {

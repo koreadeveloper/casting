@@ -10,6 +10,7 @@ import {
   ROLE_GENDERS,
   ROLE_TYPES,
   NO_SPECIAL_SCENE,
+  cleanPosterUrl,
   normalizeSpecialScenes,
   pickKnown,
 } from './project-meta';
@@ -88,6 +89,7 @@ export function parseProjectBody(body: Record<string, unknown>): Parsed {
     location: locationDetail ? `${region} ${locationDetail}` : region,
     description: requiredText(body.description, 2000),
     perks: pickKnown(body.perks, Object.keys(PERKS)),
+    posterUrl: cleanPosterUrl(body.posterUrl),
   };
 
   const deadline = optionalDate(body.deadline);

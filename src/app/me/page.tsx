@@ -8,10 +8,11 @@ import { RECENT_ROLES } from '@/lib/recent';
 import { getProfile, listActorProposals } from '@/lib/accounts';
 import { getCurrentUser } from '@/lib/auth';
 import { listActorApplications, listOpenRoles } from '@/lib/db';
-import { matchRoleForActor } from '@/lib/match';
+import { matchHighlights, matchRoleForActor } from '@/lib/match';
 import { profileCompletion } from '@/lib/profile';
 import { actorStageInfo, actorStageOf } from '@/lib/types';
 import ProposalActions from './proposal-actions';
+import RoleFinder from '@/components/role-finder';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,7 +118,21 @@ export default async function ActorHome() {
           </span>
         </div>
         {applications.length === 0 ? (
-          <div className="empty-card">아직 지원한 배역이 없습니다.</div>
+          // 빈 화면에서 끝나지 않게 다음 할 일(공고 둘러보기)로 이어 준다.
+          <div className="empty-card empty-next">
+            <strong>아직 지원한 배역이 없어요</strong>
+            <span>
+              {matched.length > 0
+                ? `${user.name} 배우님께 맞는 공고부터 살펴보고 첫 지원을 시작해 보세요.`
+                : '아래 모집 중인 배역에서 첫 지원을 시작해 보세요.'}
+            </span>
+            <a
+              className="button button-primary"
+              href={matched.length > 0 ? '#match-roles' : '#open-roles'}
+            >
+              {matched.length > 0 ? '맞춤 공고 보기' : '모집 중인 배역 보기'}
+            </a>
+          </div>
         ) : (
           applications.map((item) => (
             <Link key={item.id} href={`/status/${item.receiptToken}`} className="audition-card">
@@ -139,10 +154,10 @@ export default async function ActorHome() {
 
         {matched.length > 0 && (
           <>
-            <div className="section-head">
-              <h2>나와 잘 맞는 공고</h2>
+            <div className="section-head" id="match-roles">
+              <h2>{user.name} 배우님을 위한 맞춤 공고</h2>
               <span className="muted" style={{ fontSize: 12 }}>
-                프로필 기반 추천
+                프로필 조건 기준
               </span>
             </div>
             <div className="role-grid">
@@ -152,7 +167,7 @@ export default async function ActorHome() {
                   href={`/apply/${role.slug}`}
                   className="pcard role-link match-card"
                 >
-                  <span className="match-badge">{fit.score}% 매치</span>
+                  {/* 점수(50% 매치) 대신 무엇이 맞는지를 보인다. 알림 문구와 같은 근거다. */}
                   <h3>{role.projectTitle}</h3>
                   <p className="sub">{role.title}</p>
                   <p className="meta">
@@ -162,9 +177,11 @@ export default async function ActorHome() {
                     {role.pay}
                   </p>
                   <div className="match-reasons">
-                    {fit.reasons.slice(0, 3).map((reason) => (
-                      <span key={reason}>{reason}</span>
-                    ))}
+                    {matchHighlights(fit.facts)
+                      .slice(0, 4)
+                      .map((item) => (
+                        <span key={item}>✓ {item}</span>
+                      ))}
                   </div>
                 </Link>
               ))}
@@ -172,37 +189,19 @@ export default async function ActorHome() {
           </>
         )}
 
-        <div className="section-head">
-          <h2>모집 중인 배역</h2>
-          <span className="muted" style={{ fontSize: 12 }}>
-            {roles.length}개
-          </span>
-        </div>
-        <div className="role-grid">
-          {roles.map((role) => (
-            <Link key={role.id} href={`/apply/${role.slug}`} className="pcard role-link">
-              <div className="pcard-top">
-                <div className="pcard-img" style={{ width: 96, height: 104 }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`https://picsum.photos/seed/${role.slug}/200/220`} alt="" />
-                </div>
-                <div className="pcard-info">
-                  <span className="badge-soft">
-                    {appliedRoleIds.has(role.id) ? '지원함' : `${shortDate(role.deadline)} 마감`}
-                  </span>
-                  <h3>{role.projectTitle}</h3>
-                  <p className="sub">{role.title}</p>
-                  <p className="meta">
-                    촬영 {formatDates(role.shootDates, 1) || shortDate(role.shootDate)} ·{' '}
-                    {role.location}
-                    <br />
-                    {role.pay}
-                  </p>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <RoleFinder
+          roles={roles}
+          appliedRoleIds={[...appliedRoleIds]}
+          me={
+            profile
+              ? {
+                  gender: profile.gender,
+                  // 맞춤 계산(match.ts)과 같은 나이 기준을 쓴다.
+                  age: profile.birthYear ? new Date().getFullYear() - profile.birthYear + 1 : null,
+                }
+              : undefined
+          }
+        />
       </div>
     </main>
   );

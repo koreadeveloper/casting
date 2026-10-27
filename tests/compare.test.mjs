@@ -108,3 +108,52 @@ test('잘못된 픽과 후보 수는 오류를 던진다', () => {
   assert.throws(() => buildBracket(['a', 'b', 'c']));
   assert.throws(() => buildBracket(ids8.concat('i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q')));
 });
+
+test('보류: 보류한 경기는 다른 경기를 먼저 치르고, 남은 게 그것뿐일 때 다시 나온다', async () => {
+  const { deferMatch, canDefer, deferredCount } = await import('../src/lib/compare.ts');
+  let state = createState(ids8, 3);
+  const first = currentMatch(state);
+  assert.equal(first.deferred, false);
+  assert.equal(canDefer(state, first.roundIndex, first.pairIndex), true);
+  state = deferMatch(state, first.roundIndex, first.pairIndex);
+  assert.equal(deferredCount(state), 1);
+  // 보류한 경기 대신 다음 경기가 나온다
+  const second = currentMatch(state);
+  assert.notDeepEqual([second.roundIndex, second.pairIndex], [first.roundIndex, first.pairIndex]);
+  // 첫 라운드 나머지 3경기를 치르면 4강 1경기(보류 경기와 무관한 쪽)가 먼저 나오고,
+  // 결국 보류한 경기만 남으면 그 경기가 '보류했던 경기'로 다시 나온다.
+  let guard = 0;
+  let match = currentMatch(state);
+  while (match && !match.deferred && guard < 10) {
+    state = applyPick(state, match.roundIndex, match.pairIndex, match.pair.a);
+    match = currentMatch(state);
+    guard += 1;
+  }
+  assert.equal(match.deferred, true);
+  assert.deepEqual([match.roundIndex, match.pairIndex], [first.roundIndex, first.pairIndex]);
+  // 남은 경기가 이것뿐이면 다시 보류할 수 없다
+  assert.equal(canDefer(state, match.roundIndex, match.pairIndex), false);
+  assert.throws(() => deferMatch(state, match.roundIndex, match.pairIndex));
+  // 고르면 보류 목록에서 빠지고 대회가 이어진다
+  state = applyPick(state, match.roundIndex, match.pairIndex, match.pair.b);
+  assert.equal(deferredCount(state), 0);
+  while ((match = currentMatch(state))) {
+    state = applyPick(state, match.roundIndex, match.pairIndex, match.pair.a);
+  }
+  assert.ok(champion(state));
+});
+
+test('보류: 이미 보류한 경기를 다시 보류하면 순서가 맨 뒤로 간다', async () => {
+  const { deferMatch } = await import('../src/lib/compare.ts');
+  let state = createState(ids8, 5);
+  // 첫 라운드 4경기를 모두 보류
+  for (let i = 0; i < 4; i += 1) {
+    const match = currentMatch(state);
+    state = deferMatch(state, match.roundIndex, match.pairIndex);
+  }
+  const again = currentMatch(state);
+  assert.equal(again.deferred, true);
+  assert.equal(again.pairIndex, 0); // 먼저 보류한 것부터
+  state = deferMatch(state, again.roundIndex, again.pairIndex);
+  assert.equal(currentMatch(state).pairIndex, 1); // 다시 보류하면 다음 것이 앞으로
+});

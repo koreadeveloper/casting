@@ -56,7 +56,7 @@ async function initialize(database: Conn) {
   const migrated = await database
     .prepare(
       `SELECT 1 FROM information_schema.columns
-       WHERE table_schema = current_schema() AND table_name='roles' AND column_name='special_note'`,
+       WHERE table_schema = current_schema() AND table_name='projects' AND column_name='poster_url'`,
     )
     .get();
   if (!migrated) {
@@ -234,8 +234,10 @@ async function initialize(database: Conn) {
     await addColumn(database, 'applications', 'viewed_at', 'TEXT');
     // 특수 장면 안내(공고 필수 항목): 종류 목록과 구체적인 설명. ['none']이면 '특수 장면 없음'.
     await addColumn(database, 'roles', 'special_scenes', list);
-    // 이 칸이 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 추가한다.
     await addColumn(database, 'roles', 'special_note', text);
+    // 작품 포스터: 업로드한 이미지 주소(/api/uploads/…). 비어 있으면 화면에서 기본 커버를 그린다.
+    // 이 칸이 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 추가한다.
+    await addColumn(database, 'projects', 'poster_url', text);
   }
   if (
     (process.env.NODE_ENV !== 'production' || process.env.DEMO_BUILD === 'true') &&
@@ -509,6 +511,9 @@ function roleFromRow(row: Record<string, unknown>): Role {
     shortlistCount: Number(row.shortlist_count || 0),
     ownerId: row.owner_id ? String(row.owner_id) : null,
     projectId: row.project_id ? String(row.project_id) : null,
+    posterUrl: row.poster_url ? String(row.poster_url) : '',
+    projectFormat: row.project_format ? String(row.project_format) : '',
+    projectGenres: stringList(row.project_genres),
   };
 }
 
@@ -581,7 +586,12 @@ const CHAT_SUMMARY = `
   (SELECT m.status FROM chat_messages m WHERE m.application_id=applications.id AND m.kind='offer' ORDER BY m.created_at DESC LIMIT 1) offer_status,
   (SELECT m.selected_slot FROM chat_messages m WHERE m.application_id=applications.id AND m.kind='offer' AND m.status='confirmed' ORDER BY m.created_at DESC LIMIT 1) confirmed_slot`;
 
-const ROLE_STATS = `SELECT roles.*, COUNT(applications.id) application_count,
+// 작품 포스터·형식·장르는 projects에 있어서 배역 행마다 함께 읽어 온다(배우의 공고 검색·필터).
+const POSTER = `(SELECT projects.poster_url FROM projects WHERE projects.id=roles.project_id) poster_url,
+  (SELECT projects.genre FROM projects WHERE projects.id=roles.project_id) project_format,
+  (SELECT projects.genres FROM projects WHERE projects.id=roles.project_id) project_genres`;
+
+const ROLE_STATS = `SELECT roles.*, ${POSTER}, COUNT(applications.id) application_count,
       SUM(CASE WHEN applications.status='new' THEN 1 ELSE 0 END) new_count,
       COALESCE(SUM(applications.shortlist),0) shortlist_count
       FROM roles
@@ -619,20 +629,12 @@ export async function listOpenRoles(today: string) {
 }
 
 export async function getRole(slug: string) {
-  const row = await db()
-    .prepare(
-      `SELECT roles.*, COUNT(applications.id) application_count,
-      SUM(CASE WHEN applications.status='new' THEN 1 ELSE 0 END) new_count,
-      COALESCE(SUM(applications.shortlist),0) shortlist_count
-      FROM roles
-    LEFT JOIN applications ON applications.role_id=roles.id WHERE roles.slug=? GROUP BY roles.id`,
-    )
-    .get(slug);
+  const row = await db().prepare(`${ROLE_STATS} WHERE roles.slug=? GROUP BY roles.id`).get(slug);
   return row ? roleFromRow(row as Record<string, unknown>) : null;
 }
 
 export async function getRoleById(id: string) {
-  const row = await db().prepare('SELECT * FROM roles WHERE id=?').get(id);
+  const row = await db().prepare(`SELECT roles.*, ${POSTER} FROM roles WHERE id=?`).get(id);
   return row ? roleFromRow(row as Record<string, unknown>) : null;
 }
 

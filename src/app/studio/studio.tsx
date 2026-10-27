@@ -9,8 +9,10 @@ import { NotifBell } from '@/components/notif-bell';
 import { BrandLogo } from '@/components/brand';
 import PhotoLightbox from '@/components/photo-lightbox';
 import ProducerNav from '@/components/producer-nav';
+import { MIN_CANDIDATES } from '@/lib/compare';
 import { formatDates } from '@/lib/schedule';
 import { useBackClose } from '@/lib/use-back-close';
+import ProjectCover from '@/components/project-cover';
 
 type Tab = 'home' | 'applicants' | 'messages' | 'profile';
 const TABS: Tab[] = ['home', 'applicants', 'messages', 'profile'];
@@ -465,22 +467,24 @@ export default function Studio({
     setPhotoAt(null);
   }, [selectedId, selected?.note]);
   // 지원자 상세를 처음 열면 '열람'으로 남긴다. 배우 화면에서는 '미열람 → 검토 중'으로 바뀐다.
-  const unviewedId = selected && !selected.viewedAt ? selected.id : null;
-  useEffect(() => {
-    if (!unviewedId) return;
-    void api<{ application: Application }>(`/api/applications/${unviewedId}`, {
+  const markViewed = useCallback((id: string) => {
+    void api<{ application: Application }>(`/api/applications/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ viewed: true }),
     })
       .then((result) =>
         setApplications((current) =>
           current.map((item) =>
-            item.id === unviewedId ? { ...item, viewedAt: result.application.viewedAt } : item,
+            item.id === id ? { ...item, viewedAt: result.application.viewedAt } : item,
           ),
         ),
       )
       .catch(() => undefined); // 열람 기록이 실패해도 상세 보기는 막지 않는다
-  }, [unviewedId]);
+  }, []);
+  const unviewedId = selected && !selected.viewedAt ? selected.id : null;
+  useEffect(() => {
+    if (unviewedId) markViewed(unviewedId);
+  }, [unviewedId, markViewed]);
   // 뒤로가기·앞으로가기로 주소가 바뀌면 그 주소의 탭과 배역으로 화면을 맞춘다.
   useEffect(() => {
     const sync = () => {
@@ -717,12 +721,7 @@ export default function Studio({
                   <section className="pcard" key={project.title}>
                     <div className="pcard-top">
                       <div className="pcard-img">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={`https://picsum.photos/seed/${first.slug}/240/264`}
-                          alt=""
-                          loading="lazy"
-                        />
+                        <ProjectCover title={project.title} posterUrl={first.posterUrl} />
                       </div>
                       <div className="pcard-info">
                         <span className={`badge-soft${project.closed ? ' state-off' : ''}`}>
@@ -924,6 +923,40 @@ export default function Studio({
                     <span>오디션 후보</span>
                   </div>
                 </section>
+                {(() => {
+                  // 이상형 월드컵(기획서: 1:1로 넘기며 비교하고 관심 후보로 저장).
+                  // 제외한 지원자는 빼고 겨루므로 남은 인원으로 시작 가능 여부를 정한다.
+                  const contenders = applications.filter((item) => item.status !== 'excluded');
+                  const ready = contenders.length >= MIN_CANDIDATES;
+                  const body = (
+                    <>
+                      <span className="compare-entry-icon" aria-hidden>
+                        VS
+                      </span>
+                      <span className="compare-entry-txt">
+                        <strong>이상형 월드컵으로 비교</strong>
+                        <small>
+                          {ready
+                            ? `지원자 ${contenders.length}명을 1:1로 겨뤄 최종 후보 고르기`
+                            : `지원자가 ${MIN_CANDIDATES}명 이상이면 시작할 수 있어요 (지금 ${contenders.length}명)`}
+                        </small>
+                      </span>
+                      <span className="chevron">›</span>
+                    </>
+                  );
+                  return ready ? (
+                    <a
+                      className="compare-entry"
+                      href={`/studio/compare?role=${encodeURIComponent(role.id)}`}
+                    >
+                      {body}
+                    </a>
+                  ) : (
+                    <div className="compare-entry is-off" aria-disabled="true">
+                      {body}
+                    </div>
+                  );
+                })()}
                 <section>
                   <div className="section-head" style={{ marginTop: 22 }}>
                     <h2>{filter === 'shortlist' ? '오디션 후보' : '지원자 목록'}</h2>
@@ -1160,7 +1193,7 @@ export default function Studio({
               <a href="/studio/compare">
                 {Icon.vs}
                 <span>
-                  후보 비교<small>두 명씩 골라 최종 1인 뽑기</small>
+                  이상형 월드컵<small>두 명씩 겨뤄 최종 1인 뽑기</small>
                 </span>
               </a>
               <a href="/studio/board">
@@ -1217,89 +1250,162 @@ export default function Studio({
       {selected && (
         <div className="sheet-backdrop" onClick={() => setSelectedId(null)}>
           <section
-            className="detail-sheet"
+            className="detail-sheet has-actions"
             role="dialog"
             aria-modal="true"
             aria-label={`${selected.name} 지원서`}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="sheet-handle" />
-            <div className="sheet-title">
-              <span>지원자 상세</span>
-              <button onClick={() => setSelectedId(null)} aria-label="닫기">
-                ×
-              </button>
-            </div>
-            <div className="detail-profile">
-              {selected.photoUrls.length > 0 ? (
-                <button
-                  className="avatar-open"
-                  onClick={() => setPhotoAt(0)}
-                  aria-label={`${selected.name} 사진 크게 보기`}
-                >
+            {/* 내용만 스크롤하고, 분류·연락·후보 버튼은 아래에 고정한다(긴 지원서도 끝까지 내리지 않게). */}
+            <div className="sheet-body">
+              <div className="sheet-handle" />
+              <div className="sheet-title">
+                <span>지원자 상세</span>
+                <button onClick={() => setSelectedId(null)} aria-label="닫기">
+                  ×
+                </button>
+              </div>
+              <div className="detail-profile">
+                {selected.photoUrls.length > 0 ? (
+                  <button
+                    className="avatar-open"
+                    onClick={() => setPhotoAt(0)}
+                    aria-label={`${selected.name} 사진 크게 보기`}
+                  >
+                    <Avatar
+                      name={selected.name}
+                      photoUrl={selected.photoUrl}
+                      className="avatar avatar-large"
+                    />
+                  </button>
+                ) : (
                   <Avatar
                     name={selected.name}
                     photoUrl={selected.photoUrl}
                     className="avatar avatar-large"
                   />
-                </button>
-              ) : (
-                <Avatar
-                  name={selected.name}
-                  photoUrl={selected.photoUrl}
-                  className="avatar avatar-large"
+                )}
+                <div>
+                  <h2>
+                    {selected.name} <small>{selected.age ? `(${selected.age})` : ''}</small>
+                  </h2>
+                  <p>{selected.introduction}</p>
+                  <span>
+                    지원일{' '}
+                    {new Date(selected.createdAt).toLocaleDateString('ko-KR', {
+                      timeZone: 'Asia/Seoul',
+                    })}
+                  </span>
+                </div>
+              </div>
+              <div className="detail-grid">
+                <div>
+                  <span>촬영 가능</span>
+                  <strong className={selected.available === 'yes' ? 'positive' : 'uncertain'}>
+                    {conditionLabel(selected.available)}
+                  </strong>
+                </div>
+                <div>
+                  <span>지역 이동</span>
+                  <strong>{conditionLabel(selected.travel)}</strong>
+                </div>
+                <div>
+                  <span>출연료 수용</span>
+                  <strong>{conditionLabel(selected.payAccepted)}</strong>
+                </div>
+              </div>
+              <div className="detail-block">
+                <h3>자료와 연락처</h3>
+                <p>필수 역량: {selected.skill || '미입력'}</p>
+                <p>
+                  연락처: {selected.phone} · {selected.email}
+                </p>
+                {selected.photoUrls.length > 0 && (
+                  <button className="text-button" onClick={() => setPhotoAt(0)}>
+                    사진 크게 보기
+                    {selected.photoUrls.length > 1 && ` (${selected.photoUrls.length}장)`}
+                  </button>
+                )}
+                {selected.videoUrl && (
+                  <a href={selected.videoUrl} target="_blank" rel="noreferrer">
+                    연기 영상 열기 ↗
+                  </a>
+                )}
+              </div>
+              <div className="detail-block">
+                <h3>
+                  내부 검토{' '}
+                  <span className={`status-chip chip-${selected.status}`}>
+                    {selected.status === 'new' ? '미분류' : reviewLabels[selected.status]}
+                  </span>
+                </h3>
+                <p className="review-hint">
+                  제외·보류·관심 있음은 아래 고정 버튼으로 정해요. 같은 버튼을 다시 누르면 선택이
+                  풀려요.
+                  <br />이 분류는 팀 전체가 함께 보는 값이라 팀 보드의 단계도 같이 바뀝니다.
+                </p>
+                <label className="field-label" htmlFor="review-note">
+                  팀 내부 메모
+                </label>
+                <textarea
+                  id="review-note"
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  rows={3}
+                  placeholder="공개되지 않는 메모입니다"
                 />
-              )}
-              <div>
-                <h2>
-                  {selected.name} <small>{selected.age ? `(${selected.age})` : ''}</small>
-                </h2>
-                <p>{selected.introduction}</p>
-                <span>
-                  지원일{' '}
-                  {new Date(selected.createdAt).toLocaleDateString('ko-KR', {
-                    timeZone: 'Asia/Seoul',
-                  })}
-                </span>
-              </div>
-            </div>
-            <div className="detail-grid">
-              <div>
-                <span>촬영 가능</span>
-                <strong className={selected.available === 'yes' ? 'positive' : 'uncertain'}>
-                  {conditionLabel(selected.available)}
-                </strong>
-              </div>
-              <div>
-                <span>지역 이동</span>
-                <strong>{conditionLabel(selected.travel)}</strong>
-              </div>
-              <div>
-                <span>출연료 수용</span>
-                <strong>{conditionLabel(selected.payAccepted)}</strong>
-              </div>
-            </div>
-            <div className="detail-block">
-              <h3>자료와 연락처</h3>
-              <p>필수 역량: {selected.skill || '미입력'}</p>
-              <p>
-                연락처: {selected.phone} · {selected.email}
-              </p>
-              {selected.photoUrls.length > 0 && (
-                <button className="text-button" onClick={() => setPhotoAt(0)}>
-                  사진 크게 보기
-                  {selected.photoUrls.length > 1 && ` (${selected.photoUrls.length}장)`}
+                <button
+                  className="text-button"
+                  disabled={busy || note === selected.note}
+                  onClick={() => void updateApplication(selected.id, { note })}
+                >
+                  메모 저장
                 </button>
-              )}
-              {selected.videoUrl && (
-                <a href={selected.videoUrl} target="_blank" rel="noreferrer">
-                  연기 영상 열기 ↗
-                </a>
-              )}
+              </div>
+              <div className="detail-block public-block">
+                <h3>배우에게 공개할 결과</h3>
+                <p>
+                  선택 후 저장하면 배우의 지원 현황에 표시됩니다. 결과를 정하기 전에는 배우에게{' '}
+                  <strong>{selected.viewedAt ? '검토 중' : '미열람'}</strong>으로 보여요.
+                </p>
+                <select
+                  aria-label="배우 공개 상태"
+                  value={pendingPublicStage ?? selected.publicStage}
+                  onChange={(event) => setPendingPublicStage(event.target.value as PublicStage)}
+                >
+                  <option value="received">결과 정하기 전 (검토 중)</option>
+                  <option value="audition">오디션 대상</option>
+                  <option value="not_selected">불합격</option>
+                  <option value="cast">합격</option>
+                </select>
+                {pendingPublicStage && pendingPublicStage !== selected.publicStage && (
+                  <div className="public-confirm">
+                    <p>
+                      <strong>{publicLabels[pendingPublicStage]}</strong> 상태를 배우의 현황
+                      페이지에 공개합니다.
+                    </p>
+                    <button
+                      className="button button-primary"
+                      disabled={busy}
+                      onClick={() => {
+                        void updateApplication(selected.id, { publicStage: pendingPublicStage });
+                        setPendingPublicStage(null);
+                      }}
+                    >
+                      결과 공개
+                    </button>
+                    <button
+                      className="button button-outline"
+                      onClick={() => setPendingPublicStage(null)}
+                    >
+                      취소
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="detail-block">
-              <h3>내부 검토</h3>
-              <div className="review-buttons">
+            <div className="sheet-actions">
+              <div className="review-buttons" role="group" aria-label="내부 검토 분류">
                 {(
                   [
                     ['excluded', '제외'],
@@ -1320,100 +1426,36 @@ export default function Studio({
                         void updateApplication(selected.id, { status: picked ? 'new' : status })
                       }
                     >
+                      {picked && '✓ '}
                       {label}
                     </button>
                   );
                 })}
               </div>
-              <p className="review-hint">
-                {selected.status === 'new'
-                  ? '아직 분류하지 않았어요. 고른 버튼을 한 번 더 누르면 이 상태로 돌아옵니다.'
-                  : `현재 ${reviewLabels[selected.status]}. 같은 버튼을 다시 누르면 선택이 풀려요.`}
-                <br />이 분류는 팀 전체가 함께 보는 값이라 팀 보드의 단계도 같이 바뀝니다.
-              </p>
-              <label className="field-label" htmlFor="review-note">
-                팀 내부 메모
-              </label>
-              <textarea
-                id="review-note"
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                rows={3}
-                placeholder="공개되지 않는 메모입니다"
-              />
-              <button
-                className="text-button"
-                disabled={busy || note === selected.note}
-                onClick={() => void updateApplication(selected.id, { note })}
-              >
-                메모 저장
-              </button>
+              <div className="sheet-actions-row">
+                <button
+                  className="button button-outline"
+                  onClick={() => {
+                    setChatId(selected.id);
+                    setSelectedId(null);
+                  }}
+                >
+                  연락·오디션 제안
+                </button>
+                <button
+                  className={selected.shortlist ? 'button button-outline' : 'button button-primary'}
+                  disabled={busy}
+                  onClick={() =>
+                    void updateApplication(selected.id, {
+                      shortlist: !selected.shortlist,
+                      status: !selected.shortlist ? 'interested' : selected.status,
+                    })
+                  }
+                >
+                  {selected.shortlist ? '★ 후보에서 빼기' : '☆ 오디션 후보에 추가'}
+                </button>
+              </div>
             </div>
-            <div className="detail-block public-block">
-              <h3>배우에게 공개할 결과</h3>
-              <p>
-                선택 후 저장하면 배우의 지원 현황에 표시됩니다. 결과를 정하기 전에는 배우에게{' '}
-                <strong>{selected.viewedAt ? '검토 중' : '미열람'}</strong>으로 보여요.
-              </p>
-              <select
-                aria-label="배우 공개 상태"
-                value={pendingPublicStage ?? selected.publicStage}
-                onChange={(event) => setPendingPublicStage(event.target.value as PublicStage)}
-              >
-                <option value="received">결과 정하기 전 (검토 중)</option>
-                <option value="audition">오디션 대상</option>
-                <option value="not_selected">불합격</option>
-                <option value="cast">합격</option>
-              </select>
-              {pendingPublicStage && pendingPublicStage !== selected.publicStage && (
-                <div className="public-confirm">
-                  <p>
-                    <strong>{publicLabels[pendingPublicStage]}</strong> 상태를 배우의 현황 페이지에
-                    공개합니다.
-                  </p>
-                  <button
-                    className="button button-primary"
-                    disabled={busy}
-                    onClick={() => {
-                      void updateApplication(selected.id, { publicStage: pendingPublicStage });
-                      setPendingPublicStage(null);
-                    }}
-                  >
-                    결과 공개
-                  </button>
-                  <button
-                    className="button button-outline"
-                    onClick={() => setPendingPublicStage(null)}
-                  >
-                    취소
-                  </button>
-                </div>
-              )}
-            </div>
-            <button
-              className="button button-outline full"
-              style={{ marginBottom: 9 }}
-              onClick={() => {
-                setChatId(selected.id);
-                setSelectedId(null);
-              }}
-            >
-              연락하기 · 오디션 일정 제안
-            </button>
-            <button
-              className={
-                selected.shortlist ? 'button button-outline full' : 'button button-primary full'
-              }
-              disabled={busy}
-              onClick={() =>
-                void updateApplication(selected.id, {
-                  shortlist: !selected.shortlist,
-                  status: !selected.shortlist ? 'interested' : selected.status,
-                })
-              }
-            >
-              {selected.shortlist ? '후보 목록에서 제거' : '☆ 오디션 후보에 추가'}
-            </button>
           </section>
         </div>
       )}
@@ -1446,7 +1488,7 @@ export default function Studio({
                 peerSub={`${role?.projectTitle || ''} · ${role?.title || ''}`}
                 projectTitle={role?.projectTitle || ''}
                 roleTitle={role?.title || ''}
-                projectImage={`https://picsum.photos/seed/${role?.slug}/96/96`}
+                projectImage={role?.posterUrl}
                 onViewProfile={() => {
                   setSelectedId(chatId);
                   setChatId(null);

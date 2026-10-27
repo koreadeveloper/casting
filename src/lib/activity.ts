@@ -1,7 +1,7 @@
 // 알림 피드 — 실제 DB 이벤트(지원·메시지·제안 응답·공고)를 모아 최근순으로 반환.
 // 별도 notifications 테이블 없이 파생 데이터로 구성해 항상 실제 상태와 일치한다.
 import { db } from './db';
-import { matchRoleForActor, type MatchProfileInput } from './match';
+import { matchMessage, matchRoleForActor, type MatchProfileInput } from './match';
 
 export type ActivityItem = {
   id: string;
@@ -21,6 +21,15 @@ const str = (value: unknown) => String(value ?? '');
 
 function clip(text: string, length = 34) {
   return text.length > length ? `${text.slice(0, length)}…` : text;
+}
+
+function dateList(value: unknown): string[] {
+  try {
+    const parsed = JSON.parse(str(value) || '[]');
+    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
 }
 
 function sortCap(items: ActivityItem[], cap = 10) {
@@ -115,6 +124,8 @@ export async function producerFeed(ownerId: string): Promise<ActivityFeed> {
 export async function actorFeed(
   actorId: string,
   profile: MatchProfileInput | null,
+  /** 맞춤 공고 알림에 부르는 이름 ("김하나 배우님께 맞는 …") */
+  actorName = '',
 ): Promise<ActivityFeed> {
   const items: ActivityItem[] = [];
   let badge = 0;
@@ -186,7 +197,8 @@ export async function actorFeed(
     const since = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
     const roles = (await db()
       .prepare(
-        `SELECT slug, title, description, requirement, location, shoot_date, project_title, created_at
+        `SELECT slug, title, description, requirement, location, shoot_date, shoot_dates,
+           gender, age_min, age_max, project_title, created_at
          FROM roles WHERE is_closed = 0 AND created_at >= ? ORDER BY created_at DESC`,
       )
       .all(since)) as Row[];
@@ -199,6 +211,11 @@ export async function actorFeed(
           requirement: str(row.requirement),
           location: str(row.location),
           shootDate: str(row.shoot_date),
+          // 배역에 따로 적은 성별·연령대·촬영일을 함께 봐야 근거("20대 여성")를 정확히 말한다.
+          shootDates: dateList(row.shoot_dates),
+          gender: str(row.gender),
+          ageMin: Number(row.age_min || 0),
+          ageMax: Number(row.age_max || 0),
         }),
       }))
       .filter((entry) => entry.fit.score >= 25)
@@ -208,7 +225,7 @@ export async function actorFeed(
       items.push({
         id: `role-${str(row.slug)}`,
         icon: '🎯',
-        text: `내 프로필과 ${fit.score}% 맞는 새 공고 ‘${str(row.title)}’`,
+        text: `${matchMessage(actorName, fit.facts)} · ‘${str(row.project_title)} ${str(row.title)}’`,
         href: `/apply/${str(row.slug)}`,
         at: str(row.created_at),
       });

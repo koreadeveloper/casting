@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatMessage } from '@/lib/types';
+import ProjectCover from '@/components/project-cover';
 
 type Props = {
   applicationId: string;
@@ -314,10 +315,7 @@ export default function ChatThread({
       )}
       <div className="chat-context">
         <div className="thumb">
-          {projectImage && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={projectImage} alt="" />
-          )}
+          <ProjectCover title={projectTitle} posterUrl={projectImage} />
         </div>
         <div className="cc">
           <strong>{projectTitle}</strong>
