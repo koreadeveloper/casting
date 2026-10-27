@@ -94,10 +94,10 @@ export default function ApplyForm({
       id: role.id,
       name: role.projectTitle,
       sub: `${role.title} · ${role.location}`,
-      photo: `https://picsum.photos/seed/${role.slug}/120/120`,
+      photo: role.posterUrl || '',
       href: `/apply/${role.slug}`,
     });
-  }, [role.id, role.projectTitle, role.title, role.location, role.slug]);
+  }, [role.id, role.projectTitle, role.title, role.location, role.slug, role.posterUrl]);
 
   function begin() {
     setStep('form');
@@ -168,11 +168,21 @@ export default function ApplyForm({
       )}
       {step === 'brief' ? (
         <div className="apply-content">
-          <div className="apply-cover">
+          <div className={`apply-cover${role.posterUrl ? ' has-poster' : ''}`}>
             <span className="cover-kicker">CASTING CALL</span>
-            <span className="cover-star">
-              <BrandIcon name="sparkle" size={64} />
-            </span>
+            {role.posterUrl ? (
+              // 제작진이 올린 작품 포스터
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                className="cover-poster"
+                src={role.posterUrl}
+                alt={`${role.projectTitle} 포스터`}
+              />
+            ) : (
+              <span className="cover-star">
+                <BrandIcon name="sparkle" size={64} />
+              </span>
+            )}
             <div>
               <p>{role.projectTitle}</p>
               <h1>{role.title}</h1>

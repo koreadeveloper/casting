@@ -51,6 +51,7 @@ export default async function EditProjectPage({ params }: Context) {
     producerName: project.producerName,
     logline: project.logline,
     description: project.description,
+    posterUrl: project.posterUrl,
     region: place.region,
     locationDetail: place.detail,
     auditionStart: project.auditionStart,

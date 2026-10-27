@@ -151,6 +151,15 @@ export function specialScenesLabel(values: string[]) {
     .join('·');
 }
 
+/**
+ * 작품 포스터로 받을 수 있는 주소: 우리 업로드 저장소의 사진(/api/uploads/<uuid>.jpg|png|webp)만.
+ * 바깥 주소나 PDF는 받지 않는다. 빈 값은 '포스터 없음'(기본 커버)이다.
+ */
+export function cleanPosterUrl(value: unknown): string {
+  const text = typeof value === 'string' ? value.trim() : '';
+  return /^\/api\/uploads\/[a-f0-9-]{36}\.(?:jpg|png|webp)$/.test(text) ? text : '';
+}
+
 /** 정해진 목록에 있는 값만 남긴다(중복 제거). */
 export function pickKnown(values: unknown, allowed: readonly string[]): string[] {
   if (!Array.isArray(values)) return [];

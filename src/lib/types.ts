@@ -43,6 +43,8 @@ export type Role = {
   shortlistCount?: number;
   ownerId?: string | null;
   projectId?: string | null;
+  /** 작품 포스터 이미지 주소. 비어 있으면 기본 커버를 그린다. */
+  posterUrl?: string;
 };
 
 export type Application = {

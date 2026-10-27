@@ -12,6 +12,7 @@ import { matchRoleForActor } from '@/lib/match';
 import { profileCompletion } from '@/lib/profile';
 import { actorStageInfo, actorStageOf } from '@/lib/types';
 import ProposalActions from './proposal-actions';
+import ProjectCover from '@/components/project-cover';
 
 export const dynamic = 'force-dynamic';
 
@@ -183,8 +184,7 @@ export default async function ActorHome() {
             <Link key={role.id} href={`/apply/${role.slug}`} className="pcard role-link">
               <div className="pcard-top">
                 <div className="pcard-img" style={{ width: 96, height: 104 }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`https://picsum.photos/seed/${role.slug}/200/220`} alt="" />
+                  <ProjectCover title={role.projectTitle} posterUrl={role.posterUrl} />
                 </div>
                 <div className="pcard-info">
                   <span className="badge-soft">

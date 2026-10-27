@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ProducerNav from '@/components/producer-nav';
+import ProjectCover from '@/components/project-cover';
 import {
   FORMATS,
   GENRE_TAGS,
@@ -15,6 +16,7 @@ import {
   NO_SPECIAL_SCENE,
   SPECIAL_SCENES,
   ageRangeLabel,
+  cleanPosterUrl,
   normalizeSpecialScenes,
   specialScenesLabel,
   splitLocation,
@@ -78,6 +80,8 @@ export type ProjectDraft = {
   producerName: string;
   logline: string;
   description: string;
+  /** 작품 포스터(업로드한 이미지 주소). 비우면 작품명으로 만든 기본 커버가 보인다. */
+  posterUrl: string;
   region: string;
   locationDetail: string;
   auditionStart: string;
@@ -133,6 +137,7 @@ function blankDraft(contactName: string): ProjectDraft {
     producerName: '',
     logline: '',
     description: '',
+    posterUrl: '',
     region: '서울',
     locationDetail: '',
     auditionStart: '',
@@ -206,6 +211,31 @@ export default function ProjectWizard({ contactName, editId, initial }: Props) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [posterBusy, setPosterBusy] = useState(false);
+  const posterInput = useRef<HTMLInputElement>(null);
+
+  async function uploadPoster(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    setPosterBusy(true);
+    setError('');
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const response = await fetch('/api/uploads', { method: 'POST', body: form });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || '포스터를 올리지 못했습니다.');
+      // 업로드는 PDF도 받지만 포스터는 사진만 쓴다.
+      const url = cleanPosterUrl(data.url);
+      if (!url) throw new Error('포스터는 JPG, PNG, WEBP 이미지만 올릴 수 있어요.');
+      setDraft((current) => ({ ...current, posterUrl: url }));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '포스터를 올리지 못했습니다.');
+    } finally {
+      setPosterBusy(false);
+      if (posterInput.current) posterInput.current.value = '';
+    }
+  }
 
   useEffect(() => {
     if (isEdit) return; // 수정 모드에서는 신규 등록 임시 저장을 불러오지 않는다
@@ -539,6 +569,50 @@ export default function ProjectWizard({ contactName, editId, initial }: Props) {
                       placeholder="줄거리와 분위기, 참고 작품을 적어 주세요."
                     />
                   </label>
+
+                  <h2 className="wiz-section">포스터</h2>
+                  <div className="poster-field">
+                    <div className="poster-preview">
+                      <ProjectCover title={draft.title || '작품명'} posterUrl={draft.posterUrl} />
+                    </div>
+                    <div className="poster-side">
+                      <p>작품 카드와 지원 화면에 보여요. 세로 3:4 비율이 가장 잘 맞아요. (선택)</p>
+                      <p className="muted">
+                        올리지 않으면 작품명으로 만든 기본 커버가 들어가요. JPG·PNG·WEBP, 5MB 이하.
+                      </p>
+                      <input
+                        ref={posterInput}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        hidden
+                        onChange={(event) => void uploadPoster(event.target.files)}
+                      />
+                      <div className="poster-actions">
+                        <button
+                          type="button"
+                          className="button button-outline"
+                          disabled={posterBusy}
+                          onClick={() => posterInput.current?.click()}
+                        >
+                          {posterBusy
+                            ? '올리는 중…'
+                            : draft.posterUrl
+                              ? '포스터 바꾸기'
+                              : '포스터 올리기'}
+                        </button>
+                        {draft.posterUrl && (
+                          <button
+                            type="button"
+                            className="text-button"
+                            disabled={posterBusy}
+                            onClick={() => setDraft((current) => ({ ...current, posterUrl: '' }))}
+                          >
+                            기본 커버로
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
                   <h2 className="wiz-section">촬영 지역</h2>
                   <div className="form-two">
@@ -1063,6 +1137,10 @@ export default function ProjectWizard({ contactName, editId, initial }: Props) {
                       </strong>
                     </div>
                   )}
+                  <div>
+                    <span>포스터</span>
+                    <strong>{draft.posterUrl ? '올린 포스터' : '기본 커버 (작품명)'}</strong>
+                  </div>
                   {draft.logline.trim() && (
                     <div>
                       <span>한 줄 소개</span>

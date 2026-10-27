@@ -76,6 +76,8 @@ export type Project = {
   description: string;
   /** 제공 항목(교통비·식사·숙박) */
   perks: string[];
+  /** 작품 포스터 이미지 주소(/api/uploads/…). 비어 있으면 기본 커버 */
+  posterUrl: string;
   createdAt: string;
 };
 
@@ -105,6 +107,7 @@ export const EMPTY_PROJECT: ProjectInput = {
   location: '',
   description: '',
   perks: [],
+  posterUrl: '',
 };
 
 /** 모든 배역에 똑같이 들어가는 지원 조건. 프로젝트 등록·수정의 '조건·담당' 단계 값이다. */
@@ -396,6 +399,7 @@ function projectFromRow(row: Row): Project {
     location: textOf(row.location),
     description: textOf(row.description),
     perks: listOf(row.perks),
+    posterUrl: textOf(row.poster_url),
     createdAt: String(row.created_at),
   };
 }
@@ -437,6 +441,7 @@ const PROJECT_COLUMNS = [
   'location',
   'description',
   'perks',
+  'poster_url',
 ];
 
 function projectValues(input: ProjectInput) {
@@ -463,6 +468,7 @@ function projectValues(input: ProjectInput) {
     input.location,
     input.description,
     JSON.stringify(input.perks),
+    input.posterUrl,
   ];
 }
 

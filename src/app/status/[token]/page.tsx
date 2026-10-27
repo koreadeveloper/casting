@@ -118,7 +118,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
               peerSub={`${role.projectTitle} · ${role.title}`}
               projectTitle={role.projectTitle}
               roleTitle={role.title}
-              projectImage={`https://picsum.photos/seed/${role.slug}/96/96`}
+              projectImage={role.posterUrl}
               profileHref={`/apply/${role.slug}`}
             />
           </section>
