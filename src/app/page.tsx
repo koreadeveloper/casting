@@ -146,7 +146,7 @@ export default async function Landing() {
           <div className="lp-card accent">
             <span className="badge-soft">Casting Assist</span>
             <strong className="price">프로젝트 단위 · 준비 중</strong>
-            <p>맞춤 추천, 셀프테이프 요청, 후보 비교와 팀 워크스페이스.</p>
+            <p>맞춤 추천, 셀프테이프 요청, 이상형 월드컵 비교와 팀 워크스페이스.</p>
           </div>
         </div>
       </section>

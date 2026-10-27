@@ -117,7 +117,10 @@ export default function CompareClient() {
       .then((data) => {
         const list: RoleOption[] = data.roles ?? [];
         setRoles(list);
-        if (list[0]) setRoleId(list[0].id);
+        // 지원자 화면의 '이상형 월드컵으로 비교'에서 오면 그 배역을 먼저 고른다.
+        const wanted = new URLSearchParams(location.search).get('role');
+        const first = list.find((item) => item.id === wanted) ?? list[0];
+        if (first) setRoleId(first.id);
       })
       .catch(() => setRoles([]));
   }, [loadResults]);
@@ -278,7 +281,7 @@ export default function CompareClient() {
         <div className="title-row">
           <div>
             <p className="greet-sub">두 명씩 골라 최종 1인을 뽑습니다</p>
-            <h1 className="page-title">후보 비교</h1>
+            <h1 className="page-title">이상형 월드컵</h1>
           </div>
           {stage !== 'setup' && (
             <button className="text-button" onClick={reset}>

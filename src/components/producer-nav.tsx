@@ -95,7 +95,7 @@ const items: { key: ProducerSection; label: string; href: string; mobile: boolea
   { key: 'actors', label: '배우 찾기', href: '/studio/actors', mobile: true },
   { key: 'messages', label: '메시지', href: '/studio?tab=messages', mobile: true },
   { key: 'recommend', label: '배우 추천', href: '/studio/recommend', mobile: false },
-  { key: 'compare', label: '후보 비교', href: '/studio/compare', mobile: false },
+  { key: 'compare', label: '이상형 월드컵', href: '/studio/compare', mobile: false },
   { key: 'board', label: '팀 보드', href: '/studio/board', mobile: false },
   { key: 'calendar', label: '캘린더', href: '/studio/calendar', mobile: false },
   { key: 'new-project', label: '프로젝트 등록', href: '/studio/projects/new', mobile: false },

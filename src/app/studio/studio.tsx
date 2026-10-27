@@ -9,7 +9,7 @@ import { NotifBell } from '@/components/notif-bell';
 import { BrandLogo } from '@/components/brand';
 import PhotoLightbox from '@/components/photo-lightbox';
 import ProducerNav from '@/components/producer-nav';
-import SwipeReview from './swipe-review';
+import { MIN_CANDIDATES } from '@/lib/compare';
 import { formatDates } from '@/lib/schedule';
 import { useBackClose } from '@/lib/use-back-close';
 import ProjectCover from '@/components/project-cover';
@@ -389,8 +389,6 @@ export default function Studio({
   const [note, setNote] = useState('');
   const [pendingPublicStage, setPendingPublicStage] = useState<PublicStage | null>(null);
   const [photoAt, setPhotoAt] = useState<number | null>(null);
-  /** 카드 검토 중인 지원자 순서. null이면 카드 검토를 닫은 상태. */
-  const [swipeIds, setSwipeIds] = useState<string[] | null>(null);
 
   const role = roles.find((item) => item.id === roleId);
   const selected = applications.find((item) => item.id === selectedId);
@@ -469,7 +467,6 @@ export default function Studio({
     setPhotoAt(null);
   }, [selectedId, selected?.note]);
   // 지원자 상세를 처음 열면 '열람'으로 남긴다. 배우 화면에서는 '미열람 → 검토 중'으로 바뀐다.
-  // 카드 검토에서 카드를 보여 준 것도 열람이다.
   const markViewed = useCallback((id: string) => {
     void api<{ application: Application }>(`/api/applications/${id}`, {
       method: 'PATCH',
@@ -502,7 +499,6 @@ export default function Studio({
   // 지원자 상세·대화 시트는 뒤로가기로 닫힌다. (사진 크게 보기는 PhotoLightbox 안에서 처리)
   useBackClose(Boolean(selected), () => setSelectedId(null));
   useBackClose(Boolean(chatId), closeChat);
-  useBackClose(Boolean(swipeIds), () => setSwipeIds(null));
 
   async function updateApplication(id: string, patch: Partial<Application>) {
     setBusy(true);
@@ -522,23 +518,6 @@ export default function Studio({
       setBusy(false);
     }
   }
-
-  // 카드 검토의 분류 저장. 카드를 넘길 때마다 '저장했습니다' 알림이 뜨지 않게 실패만 알린다.
-  const decideQuietly = useCallback(async (id: string, status: ReviewStatus) => {
-    try {
-      const result = await api<{ application: Application }>(`/api/applications/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-      });
-      setApplications((current) =>
-        current.map((item) => (item.id === id ? { ...item, ...result.application } : item)),
-      );
-      return true;
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : '분류를 저장하지 못했습니다.');
-      return false;
-    }
-  }, []);
 
   // 탭 이동을 브라우저 기록에 남겨 휴대폰·브라우저 뒤로가기로 이전 화면에 돌아갈 수 있게 한다.
   function goTab(next: Tab, nextRoleId?: string) {
@@ -876,7 +855,6 @@ export default function Studio({
                           setRoleId(event.target.value);
                           setFilter('all');
                           setSelectedId(null);
-                          setSwipeIds(null);
                           // 같은 작품 안에서 배역만 바꾼 것이라 기록을 새로 쌓지 않고 주소만 맞춘다.
                           history.replaceState(
                             {
@@ -946,33 +924,37 @@ export default function Studio({
                   </div>
                 </section>
                 {(() => {
-                  // 기본(전체) 목록에서는 아직 분류하지 않은 지원자만 카드로 넘긴다.
-                  // 필터·검색을 걸었으면 지금 보이는 목록 그대로 넘긴다(목록과 카드가 같은 기준).
-                  const unsorted = filtered.filter((item) => item.status === 'new');
-                  const deck = filter === 'all' && !search && unsorted.length ? unsorted : filtered;
-                  return (
-                    <button
-                      type="button"
-                      className="swipe-entry"
-                      disabled={deck.length === 0}
-                      onClick={() => setSwipeIds(deck.map((item) => item.id))}
-                    >
-                      <span className="swipe-entry-icon" aria-hidden>
-                        <i />
-                        <i />
+                  // 이상형 월드컵(기획서: 1:1로 넘기며 비교하고 관심 후보로 저장).
+                  // 제외한 지원자는 빼고 겨루므로 남은 인원으로 시작 가능 여부를 정한다.
+                  const contenders = applications.filter((item) => item.status !== 'excluded');
+                  const ready = contenders.length >= MIN_CANDIDATES;
+                  const body = (
+                    <>
+                      <span className="compare-entry-icon" aria-hidden>
+                        VS
                       </span>
-                      <span className="swipe-entry-txt">
-                        <strong>
-                          {deck === unsorted && deck.length
-                            ? `미분류 ${deck.length}명 카드로 검토`
-                            : deck.length
-                              ? `지금 목록 ${deck.length}명 카드로 보기`
-                              : '카드로 볼 지원자가 없어요'}
-                        </strong>
-                        <small>← 제외 · ↑ 보류 · → 관심 · 버튼으로도 돼요</small>
+                      <span className="compare-entry-txt">
+                        <strong>이상형 월드컵으로 비교</strong>
+                        <small>
+                          {ready
+                            ? `지원자 ${contenders.length}명을 1:1로 겨뤄 최종 후보 고르기`
+                            : `지원자가 ${MIN_CANDIDATES}명 이상이면 시작할 수 있어요 (지금 ${contenders.length}명)`}
+                        </small>
                       </span>
                       <span className="chevron">›</span>
-                    </button>
+                    </>
+                  );
+                  return ready ? (
+                    <a
+                      className="compare-entry"
+                      href={`/studio/compare?role=${encodeURIComponent(role.id)}`}
+                    >
+                      {body}
+                    </a>
+                  ) : (
+                    <div className="compare-entry is-off" aria-disabled="true">
+                      {body}
+                    </div>
                   );
                 })()}
                 <section>
@@ -1211,7 +1193,7 @@ export default function Studio({
               <a href="/studio/compare">
                 {Icon.vs}
                 <span>
-                  후보 비교<small>두 명씩 골라 최종 1인 뽑기</small>
+                  이상형 월드컵<small>두 명씩 겨뤄 최종 1인 뽑기</small>
                 </span>
               </a>
               <a href="/studio/board">
@@ -1263,25 +1245,6 @@ export default function Studio({
           {message}
           <button aria-label="닫기">×</button>
         </div>
-      )}
-
-      {swipeIds && role && (
-        <SwipeReview
-          items={swipeIds
-            .map((id) => applications.find((item) => item.id === id))
-            .filter((item): item is Application => Boolean(item))}
-          title={`${role.projectTitle} · ${role.title}`}
-          paused={Boolean(selected || chatId)}
-          onDecide={decideQuietly}
-          onSeen={markViewed}
-          onOpenDetail={(id) => setSelectedId(id)}
-          onShowInterested={() => {
-            setFilter('interested');
-            setSearch('');
-            setSwipeIds(null);
-          }}
-          onClose={() => setSwipeIds(null)}
-        />
       )}
 
       {selected && (
