@@ -7,6 +7,7 @@ import {
   hasRoleFilters,
   matchesRoleFilters,
   parseRoleFilters,
+  sortRoleListings,
 } from '../src/lib/role-search.ts';
 import { FORMATS, GENRE_TAGS, PROJECT_REGIONS, ROLE_TYPES } from '../src/lib/project-meta.ts';
 
@@ -57,6 +58,7 @@ test('검색 조건 해석: 모르는 값은 버리고 여러 개 고른 값은 
     gender: '',
     ages: ['20'],
     free: true,
+    sort: 'newest',
   });
   assert.deepEqual(parseRoleFilters({}, options), EMPTY_FILTERS);
 });
@@ -127,4 +129,39 @@ test('출연 불가일 피하기: 촬영일이 하루라도 겹치면 뺀다', (
   assert.equal(matchesRoleFilters(listing, free, []), true);
   // 토글을 끄면 겹쳐도 보인다
   assert.equal(matchesRoleFilters(listing, EMPTY_FILTERS, ['2026-11-17']), true);
+});
+
+test('정렬: 기본은 최신 등록순이고 주소에 남기지 않는다', () => {
+  const filters = parseRoleFilters({}, options);
+  assert.equal(filters.sort, 'newest');
+  assert.equal(filtersToQuery(filters), '');
+  assert.equal(parseRoleFilters({ sort: 'weird' }, options).sort, 'newest');
+  const sorted = parseRoleFilters({ sort: 'deadline' }, options);
+  assert.equal(sorted.sort, 'deadline');
+  assert.equal(filtersToQuery(sorted), 'sort=deadline');
+  // 정렬은 필터가 아니라서 '검색 중'으로 치지 않는다
+  assert.equal(activeFilterCount(sorted), 0);
+  assert.equal(hasRoleFilters(sorted), false);
+});
+
+test('정렬: 마감 임박순·촬영일 빠른순, 같으면 최신 등록순, 날짜 없으면 맨 뒤', () => {
+  const roles = [
+    { id: 'a', createdAt: '2026-10-01', deadline: '2026-11-20', shootDates: ['2026-12-05'] },
+    { id: 'b', createdAt: '2026-10-03', deadline: '2026-11-10', shootDates: [] },
+    {
+      id: 'c',
+      createdAt: '2026-10-02',
+      deadline: '2026-11-10',
+      shootDates: ['2026-12-09', '2026-11-30'],
+    },
+    { id: 'd', createdAt: '2026-10-04', deadline: '', shootDates: [], shootDate: '2026-12-01' },
+  ];
+  const ids = (sort) =>
+    sortRoleListings(roles, sort)
+      .map((role) => role.id)
+      .join('');
+  assert.equal(ids('newest'), 'dbca');
+  assert.equal(ids('deadline'), 'bcad');
+  assert.equal(ids('shoot'), 'cdab');
+  assert.equal(roles[0].id, 'a', '원래 배열은 그대로 둔다');
 });

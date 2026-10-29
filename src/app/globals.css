@@ -4705,6 +4705,18 @@ img {
   border-radius: 16px;
   background: #fff;
 }
+.role-search .sort-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.role-search .sort-row select {
+  width: auto;
+  min-height: 34px;
+  padding: 4px 30px 4px 12px;
+  font-size: 13px;
+  border-radius: 12px;
+}
 .role-search > .wiz-note {
   margin-top: 8px;
 }

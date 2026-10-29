@@ -5,7 +5,7 @@ import type { Application, Audition, ChatMessage, PublicStage, ReviewStatus, Rol
 import { demoFace } from './demo-faces';
 import { projectCover, splitLocation } from './project-meta';
 import { resultDueDate } from './result-deadline';
-import { matchesRoleFilters, type RoleFilters } from './role-search';
+import { matchesRoleFilters, sortRoleListings, type RoleFilters } from './role-search';
 import { conn as rawConnection, withAdvisoryLock, type Conn, type Statement } from './sql';
 
 // 스키마 생성과 샘플 데이터는 프로세스당 한 번만, 다른 인스턴스와 겹치지 않게 실행한다.
@@ -684,7 +684,10 @@ export async function searchOpenRoles(
   });
   return {
     all,
-    roles: all.filter((listing) => matchesRoleFilters(listing, filters, unavailableDates)),
+    roles: sortRoleListings(
+      all.filter((listing) => matchesRoleFilters(listing, filters, unavailableDates)),
+      filters.sort,
+    ),
   };
 }
 

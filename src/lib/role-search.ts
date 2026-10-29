@@ -11,6 +11,14 @@ export const AGE_BANDS: Record<string, { label: string; min: number; max: number
   '50': { label: '50대 이상', min: 50, max: 200 },
 };
 
+/** 정렬. newest가 기본(주소에 안 남긴다). */
+export const ROLE_SORTS = {
+  newest: '최신 등록순',
+  deadline: '마감 임박순',
+  shoot: '촬영일 빠른순',
+} as const;
+export type RoleSort = keyof typeof ROLE_SORTS;
+
 export type RoleFilters = {
   /** 키워드: 작품명·배역명·배역 설명·지원 조건에서 찾는다 */
   q: string;
@@ -28,6 +36,8 @@ export type RoleFilters = {
   ages: string[];
   /** 내 출연 불가일과 겹치는 배역 빼기 */
   free: boolean;
+  /** 정렬(필터 개수에는 넣지 않는다) */
+  sort: RoleSort;
 };
 
 export const EMPTY_FILTERS: RoleFilters = {
@@ -39,6 +49,7 @@ export const EMPTY_FILTERS: RoleFilters = {
   gender: '',
   ages: [],
   free: false,
+  sort: 'newest',
 };
 
 /** 검색에 필요한 배역·작품 정보 */
@@ -82,6 +93,7 @@ function known(values: string[], allowed: readonly string[]) {
 export function parseRoleFilters(params: Params, options: FilterOptions): RoleFilters {
   const gender = one(params.gender);
   const region = one(params.region);
+  const sort = one(params.sort);
   return {
     q: one(params.q).slice(0, 60),
     formats: known(many(params.format), options.formats),
@@ -91,6 +103,7 @@ export function parseRoleFilters(params: Params, options: FilterOptions): RoleFi
     gender: gender === 'male' || gender === 'female' ? gender : '',
     ages: known(many(params.age), Object.keys(AGE_BANDS)),
     free: one(params.free) === '1',
+    sort: Object.hasOwn(ROLE_SORTS, sort) ? (sort as RoleSort) : 'newest',
   };
 }
 
@@ -105,6 +118,7 @@ export function filtersToQuery(filters: RoleFilters) {
   if (filters.gender) params.set('gender', filters.gender);
   for (const value of filters.ages) params.append('age', value);
   if (filters.free) params.set('free', '1');
+  if (filters.sort !== 'newest') params.set('sort', filters.sort);
   return params.toString();
 }
 
@@ -133,6 +147,43 @@ function ageMatches(listing: RoleListing, bands: string[]) {
   return bands.some((key) => {
     const band = AGE_BANDS[key];
     return band && band.min <= max && min <= band.max;
+  });
+}
+
+/** 정렬에 쓰는 배역 정보 */
+export type SortableRole = {
+  createdAt: string;
+  deadline: string;
+  shootDates: string[];
+  shootDate?: string;
+};
+
+/** 첫 촬영일. 날짜가 없으면 ''. */
+function firstShootDay(role: SortableRole) {
+  const days = role.shootDates.length ? role.shootDates : role.shootDate ? [role.shootDate] : [];
+  return [...days].sort()[0] ?? '';
+}
+
+/** 날짜 오름차순. 빈 날짜는 맨 뒤로. */
+function byDateAsc(a: string, b: string) {
+  if (!a || !b) return a ? -1 : b ? 1 : 0;
+  return a.localeCompare(b);
+}
+
+/**
+ * 배역 목록 정렬(새 배열을 돌려준다). 같은 순위면 최신 등록순.
+ * deadline = 지원 마감이 가까운 순, shoot = 첫 촬영일이 빠른 순.
+ */
+export function sortRoleListings<T extends SortableRole>(roles: T[], sort: RoleSort): T[] {
+  const newest = (a: T, b: T) => b.createdAt.localeCompare(a.createdAt);
+  return [...roles].sort((a, b) => {
+    const order =
+      sort === 'deadline'
+        ? byDateAsc(a.deadline, b.deadline)
+        : sort === 'shoot'
+          ? byDateAsc(firstShootDay(a), firstShootDay(b))
+          : 0;
+    return order || newest(a, b);
   });
 }
 

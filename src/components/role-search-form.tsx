@@ -7,6 +7,8 @@ import { FORMATS, GENRE_TAGS, PROJECT_REGIONS, ROLE_TYPES } from '@/lib/project-
 import {
   AGE_BANDS,
   EMPTY_FILTERS,
+  ROLE_SORTS,
+  type RoleSort,
   activeFilterCount,
   filtersToQuery,
   type RoleFilters,
@@ -112,6 +114,19 @@ export default function RoleSearchForm({ initial, unavailableCount }: Props) {
           필터{count > 0 && <b>{count}</b>}
         </button>
       </div>
+      <div className="sort-row">
+        <select
+          value={filters.sort}
+          onChange={(event) => change({ sort: event.target.value as RoleSort })}
+          aria-label="정렬"
+        >
+          {Object.entries(ROLE_SORTS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {open && (
         <div className="filter-panel role-filter-panel" id="role-filter-panel">
@@ -120,7 +135,7 @@ export default function RoleSearchForm({ initial, unavailableCount }: Props) {
             <button
               type="button"
               className="text-button"
-              onClick={() => change({ ...EMPTY_FILTERS, q: filters.q })}
+              onClick={() => change({ ...EMPTY_FILTERS, q: filters.q, sort: filters.sort })}
             >
               초기화
             </button>
