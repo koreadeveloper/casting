@@ -116,7 +116,7 @@ export default function ProducerNav({
   return (
     <nav className="pnav" aria-label="제작자 메뉴">
       <div className="pnav-brand">
-        <Link href="/" className="pnav-brand-link" aria-label="Casting Flow 첫 화면으로">
+        <Link href="/" className="pnav-brand-link" aria-label="캐스팅플로우 첫 화면으로">
           <BrandLogo />
         </Link>
       </div>

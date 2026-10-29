@@ -715,7 +715,7 @@ export default function Studio({
         </div>
       )}
       <header className="home-header">
-        <Link href="/" className="brand-word mobile-only" aria-label="Casting Flow 첫 화면으로">
+        <Link href="/" className="brand-word mobile-only" aria-label="캐스팅플로우 첫 화면으로">
           <BrandLogo />
         </Link>
         <span className="desk-only" />

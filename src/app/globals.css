@@ -50,6 +50,9 @@ html {
 }
 body {
   margin: 0;
+  /* 한국어는 낱말 중간에서 줄을 바꾸지 않는다('적합/도' 같은 끊김 방지). 긴 주소는 넘치지 않게 끊는다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 button,
 input,
@@ -3672,8 +3675,10 @@ img {
   color: #6d727d;
 }
 .lp-card .badge-soft {
-  display: inline-block;
+  /* inline-block이면 앞의 표시등(::before)이 점이 아니라 세로줄로 찌그러진다 */
+  display: inline-flex;
   margin-bottom: 10px;
+  font-size: 12px;
 }
 .lp-card .price {
   font-size: 22px;
@@ -4786,12 +4791,16 @@ img {
   align-items: center;
   gap: 7px;
 }
-.brand-mascot,
+.brand-cf,
 .brand-icon {
   flex: none;
   display: inline-block;
   object-fit: contain;
   vertical-align: middle;
+}
+/* 로고의 CF 마크: 앱 아이콘처럼 둥근 네모로 보이게 (.brand-mark는 다른 곳에서 쓰는 이름이라 피한다) */
+.brand-cf {
+  border-radius: 24%;
 }
 .brand-wordmark {
   display: block;
@@ -5410,4 +5419,222 @@ img {
   align-self: flex-start;
   padding: 0;
   font-size: 12px;
+}
+
+/* ── 첫 화면: 누구를 위한 무슨 서비스인지 ── */
+.lp-eyebrow {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid #fff;
+  border-radius: 999px;
+  padding: 7px 13px;
+  box-shadow: 0 6px 16px #8f9bd41f;
+}
+.lp-login-hint {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.lp-login-hint a {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  display: inline-block;
+  padding: 10px 2px;
+}
+.lp-lead {
+  max-width: 720px;
+  margin: -8px 0 22px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.lp-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--primary);
+  background: var(--lavender);
+  border-radius: 999px;
+  padding: 4px 10px;
+  margin-bottom: 10px;
+}
+.lp-card p {
+  font-size: 14px;
+  line-height: 1.65;
+}
+.lp-audience {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lp-audience .lp-tag {
+  align-self: flex-start;
+  margin-bottom: 0;
+}
+.lp-audience .button {
+  align-self: flex-start;
+  margin-top: auto;
+}
+.lp-flow {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lp-flow li {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 2px 12px;
+}
+.lp-flow b {
+  grid-row: span 2;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--on-primary);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.lp-flow strong {
+  font-size: 15px;
+  margin: 0;
+}
+.lp-flow span {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.lp-bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.lp-final {
+  text-align: center;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 34px 20px;
+  box-shadow: 0 12px 30px #0b0d120f;
+}
+.lp-final h2 {
+  margin-bottom: 8px !important;
+}
+.lp-final p {
+  margin: 0 0 20px;
+  font-size: 15px;
+  color: var(--muted);
+}
+.lp-final .lp-cta {
+  justify-content: center;
+}
+/* 상단 '로그인'·'시작하기': 손가락으로 누르기 쉽게 44px 이상 */
+.lp-auth .text-button,
+.lp-auth .button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.lp-auth .text-button {
+  padding: 0 10px;
+}
+@media (max-width: 719px) {
+  .lp-copy h1 {
+    font-size: 34px;
+    letter-spacing: -1.4px;
+  }
+}
+@media (min-width: 720px) {
+  .lp-grid.three {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .lp-grid:not(.two):not(.three) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1080px) {
+  .lp-grid.three {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .lp-grid:not(.two):not(.three) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ── 비밀번호 찾기 ── */
+.forgot-link {
+  align-self: center;
+  display: inline-block;
+  padding: 12px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.reset-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* ── 로그인 전 배우 화면 ── */
+.home-auth {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.home-header-btn {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.home-auth .text-button {
+  padding: 0 10px;
+}
+.join-nudge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--lavender-strong);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin: 12px 0 4px;
+}
+.join-nudge p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.join-nudge strong {
+  color: var(--ink);
+}
+.join-nudge .button {
+  flex: none;
+  min-height: 40px;
+}
+/* 휴대폰에서는 첫 화면 버튼을 같은 너비로 쌓는다 */
+@media (max-width: 719px) {
+  .lp-cta {
+    flex-direction: column;
+  }
+  .lp-cta .button {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
 }

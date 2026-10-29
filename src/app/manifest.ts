@@ -3,8 +3,8 @@ import type { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: '캐스팅플로우',
-    short_name: '캐스팅',
-    description: '모바일 캐스팅 지원·검토 도구',
+    short_name: '캐스팅플로우',
+    description: '학생·독립영화 제작팀과 신인 배우를 위한 캐스팅 플랫폼',
     start_url: '/studio',
     display: 'standalone',
     // 설치 앱을 켤 때 아이콘 뒤로 보이는 바탕. 새 아이콘(검정 바탕)과 맞춘다.

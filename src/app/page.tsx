@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Brand, BrandIcon, type BrandIconName } from '@/components/brand';
+import { Brand } from '@/components/brand';
 import { DemoEntry } from '@/components/demo-entry';
 import { demoFace } from '@/lib/demo-faces';
 import { getSession, homeFor } from '@/lib/auth';
@@ -8,36 +8,128 @@ export const dynamic = 'force-dynamic';
 
 const collage = [1, 2, 7, 6, 4];
 
-const values = [
-  ['sparkle', '맞춤 추천', '배역 조건과 프로필을 비교해 적합도 순으로 제안'],
-  ['bolt', '빠른 검토', '카드·목록으로 지원자를 한 화면에서 비교'],
-  ['team', '팀 협업', '감독·PD가 함께 후보를 정리'],
+// 기획서의 차별점. 실제로 들어가 있는 기능만 적는다(없는 기능을 적지 않는다).
+const strengths: { who: string; title: string; desc: string }[] = [
+  {
+    who: '신뢰',
+    title: '제작진 인증 배지',
+    desc: '재학증명서·학교 메일·사업자등록증으로 확인한 팀에 ‘학교 인증’·‘제작사 인증됨’이 붙어요. 인증 전인 팀은 그렇다고 알려 드려요.',
+  },
+  {
+    who: '배우',
+    title: '지원 현황 공개',
+    desc: '미열람 → 검토 중 → 오디션 대상 → 결과까지 단계가 보여요. 결과 안내일이 지나면 자동으로 알려 드려서 무작정 기다리지 않아요.',
+  },
+  {
+    who: '배우',
+    title: '조건을 지원 전에 확인',
+    desc: '촬영 일정·출연료·특수 장면 안내를 공고에서 먼저 보고, 프로필 하나로 여러 작품에 지원해요.',
+  },
+  {
+    who: '제작진',
+    title: '이상형 월드컵 비교',
+    desc: '최종 후보를 1:1로 붙여 가며 골라요. 비슷한 후보 사이에서 고민하는 시간을 줄여요.',
+  },
+  {
+    who: '제작진',
+    title: '팀보드',
+    desc: '지원자를 서류 검토 → 서류 통과 → 오디션 후보로 옮기고, 팀원과 투표·메모로 함께 정해요.',
+  },
+  {
+    who: '현장',
+    title: '촬영 참석 재확인',
+    desc: '출연이 확정되면 촬영 3일 전부터 배우에게 참석 여부를 다시 물어 노쇼를 줄여요.',
+  },
 ];
 
-const features = [
-  ['배우 검색·탐색', '성별·연령·키·지역·특기·출연 가능일로 원하는 배우를 바로 찾습니다.'],
-  ['지원 링크', '필름메이커스·SNS 공고에 링크 하나만 붙이면 지원서가 한곳에 모입니다.'],
-  ['캐스팅 제안', '마음에 드는 배우에게 배역을 골라 바로 제안하고 응답을 받습니다.'],
-  ['오디션 일정', '시간 후보를 보내면 배우가 고르고, 확정까지 대화에서 끝냅니다.'],
+const producerFlow: [string, string][] = [
+  ['프로젝트·배역 등록', '촬영 조건·출연료·특수 장면까지 안내에 따라 공고 필수 항목을 채워요.'],
+  [
+    '지원 받기·배우 찾기',
+    '지원 링크를 필름메이커스·SNS 공고에 붙이고, 성별·연령·키·지역·특기·출연 가능일로 배우를 찾아 직접 제안해요.',
+  ],
+  ['팀과 함께 고르기', '팀보드와 이상형 월드컵으로 후보를 정해요.'],
+  ['오디션·촬영', '대화에서 오디션 시간을 확정하고, 촬영 전 참석을 다시 확인해요.'],
 ];
+
+const actorFlow: [string, string][] = [
+  ['프로필 하나 만들기', '갖고 있던 PDF 프로필을 올리면 입력칸을 자동으로 채워 드려요.'],
+  ['안심하고 지원', '인증 배지와 촬영 조건·출연료·특수 장면 안내를 보고 지원해요.'],
+  ['진행 상황 확인', '지원 현황에서 지금 단계와 결과 안내 예정일을 확인해요.'],
+  ['오디션·촬영', '오디션 시간을 고르고, 촬영 전에 참석 여부를 알려 줘요.'],
+];
+
+// 기획서의 가격(안). 아직 결제 기능이 없어 '출시 예정'으로만 보여 준다.
+const plans: { name: string; price: string; desc: string; accent?: boolean }[] = [
+  {
+    name: '무료',
+    price: '0원',
+    desc: '공고 1건, 지원서 통합 관리, 팀원 2명까지. 배우는 언제나 무료예요.',
+  },
+  {
+    name: '프로젝트 패스',
+    price: '19,900원 / 작품 1편',
+    desc: '90일 동안 추천·이상형 월드컵·팀보드 무제한, 촬영 참석 재확인 알림.',
+    accent: true,
+  },
+  { name: '학기 패스', price: '49,000원 / 6개월', desc: '동아리·연속 제작팀용, 공고 무제한.' },
+  {
+    name: '학과 라이선스',
+    price: '연 60만 원 / 학과',
+    desc: '학과 소속 팀 전체 사용, 학교 인증 자동화, 학과 관리 화면.',
+  },
+];
+
+function FlowList({ items }: { items: [string, string][] }) {
+  return (
+    <ol className="lp-flow">
+      {items.map(([title, desc], index) => (
+        <li key={title}>
+          <b>{index + 1}</b>
+          <strong>{title}</strong>
+          <span>{desc}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 export default async function Landing() {
   const session = await getSession();
   const demo = process.env.DEMO_MODE === 'true';
-  const start = session ? homeFor(session.role) : demo ? '/login' : '/signup';
+  const home = session ? homeFor(session.role) : '';
+
+  // 로그인한 사람에게는 '내 화면으로'만, 처음 온 사람에게는 제작진·배우 입구를 따로 보여 준다.
+  const ctas = session ? (
+    <div className="lp-cta">
+      <Link className="button button-primary" href={home}>
+        내 화면으로 →
+      </Link>
+    </div>
+  ) : (
+    <div className="lp-cta">
+      <Link className="button button-primary" href="/signup/producer">
+        제작진으로 시작하기 →
+      </Link>
+      <Link className="button button-outline" href="/actor">
+        배우로 배역 보기
+      </Link>
+    </div>
+  );
+
   return (
     <main className="landing-page">
       <header className="lp-nav">
         <Brand />
         <nav className="lp-links">
           <a href="#about">서비스 소개</a>
-          <a href="#features">주요 기능</a>
+          <a href="#features">차별점</a>
           <a href="#how">이용 방법</a>
           <a href="#pricing">요금제</a>
         </nav>
         <div className="lp-auth">
           {session ? (
-            <Link className="button button-primary sm" href={start}>
+            <Link className="button button-primary sm" href={home}>
               내 화면으로
             </Link>
           ) : (
@@ -55,39 +147,23 @@ export default async function Landing() {
 
       <section className="lp-hero" id="about">
         <div className="lp-copy">
+          <span className="lp-eyebrow">학생·독립영화 제작팀과 신인 배우를 위한 캐스팅 플랫폼</span>
           <h1>
-            좋은 이야기는
+            공고부터 합격까지
             <br />
-            <em>좋은 사람</em>으로부터
+            <em>한곳에서</em> 캐스팅
           </h1>
           <p>
-            영화, 드라마, 광고. 다양한 프로젝트의 제작자와 배우를
-            <br className="desk-only" /> 더 빠르고 정확하게 연결하는 캐스팅 플랫폼입니다.
+            캐스팅 담당자가 따로 없는 제작팀은 조건에 맞는 배우를 빠르게 찾아 팀과 함께 고르고, 신인
+            배우는 인증된 공고에 안심하고 지원해 진행 상황을 바로 확인해요.
           </p>
-          <div className="lp-values">
-            {values.map(([icon, title, desc]) => (
-              <div key={title}>
-                <span>
-                  <BrandIcon name={icon as BrandIconName} size={26} />
-                </span>
-                <strong>{title}</strong>
-                <small>{desc}</small>
-              </div>
-            ))}
-          </div>
-          {demo ? (
-            <DemoEntry />
-          ) : (
-            <div className="lp-cta">
-              <Link className="button button-primary" href={start}>
-                시작하기 →
-              </Link>
-              <Link className="button button-outline" href="/actor">
-                모집 중인 배역 보기
-              </Link>
-            </div>
+          {ctas}
+          {!session && (
+            <p className="lp-login-hint">
+              이미 계정이 있나요? <Link href="/login">로그인</Link>
+            </p>
           )}
-          {!demo && !session && <DemoEntry />}
+          {!session && <DemoEntry />}
         </div>
         <div className="lp-collage" aria-hidden>
           {collage.map((id, index) => (
@@ -95,59 +171,79 @@ export default async function Landing() {
             <img key={id} className={`c${index}`} src={demoFace(id)} alt="" />
           ))}
           <div className="lp-bubble">
-            새로운 이야기를
-            <br />
-            함께해요
+            <span className="trust-badge trust-school">학교 인증</span>
+            지원 현황 · 오디션 대상
           </div>
         </div>
       </section>
 
       <section className="lp-section" id="features">
-        <h2>주요 기능</h2>
-        <div className="lp-grid">
-          {features.map(([title, desc]) => (
-            <div key={title} className="lp-card">
-              <strong>{title}</strong>
-              <p>{desc}</p>
+        <h2>캐스팅플로우가 다른 점</h2>
+        <p className="lp-lead">
+          모집 공고에서 끝나지 않고 최종 선발까지, ‘좋아요 수’가 아니라 인증과 실제 진행 상황으로
+          믿을 수 있게 만들었어요.
+        </p>
+        <div className="lp-grid three">
+          {strengths.map((item) => (
+            <div key={item.title} className="lp-card">
+              <span className="lp-tag">{item.who}</span>
+              <strong>{item.title}</strong>
+              <p>{item.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       <section className="lp-section" id="how">
-        <h2>이용 방법</h2>
-        <ol className="lp-steps">
-          <li>
-            <b>1</b>
-            <strong>{demo ? '역할 선택하고 바로 체험' : '가입하고 역할 선택'}</strong>
-            <span>제작자 또는 배우로 시작합니다.</span>
-          </li>
-          <li>
-            <b>2</b>
-            <strong>프로젝트 등록 · 프로필 작성</strong>
-            <span>제작자는 배역을, 배우는 프로필을 올립니다.</span>
-          </li>
-          <li>
-            <b>3</b>
-            <strong>탐색 · 제안 · 오디션</strong>
-            <span>배우를 찾고 제안하고, 일정을 확정합니다.</span>
-          </li>
-        </ol>
+        <h2>이렇게 쓰여요</h2>
+        <div className="lp-grid two">
+          <div className="lp-card lp-audience">
+            <span className="lp-tag">제작진 · 학생·독립영화 팀</span>
+            <FlowList items={producerFlow} />
+            {!session && (
+              <Link className="button button-primary" href="/signup/producer">
+                제작진으로 시작하기
+              </Link>
+            )}
+          </div>
+          <div className="lp-card lp-audience">
+            <span className="lp-tag">배우 · 언제나 무료</span>
+            <FlowList items={actorFlow} />
+            {!session && (
+              <Link className="button button-outline" href="/signup/actor">
+                배우로 가입하기
+              </Link>
+            )}
+          </div>
+        </div>
       </section>
 
       <section className="lp-section" id="pricing">
         <h2>요금제</h2>
-        <div className="lp-grid two">
-          <div className="lp-card">
-            <span className="badge-soft">Basic</span>
-            <strong className="price">무료</strong>
-            <p>배역 등록, 지원 링크, 지원자 관리, 배우 검색. 배우는 언제나 무료입니다.</p>
-          </div>
-          <div className="lp-card accent">
-            <span className="badge-soft">Casting Assist</span>
-            <strong className="price">프로젝트 단위 · 준비 중</strong>
-            <p>맞춤 추천, 셀프테이프 요청, 이상형 월드컵 비교와 팀 워크스페이스.</p>
-          </div>
+        <p className="lp-lead">
+          지금은 파일럿 기간이라 모든 기능을 무료로 쓸 수 있어요. 아래는 정식 출시 때 적용할 예정
+          가격(안)이고, 바뀔 수 있어요.
+        </p>
+        <div className="lp-grid">
+          {plans.map((plan) => (
+            <div key={plan.name} className={`lp-card${plan.accent ? ' accent' : ''}`}>
+              <span className="badge-soft">{plan.name}</span>
+              <strong className="price">{plan.price}</strong>
+              <p>{plan.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="lp-section">
+        <div className="lp-final">
+          <h2>
+            다음 작품의 캐스팅,
+            <br />
+            지금 시작해 보세요
+          </h2>
+          <p>제작진은 지금 무료로 공고를 올리고, 배우는 언제나 무료로 지원해요.</p>
+          {ctas}
         </div>
       </section>
 

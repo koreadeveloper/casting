@@ -19,7 +19,7 @@ export default async function SignupChoice() {
       </header>
       <section className="auth-card wide-card">
         <h1>지금, 당신의 이야기를 시작하세요</h1>
-        <p className="muted">당신의 역할을 선택하고, Casting Flow와 함께하세요.</p>
+        <p className="muted">당신의 역할을 선택하고, 캐스팅플로우와 함께하세요.</p>
         <div className="role-cards">
           <Link href="/signup/producer" className="role-card">
             <span className="role-art">

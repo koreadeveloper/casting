@@ -4,9 +4,10 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: '캐스팅플로우',
-  description: '배역 지원부터 오디션 후보 선정까지, 작은 제작팀을 위한 모바일 캐스팅 도구',
+  description:
+    '학생·독립영화 제작팀과 신인 배우를 위한 캐스팅 플랫폼. 공고부터 최종 합격까지 한곳에서.',
   applicationName: '캐스팅플로우',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: '캐스팅' },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: '캐스팅플로우' },
 };
 
 export const viewport: Viewport = {

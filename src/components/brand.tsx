@@ -4,19 +4,19 @@ import Link from 'next/link';
 // 브랜드 이미지는 public/brand에 있다. 크롬·라임 3D 아이콘과 CASTING FLOW 글씨 로고.
 export type BrandIconName = 'masks' | 'sparkle' | 'bolt' | 'team' | 'clapper' | 'mascot';
 
-/** 눈 달린 슬레이트 캐릭터. 로고의 아이콘 자리에 쓴다. */
+/** CF 클래퍼보드 마크. 앱 아이콘과 같은 그림이라 홈 화면 아이콘과 사이트 로고가 같아 보인다. */
 export function BrandMark({ size = 30 }: { size?: number }) {
-  return <img src="/brand/mascot.png" alt="" width={size} height={size} className="brand-mascot" />;
+  return <img src="/brand/cf-mark.png" alt="" width={size} height={size} className="brand-cf" />;
 }
 
-/** 캐릭터 + CASTING FLOW 글씨 로고. 화면 왼쪽 위 로고 자리에 쓴다. */
+/** CF 마크 + CASTING FLOW 글씨 로고. 화면 왼쪽 위 로고 자리에 쓴다. */
 export function BrandLogo({ size = 30 }: { size?: number }) {
   return (
     <span className="brand-logo">
       <BrandMark size={size} />
       <img
         src="/brand/wordmark.png"
-        alt="Casting Flow"
+        alt="캐스팅플로우"
         className="brand-wordmark"
         style={{ height: Math.round(size * 0.82) }}
       />

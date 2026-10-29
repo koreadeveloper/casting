@@ -188,7 +188,10 @@ export default function SignupWizard({ role }: { role: Role }) {
                   placeholder="예: 봄날 필름, 한빛대 영화과"
                 />
               </label>
-              <p className="small-note">재학·제작 이력 인증은 이후 단계에서 추가될 예정입니다.</p>
+              <p className="small-note">
+                학교·제작사 인증은 가입한 뒤 ‘내 정보 → 제작진 인증’에서 할 수 있어요. 인증을 받으면
+                공고에 인증 표시가 붙어요.
+              </p>
             </>
           )}
           {last && (

@@ -62,6 +62,9 @@ export default function LoginForm({ next }: { next: string }) {
           <button className="button button-primary full" disabled={busy}>
             {busy ? '로그인 중…' : '로그인'}
           </button>
+          <Link className="forgot-link" href="/reset">
+            비밀번호를 잊으셨나요?
+          </Link>
         </form>
         <DemoEntry caption="또는 데모로 바로 보기" />
         <p className="small-note center">
