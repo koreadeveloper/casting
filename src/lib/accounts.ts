@@ -818,6 +818,13 @@ export async function deleteAccount(userId: string) {
       .all(userId, userId)) as { photo_url: string; photo_urls: string }[];
     for (const app of apps)
       files.push(app.photo_url, ...(JSON.parse(app.photo_urls || '[]') as string[]));
+    // 대화에 주고받은 첨부 파일도 같은 저장소(uploads/)에 있다.
+    const chatFiles = (await db()
+      .prepare(
+        `SELECT file_key FROM chat_messages WHERE application_id IN (${appIds}) AND file_key<>''`,
+      )
+      .all(userId, userId)) as { file_key: string }[];
+    files.push(...chatFiles.map((row) => `/api/uploads/${row.file_key}`));
 
     await run(`DELETE FROM candidate_votes WHERE user_id=? OR candidate_id IN (${candIds})`, 4);
     await run(`DELETE FROM candidate_notes WHERE user_id=? OR candidate_id IN (${candIds})`, 4);

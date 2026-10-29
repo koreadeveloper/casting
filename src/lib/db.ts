@@ -6,6 +6,7 @@ import { demoFace } from './demo-faces';
 import { projectCover, splitLocation } from './project-meta';
 import { resultDueDate } from './result-deadline';
 import { matchesRoleFilters, sortRoleListings, type RoleFilters } from './role-search';
+import { MESSAGE_PREVIEW_SQL } from './chat-files';
 import { conn as rawConnection, withAdvisoryLock, type Conn, type Statement } from './sql';
 
 // 스키마 생성과 샘플 데이터는 프로세스당 한 번만, 다른 인스턴스와 겹치지 않게 실행한다.
@@ -59,7 +60,7 @@ async function initialize(database: Conn) {
   const migrated = await database
     .prepare(
       `SELECT 1 FROM information_schema.columns
-       WHERE table_schema = current_schema() AND table_name='projects' AND column_name='poster_url'`,
+       WHERE table_schema = current_schema() AND table_name='chat_messages' AND column_name='file_ext'`,
     )
     .get();
   if (!migrated) {
@@ -243,8 +244,13 @@ async function initialize(database: Conn) {
     // 결과 자동 안내: 결과 기준일이 지나 자동으로 불합격을 안내한 시각. 제작진이 직접 정하면 비운다.
     await addColumn(database, 'applications', 'result_auto_at', 'TEXT');
     // 작품 포스터: /api/uploads/ 사진 주소. 비어 있으면 형식별 기본 커버(projectCover)를 쓴다.
-    // 이 칸이 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 추가한다.
     await addColumn(database, 'projects', 'poster_url', text);
+    // 대화 첨부 파일: 저장소 이름(UUID.확장자)·원래 이름·크기·확장자. file_key가 비어 있으면 첨부 없음.
+    await addColumn(database, 'chat_messages', 'file_key', text);
+    await addColumn(database, 'chat_messages', 'file_name', text);
+    await addColumn(database, 'chat_messages', 'file_size', 'INTEGER NOT NULL DEFAULT 0');
+    // 이 칸이 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 추가한다.
+    await addColumn(database, 'chat_messages', 'file_ext', text);
   }
   if (
     (process.env.NODE_ENV !== 'production' || process.env.DEMO_BUILD === 'true') &&
@@ -590,7 +596,7 @@ function appFromRow(row: Record<string, unknown>): Application {
 }
 
 const CHAT_SUMMARY = `
-  (SELECT m.body FROM chat_messages m WHERE m.application_id=applications.id ORDER BY m.created_at DESC LIMIT 1) last_body,
+  (SELECT ${MESSAGE_PREVIEW_SQL('m')} FROM chat_messages m WHERE m.application_id=applications.id ORDER BY m.created_at DESC LIMIT 1) last_body,
   (SELECT m.created_at FROM chat_messages m WHERE m.application_id=applications.id ORDER BY m.created_at DESC LIMIT 1) last_at,
   (SELECT m.sender FROM chat_messages m WHERE m.application_id=applications.id ORDER BY m.created_at DESC LIMIT 1) last_sender,
   (SELECT COUNT(*) FROM chat_messages m WHERE m.application_id=applications.id AND m.sender='actor'
@@ -1081,7 +1087,23 @@ function messageFromRow(row: Record<string, unknown>): ChatMessage {
     selectedSlot: String(row.selected_slot),
     status: row.status as ChatMessage['status'],
     createdAt: String(row.created_at),
+    attachment: row.file_key
+      ? {
+          key: String(row.file_key),
+          name: String(row.file_name),
+          size: Number(row.file_size) || 0,
+          ext: String(row.file_ext),
+        }
+      : null,
   };
+}
+
+/** 이 지원서의 대화에 실제로 올라온 파일인지 확인하고 정보를 돌려준다. */
+export async function findChatAttachment(applicationId: string, key: string) {
+  const row = await db()
+    .prepare('SELECT * FROM chat_messages WHERE application_id=? AND file_key=? LIMIT 1')
+    .get(applicationId, key);
+  return row ? messageFromRow(row as Record<string, unknown>).attachment : null;
 }
 
 export async function getLatestOffer(applicationId: string) {
@@ -1108,15 +1130,19 @@ export async function getChatMessage(id: string) {
 
 export async function sendChatMessage(
   applicationId: string,
-  input: Pick<ChatMessage, 'sender' | 'kind' | 'body' | 'slots' | 'place' | 'preparation'>,
+  input: Pick<ChatMessage, 'sender' | 'kind' | 'body' | 'slots' | 'place' | 'preparation'> & {
+    attachment?: ChatMessage['attachment'];
+  },
 ) {
   const application = await getApplication(applicationId);
   if (!application) return null;
   const id = randomUUID();
+  const file = input.attachment;
   await db()
     .prepare(
-      `INSERT INTO chat_messages (id,application_id,sender,kind,body,slots,place,preparation,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO chat_messages (id,application_id,sender,kind,body,slots,place,preparation,created_at,
+      file_key,file_name,file_size,file_ext)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
     .run(
       id,
@@ -1128,6 +1154,10 @@ export async function sendChatMessage(
       input.place,
       input.preparation,
       new Date().toISOString(),
+      file?.key ?? '',
+      file?.name ?? '',
+      file?.size ?? 0,
+      file?.ext ?? '',
     );
   if (input.sender === 'producer')
     await db().prepare('UPDATE applications SET chat_open=1 WHERE id=?').run(applicationId);

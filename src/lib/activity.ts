@@ -1,6 +1,7 @@
 // 알림 피드 — 실제 DB 이벤트(지원·메시지·제안 응답·공고)를 모아 최근순으로 반환.
 // 별도 notifications 테이블 없이 파생 데이터로 구성해 항상 실제 상태와 일치한다.
 import { db } from './db';
+import { MESSAGE_PREVIEW_SQL } from './chat-files';
 import { matchNotice, matchRoleForActor, type MatchProfileInput } from './match';
 import {
   dDayLabel,
@@ -56,7 +57,7 @@ export async function producerFeed(ownerId: string): Promise<ActivityFeed> {
 
   const unread = (await db()
     .prepare(
-      `SELECT m.id, m.body, m.created_at, a.name actor_name
+      `SELECT m.id, ${MESSAGE_PREVIEW_SQL('m')} body, m.created_at, a.name actor_name
        FROM chat_messages m
        JOIN applications a ON a.id = m.application_id
        JOIN roles r ON r.id = a.role_id
@@ -196,7 +197,7 @@ export async function actorFeed(
 
   const messages = (await db()
     .prepare(
-      `SELECT m.id, m.body, m.created_at, a.receipt_token, r.title role_title
+      `SELECT m.id, ${MESSAGE_PREVIEW_SQL('m')} body, m.created_at, a.receipt_token, r.title role_title
        FROM chat_messages m
        JOIN applications a ON a.id = m.application_id
        JOIN roles r ON r.id = a.role_id

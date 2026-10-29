@@ -1,6 +1,8 @@
 'use client';
 
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import ChatAttachmentView, { FileBadge } from '@/components/chat-attachment';
+import { CHAT_FILE_ACCEPT, CHAT_FILE_MAX_BYTES, formatFileSize } from '@/lib/chat-files';
 import type { ChatMessage } from '@/lib/types';
 
 type Props = {
@@ -119,6 +121,23 @@ const Svg = {
       <path d="M3.4 20.4 21.8 12 3.4 3.6l-.1 6.5L14 12l-10.7 1.9.1 6.5Z" />
     </svg>
   ),
+  clip: (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      aria-hidden
+    >
+      <path
+        d="m20 11.5-7.8 7.8a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
   plus: (
     <svg
       width="17"
@@ -170,7 +189,21 @@ export default function ChatThread({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [online, setOnline] = useState(true);
+  // 보내기 전에 고른 첨부 파일. 보내기를 누르면 입력한 글과 함께 한 메시지로 간다.
+  const [file, setFile] = useState<File | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const messageList = useRef<HTMLDivElement>(null);
+
+  function pickFile(picked: File | undefined) {
+    if (fileInput.current) fileInput.current.value = '';
+    if (!picked) return;
+    if (picked.size > CHAT_FILE_MAX_BYTES) {
+      setError(`파일은 4MB 이하만 보낼 수 있습니다. (고른 파일 ${formatFileSize(picked.size)})`);
+      return;
+    }
+    setError('');
+    setFile(picked);
+  }
 
   const endpoint = `/api/chat/${applicationId}`;
   const load = useCallback(async () => {
@@ -225,16 +258,35 @@ export default function ChatThread({
             place,
             preparation,
           };
-    try {
-      const response = await fetch(endpoint, {
+    const withFile = kind === 'text' && file;
+    let request: RequestInit;
+    if (withFile) {
+      const form = new FormData();
+      form.append('file', withFile);
+      form.append('body', draft);
+      if (receipt) form.append('receipt', receipt);
+      request = { method: 'POST', body: form };
+    } else {
+      request = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, receipt }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || '전송하지 못했습니다.');
-      if (kind === 'text') setDraft('');
-      else {
+      };
+    }
+    try {
+      const response = await fetch(withFile ? `${endpoint}/files` : endpoint, request);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(
+          data.error ||
+            (response.status === 413
+              ? '파일이 너무 커서 보내지 못했습니다. 4MB 이하로 줄여 주세요.'
+              : '전송하지 못했습니다.'),
+        );
+      if (kind === 'text') {
+        setDraft('');
+        setFile(null);
+      } else {
         setOfferOpen(false);
         setSlots(['', '']);
         setPlace('');
@@ -359,8 +411,15 @@ export default function ChatThread({
               {divider && <div className="date-pill">{divider}</div>}
               {message.kind === 'text' ? (
                 <div className={`bubble-row ${message.sender === mode ? 'mine' : 'theirs'}`}>
-                  <div className="bubble">
-                    <p>{message.body}</p>
+                  <div className={`bubble${message.attachment ? ' has-file' : ''}`}>
+                    {message.attachment && (
+                      <ChatAttachmentView
+                        applicationId={applicationId}
+                        attachment={message.attachment}
+                        receipt={receipt}
+                      />
+                    )}
+                    {message.body && <p>{message.body}</p>}
                     <small>
                       {new Date(message.createdAt).toLocaleTimeString('ko-KR', {
                         timeZone: 'Asia/Seoul',
@@ -498,6 +557,26 @@ export default function ChatThread({
           </button>
         </div>
       )}
+      {file && (
+        <div className="chat-pending-file">
+          <FileBadge ext={/\.([a-z0-9]+)$/i.exec(file.name)?.[1]?.toLowerCase() || 'file'} />
+          <div className="chat-file-info">
+            <strong title={file.name}>{file.name}</strong>
+            <span>
+              {formatFileSize(file.size)} · {busy ? '보내는 중…' : '보내기를 누르면 전송돼요'}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => setFile(null)}
+            disabled={busy}
+            aria-label="첨부 취소"
+          >
+            ×
+          </button>
+        </div>
+      )}
       <div className="chat-compose">
         {mode === 'producer' && (
           <button
@@ -508,22 +587,44 @@ export default function ChatThread({
             {offerOpen ? '×' : Svg.plus}
           </button>
         )}
+        <button
+          type="button"
+          className="plus-btn attach-btn"
+          onClick={() => fileInput.current?.click()}
+          disabled={busy}
+          aria-label="파일 첨부"
+          title="사진·PDF·한글·워드·엑셀 (4MB까지)"
+        >
+          {Svg.clip}
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept={CHAT_FILE_ACCEPT}
+          hidden
+          onChange={(event) => pickFile(event.target.files?.[0])}
+        />
         <input
           aria-label="메시지 입력"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.nativeEvent.isComposing && draft.trim()) {
+            if (
+              event.key === 'Enter' &&
+              !event.nativeEvent.isComposing &&
+              (draft.trim() || file) &&
+              !busy
+            ) {
               event.preventDefault();
               void send('text');
             }
           }}
-          placeholder="메시지를 입력하세요"
+          placeholder={file ? '파일과 함께 보낼 말 (선택)' : '메시지를 입력하세요'}
         />
         <button
           className="send-btn"
           aria-label="메시지 보내기"
-          disabled={busy || !online || !draft.trim()}
+          disabled={busy || !online || (!draft.trim() && !file)}
           onClick={() => void send('text')}
         >
           {Svg.send}

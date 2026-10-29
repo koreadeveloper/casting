@@ -40,7 +40,13 @@ export async function readUpload(name: string): Promise<BodyInit | null> {
 /** /api/uploads/<name> 형태의 URL들을 지운다. 실패해도 탈퇴 같은 본 작업은 막지 않는다. */
 export async function deleteUploads(urls: string[]) {
   const names = urls
-    .map((url) => /^\/api\/uploads\/([a-f0-9-]{36}\.(?:jpg|png|webp|pdf))$/.exec(url)?.[1])
+    .map(
+      (url) =>
+        // 뒤의 문서 확장자들은 대화 첨부 파일(lib/chat-files.ts)용
+        /^\/api\/uploads\/([a-f0-9-]{36}\.(?:jpg|png|webp|pdf|hwpx?|docx?|xlsx?|pptx?))$/.exec(
+          url,
+        )?.[1],
+    )
     .filter((name): name is string => Boolean(name));
   if (!names.length) return;
   try {

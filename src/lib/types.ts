@@ -116,6 +116,17 @@ export type ChatMessage = {
   selectedSlot: string;
   status: 'sent' | 'selected' | 'confirmed' | 'declined' | 'change_requested';
   createdAt: string;
+  /** 함께 보낸 파일. 없으면 null. 파일은 /api/chat/[지원서]/files/[key]로 연다. */
+  attachment: ChatAttachment | null;
+};
+
+export type ChatAttachment = {
+  /** 저장소 이름(UUID.확장자) */
+  key: string;
+  /** 보낸 사람이 고른 원래 파일 이름 */
+  name: string;
+  size: number;
+  ext: string;
 };
 
 export const reviewLabels: Record<ReviewStatus, string> = {
