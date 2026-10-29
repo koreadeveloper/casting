@@ -74,14 +74,16 @@ export type Project = {
   location: string;
   /** 시놉시스 */
   description: string;
+  /** 작품 포스터(/api/uploads/ 사진). 비어 있으면 형식별 기본 커버 */
+  posterUrl: string;
   /** 제공 항목(교통비·식사·숙박) */
   perks: string[];
-  /** 작품 포스터 이미지 주소(/api/uploads/…). 비어 있으면 기본 커버 */
-  posterUrl: string;
   createdAt: string;
+  /** 보관(숨김)한 시각. null이면 진행 중 */
+  archivedAt: string | null;
 };
 
-export type ProjectInput = Omit<Project, 'id' | 'ownerId' | 'createdAt'>;
+export type ProjectInput = Omit<Project, 'id' | 'ownerId' | 'createdAt' | 'archivedAt'>;
 
 /** 프로젝트 칸 기본값. 예전 경로(배역 빠르게 추가)로 만들 때 비어 있는 칸을 채운다. */
 export const EMPTY_PROJECT: ProjectInput = {
@@ -246,6 +248,27 @@ export async function getProducerIntro(ownerId: string): Promise<ProducerIntro |
   };
 }
 
+/**
+ * 공고 카드에 한 줄로 붙이는 제작자 소속 (예: "한빛대 영화과 졸업작품팀").
+ * 소속명이 없으면 소속 유형을, 둘 다 없으면 빼고 돌려준다. 키는 제작자 id.
+ */
+export async function getProducerOrgLines(ownerIds: (string | null | undefined)[]) {
+  const ids = [...new Set(ownerIds.filter((id): id is string => Boolean(id)))];
+  const lines = new Map<string, string>();
+  if (!ids.length) return lines;
+  const rows = (await db()
+    .prepare(
+      `SELECT id, org_type, org_name FROM users
+       WHERE role='producer' AND id IN (${ids.map(() => '?').join(',')})`,
+    )
+    .all(...ids)) as Row[];
+  for (const row of rows) {
+    const line = String(row.org_name ?? '').trim() || String(row.org_type ?? '').trim();
+    if (line) lines.set(String(row.id), line);
+  }
+  return lines;
+}
+
 export async function getUserWithHash(email: string) {
   const row = (await db().prepare('SELECT * FROM users WHERE email=?').get(email.toLowerCase())) as
     Row | undefined;
@@ -401,6 +424,7 @@ function projectFromRow(row: Row): Project {
     perks: listOf(row.perks),
     posterUrl: textOf(row.poster_url),
     createdAt: String(row.created_at),
+    archivedAt: row.archived_at ? String(row.archived_at) : null,
   };
 }
 
@@ -599,6 +623,84 @@ export async function updateProjectWithRoles(
   });
 }
 
+/** 프로젝트에 연결된 기록 수. 지울지 보관할지(projectRemovalMode) 정하고 확인 화면에 보여 준다. */
+export type ProjectUsage = {
+  roles: number;
+  applications: number;
+  proposals: number;
+  /** 소유자를 뺀, 팀 보드에 초대된 팀원 수 */
+  teamMembers: number;
+};
+
+export async function projectUsage(projectId: string): Promise<ProjectUsage> {
+  const row = (await db()
+    .prepare(
+      `SELECT
+        (SELECT COUNT(*) FROM roles WHERE project_id=?) roles,
+        (SELECT COUNT(*) FROM applications a JOIN roles r ON r.id=a.role_id WHERE r.project_id=?) applications,
+        (SELECT COUNT(*) FROM proposals pr JOIN roles r ON r.id=pr.role_id WHERE r.project_id=?) proposals,
+        (SELECT COUNT(*) FROM team_members tm JOIN projects p ON p.id=tm.project_id
+          WHERE tm.project_id=? AND tm.user_id<>p.owner_id) team_members`,
+    )
+    .get(projectId, projectId, projectId, projectId)) as Row;
+  return {
+    roles: Number(row.roles || 0),
+    applications: Number(row.applications || 0),
+    proposals: Number(row.proposals || 0),
+    teamMembers: Number(row.team_members || 0),
+  };
+}
+
+/**
+ * 프로젝트 완전 삭제. 지원서·캐스팅 제안이 하나도 없는 프로젝트만 지운다(projectRemovalMode).
+ * 확인과 삭제 사이에 지원이 들어오는 경우를 막으려고 트랜잭션 안에서 다시 센다.
+ * - 지우는 것: 팀 보드 후보(투표·메모·이동 기록 포함), 팀원 초대, 배역 기록(events), 배역, 프로젝트
+ * - 남기는 것: 일정(audition_events)과 비교 결과(compare_results)는 연결만 끊는다. 제작자가 직접 만든 기록이다.
+ * 외래키에 CASCADE가 없어 deleteAccount처럼 자식 테이블부터 지운다.
+ */
+export async function deleteProject(
+  ownerId: string,
+  projectId: string,
+): Promise<'deleted' | 'missing' | 'in_use'> {
+  return transaction(async () => {
+    const project = await getProject(projectId);
+    if (!project || project.ownerId !== ownerId) return 'missing';
+    const usage = await projectUsage(projectId);
+    if (usage.applications > 0 || usage.proposals > 0) return 'in_use';
+    const run = (sql: string) => db().prepare(sql).run(projectId);
+    const roleIds = 'SELECT id FROM roles WHERE project_id=?';
+    const candIds = 'SELECT id FROM project_candidates WHERE project_id=?';
+    await run(`DELETE FROM candidate_votes WHERE candidate_id IN (${candIds})`);
+    await run(`DELETE FROM candidate_notes WHERE candidate_id IN (${candIds})`);
+    await run(`DELETE FROM board_moves WHERE candidate_id IN (${candIds})`);
+    await run('DELETE FROM project_candidates WHERE project_id=?');
+    await run('DELETE FROM team_members WHERE project_id=?');
+    await run('UPDATE audition_events SET project_id=NULL WHERE project_id=?');
+    await run(`UPDATE compare_results SET role_id=NULL WHERE role_id IN (${roleIds})`);
+    await run(`DELETE FROM events WHERE role_id IN (${roleIds})`);
+    await run('DELETE FROM roles WHERE project_id=?');
+    await run('DELETE FROM projects WHERE id=?');
+    return 'deleted';
+  });
+}
+
+/**
+ * 프로젝트 보관(숨김)·다시 꺼내기. 지원자가 있는 프로젝트는 지우지 않고 보관한다.
+ * - 보관: 모든 배역 접수를 마감하고, 제작자 목록·팀 보드에서 숨긴다. 배우의 지원 현황·대화는 그대로다.
+ * - 다시 꺼내기: 목록에 다시 보인다. 배역은 마감 상태로 두고, 수정 화면에서 다시 열 수 있다.
+ */
+export async function setProjectArchived(ownerId: string, projectId: string, archived: boolean) {
+  return transaction(async () => {
+    const result = await db()
+      .prepare('UPDATE projects SET archived_at=? WHERE id=? AND owner_id=?')
+      .run(archived ? new Date().toISOString() : null, projectId, ownerId);
+    if (result.changes === 0) return null;
+    if (archived)
+      await db().prepare('UPDATE roles SET is_closed=1 WHERE project_id=?').run(projectId);
+    return (await getProject(projectId))!;
+  });
+}
+
 const PROPOSAL_SELECT = `SELECT pr.*, pu.name producer_name, pu.org_name, au.name actor_name,
   r.slug role_slug, r.title role_title, r.project_title
   FROM proposals pr
@@ -707,6 +809,10 @@ export async function deleteAccount(userId: string) {
         ...(JSON.parse(profile.documents || '[]') as { url: string }[]).map((doc) => doc.url),
       );
     }
+    const posters = (await db()
+      .prepare("SELECT poster_url FROM projects WHERE owner_id=? AND poster_url<>''")
+      .all(userId)) as { poster_url: string }[];
+    files.push(...posters.map((row) => row.poster_url));
     const apps = (await db()
       .prepare(`SELECT photo_url, photo_urls FROM applications WHERE id IN (${appIds})`)
       .all(userId, userId)) as { photo_url: string; photo_urls: string }[];

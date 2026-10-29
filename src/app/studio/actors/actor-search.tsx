@@ -88,6 +88,8 @@ export default function ActorSearch() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [sheet, setSheet] = useState(false);
+  // 넓은 화면의 왼쪽 필터 패널. 기본은 접어 두고 버튼으로 펼친다.
+  const [deskFilters, setDeskFilters] = useState(false);
   // 모바일 필터 시트는 휴대폰 뒤로가기로 닫힌다.
   useBackClose(sheet, () => setSheet(false));
   const loadSeq = useRef(0);
@@ -347,6 +349,14 @@ export default function ActorSearch() {
           <button className="filter-btn mobile-only" onClick={() => setSheet(true)}>
             필터{activeCount > 0 && <b>{activeCount}</b>}
           </button>
+          <button
+            className={`filter-btn desk-only${deskFilters ? ' on' : ''}`}
+            aria-expanded={deskFilters}
+            onClick={() => setDeskFilters((open) => !open)}
+          >
+            {deskFilters ? '필터 접기' : '필터 펼치기'}
+            {activeCount > 0 && <b>{activeCount}</b>}
+          </button>
           <select
             className="sort-select"
             aria-label="정렬"
@@ -381,8 +391,8 @@ export default function ActorSearch() {
             </button>
           ))}
         </div>
-        <div className="search-layout">
-          <aside className="desk-only">{filterPanel}</aside>
+        <div className={`search-layout${deskFilters ? '' : ' filters-closed'}`}>
+          {deskFilters && <aside className="desk-only">{filterPanel}</aside>}
           <section>
             {error && <p className="form-error">{error}</p>}
             {!loading && actors.length === 0 ? (

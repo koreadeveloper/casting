@@ -78,16 +78,17 @@ function columnOf(status: ReviewStatus, shortlist: boolean): BoardColumnKey {
   return 'review';
 }
 
-/** 보드에 보일 수 있는 프로젝트: 내가 owner이거나 team_members로 초대된 프로젝트 */
+/** 보드에 보일 수 있는 프로젝트: 내가 owner이거나 team_members로 초대된 프로젝트(보관한 프로젝트 제외) */
 export async function listMyBoardProjects(userId: string): Promise<BoardProject[]> {
   return (
     (await db()
       .prepare(
-        `SELECT p.id, p.title, 'owner' AS role FROM projects p WHERE p.owner_id=?
+        `SELECT p.id, p.title, 'owner' AS role FROM projects p
+         WHERE p.owner_id=? AND p.archived_at IS NULL
          UNION
          SELECT p.id, p.title, tm.member_role AS role FROM team_members tm
          JOIN projects p ON p.id=tm.project_id
-         WHERE tm.user_id=? AND p.owner_id<>?`,
+         WHERE tm.user_id=? AND p.owner_id<>? AND p.archived_at IS NULL`,
       )
       .all(userId, userId, userId)) as { id: string; title: string; role: string }[]
   ).map((row) => ({

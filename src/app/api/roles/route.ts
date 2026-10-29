@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { findOrCreateProject } from '@/lib/accounts';
 import { getProducerId } from '@/lib/auth';
-import { createRole, listRoles } from '@/lib/db';
+import { closeOverdueResults, createRole, listRoles } from '@/lib/db';
+import { kstToday } from '@/lib/result-deadline';
 import { requiredText } from '@/lib/validation';
 
 export async function GET() {
   const producerId = await getProducerId();
   if (!producerId) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
+  // 스튜디오를 열 때, 결과 기준일이 지나도록 결과가 없는 지원자에게 자동으로 결과를 안내한다.
+  await closeOverdueResults({ ownerId: producerId }, kstToday());
   return NextResponse.json({ roles: await listRoles(producerId) });
 }
 

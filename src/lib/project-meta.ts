@@ -151,17 +151,53 @@ export function specialScenesLabel(values: string[]) {
     .join('·');
 }
 
-/**
- * 작품 포스터로 받을 수 있는 주소: 우리 업로드 저장소의 사진(/api/uploads/<uuid>.jpg|png|webp)만.
- * 바깥 주소나 PDF는 받지 않는다. 빈 값은 '포스터 없음'(기본 커버)이다.
- */
-export function cleanPosterUrl(value: unknown): string {
-  const text = typeof value === 'string' ? value.trim() : '';
-  return /^\/api\/uploads\/[a-f0-9-]{36}\.(?:jpg|png|webp)$/.test(text) ? text : '';
-}
-
 /** 정해진 목록에 있는 값만 남긴다(중복 제거). */
 export function pickKnown(values: unknown, allowed: readonly string[]): string[] {
   if (!Array.isArray(values)) return [];
   return [...new Set(values.filter((value): value is string => allowed.includes(value)))];
+}
+
+/**
+ * 프로젝트를 정리하는 방법.
+ * 지원서나 캐스팅 제안이 하나라도 있으면 배우가 보는 기록이라 지우지 않고 보관(숨김)만 한다.
+ * 아무도 지원하지 않았고 제안도 보내지 않은 프로젝트만 완전히 지울 수 있다.
+ */
+export function projectRemovalMode(usage: {
+  applications: number;
+  proposals: number;
+}): 'delete' | 'archive' {
+  return usage.applications > 0 || usage.proposals > 0 ? 'archive' : 'delete';
+}
+
+/** 배우 배역 검색에서 고를 수 있는 값(role-search.ts의 parseRoleFilters에 넘긴다) */
+export const ROLE_FILTER_OPTIONS = {
+  formats: FORMATS,
+  genres: GENRE_TAGS,
+  regions: PROJECT_REGIONS,
+  roleTypes: Object.keys(ROLE_TYPES),
+};
+
+/** 형식별 기본 커버(public/covers/). 포스터를 올리지 않은 작품은 형식에 맞는 그림을 쓴다. */
+const FORMAT_COVERS: Record<string, string> = {
+  단편영화: 'short',
+  장편영화: 'feature',
+  웹드라마: 'webdrama',
+  숏폼: 'shortform',
+  광고: 'ad',
+  뮤직비디오: 'mv',
+  연극: 'stage',
+  기타: 'etc',
+};
+
+/** 업로드한 포스터 주소인지(/api/uploads/의 사진만. PDF는 안 됨). */
+export function isPosterUrl(value: unknown): value is string {
+  return (
+    typeof value === 'string' && /^\/api\/uploads\/[a-f0-9-]{36}\.(?:jpg|png|webp)$/.test(value)
+  );
+}
+
+/** 작품 이미지: 올린 포스터가 있으면 포스터, 없으면 형식별 기본 커버. */
+export function projectCover(format: string, posterUrl = '') {
+  if (isPosterUrl(posterUrl)) return posterUrl;
+  return `/covers/${FORMAT_COVERS[format] ?? 'etc'}.svg`;
 }

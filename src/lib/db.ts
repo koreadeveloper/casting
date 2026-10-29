@@ -3,6 +3,9 @@ import { randomUUID, randomBytes } from 'node:crypto';
 import { hashPassword } from './password';
 import type { Application, Audition, ChatMessage, PublicStage, ReviewStatus, Role } from './types';
 import { demoFace } from './demo-faces';
+import { projectCover, splitLocation } from './project-meta';
+import { resultDueDate } from './result-deadline';
+import { matchesRoleFilters, type RoleFilters } from './role-search';
 import { conn as rawConnection, withAdvisoryLock, type Conn, type Statement } from './sql';
 
 // 스키마 생성과 샘플 데이터는 프로세스당 한 번만, 다른 인스턴스와 겹치지 않게 실행한다.
@@ -235,7 +238,11 @@ async function initialize(database: Conn) {
     // 특수 장면 안내(공고 필수 항목): 종류 목록과 구체적인 설명. ['none']이면 '특수 장면 없음'.
     await addColumn(database, 'roles', 'special_scenes', list);
     await addColumn(database, 'roles', 'special_note', text);
-    // 작품 포스터: 업로드한 이미지 주소(/api/uploads/…). 비어 있으면 화면에서 기본 커버를 그린다.
+    // 프로젝트 보관(숨김): 보관한 시각. 비어 있으면 진행 중. 지원자가 있는 프로젝트는 지우지 않고 보관한다.
+    await addColumn(database, 'projects', 'archived_at', 'TEXT');
+    // 결과 자동 안내: 결과 기준일이 지나 자동으로 불합격을 안내한 시각. 제작진이 직접 정하면 비운다.
+    await addColumn(database, 'applications', 'result_auto_at', 'TEXT');
+    // 작품 포스터: /api/uploads/ 사진 주소. 비어 있으면 형식별 기본 커버(projectCover)를 쓴다.
     // 이 칸이 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 추가한다.
     await addColumn(database, 'projects', 'poster_url', text);
   }
@@ -509,11 +516,15 @@ function roleFromRow(row: Record<string, unknown>): Role {
     applicationCount: Number(row.application_count || 0),
     newCount: Number(row.new_count || 0),
     shortlistCount: Number(row.shortlist_count || 0),
+    pendingCount: Number(row.pending_count || 0),
+    pendingShortlistCount: Number(row.pending_shortlist_count || 0),
+    resultDueDate: resultDueDate(
+      String(row.announcement_date),
+      String(row.project_audition_end ?? ''),
+    ),
     ownerId: row.owner_id ? String(row.owner_id) : null,
     projectId: row.project_id ? String(row.project_id) : null,
-    posterUrl: row.poster_url ? String(row.poster_url) : '',
-    projectFormat: row.project_format ? String(row.project_format) : '',
-    projectGenres: stringList(row.project_genres),
+    coverUrl: projectCover(String(row.cover_format ?? ''), String(row.cover_poster ?? '')),
   };
 }
 
@@ -554,6 +565,7 @@ function appFromRow(row: Record<string, unknown>): Application {
     chatOpen: Boolean(row.chat_open),
     publicStage: row.public_stage as PublicStage,
     viewedAt: row.viewed_at ? String(row.viewed_at) : null,
+    resultAutoAt: row.result_auto_at ? String(row.result_auto_at) : null,
     receiptToken: String(row.receipt_token),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
@@ -586,22 +598,31 @@ const CHAT_SUMMARY = `
   (SELECT m.status FROM chat_messages m WHERE m.application_id=applications.id AND m.kind='offer' ORDER BY m.created_at DESC LIMIT 1) offer_status,
   (SELECT m.selected_slot FROM chat_messages m WHERE m.application_id=applications.id AND m.kind='offer' AND m.status='confirmed' ORDER BY m.created_at DESC LIMIT 1) confirmed_slot`;
 
-// 작품 포스터·형식·장르는 projects에 있어서 배역 행마다 함께 읽어 온다(배우의 공고 검색·필터).
-const POSTER = `(SELECT projects.poster_url FROM projects WHERE projects.id=roles.project_id) poster_url,
-  (SELECT projects.genre FROM projects WHERE projects.id=roles.project_id) project_format,
-  (SELECT projects.genres FROM projects WHERE projects.id=roles.project_id) project_genres`;
+// 작품 이미지(roleFromRow의 coverUrl)를 만들 형식·포스터. 배우 검색(searchOpenRoles)의 project_format과 이름이 겹치지 않게 cover_를 붙인다.
+const ROLE_COVER = `(SELECT p.genre FROM projects p WHERE p.id=roles.project_id) cover_format,
+      (SELECT p.poster_url FROM projects p WHERE p.id=roles.project_id) cover_poster`;
 
-const ROLE_STATS = `SELECT roles.*, ${POSTER}, COUNT(applications.id) application_count,
+// 결과 전 지원자 수(pending)와 작품의 오디션 종료일은 결과 자동 안내 기준일·미리 알림에 쓴다.
+const ROLE_STATS = `SELECT roles.*, COUNT(applications.id) application_count,
       SUM(CASE WHEN applications.status='new' THEN 1 ELSE 0 END) new_count,
-      COALESCE(SUM(applications.shortlist),0) shortlist_count
+      COALESCE(SUM(applications.shortlist),0) shortlist_count,
+      SUM(CASE WHEN applications.public_stage='received' THEN 1 ELSE 0 END) pending_count,
+      SUM(CASE WHEN applications.public_stage='received' THEN applications.shortlist ELSE 0 END) pending_shortlist_count,
+      (SELECT p.audition_end FROM projects p WHERE p.id=roles.project_id) project_audition_end,
+      ${ROLE_COVER}
       FROM roles
     LEFT JOIN applications ON applications.role_id=roles.id`;
 
+/** 보관한 프로젝트의 배역. 제작자 목록·배우 모집 목록에서 뺀다. */
+const IN_ARCHIVED_PROJECT = `EXISTS (SELECT 1 FROM projects ap WHERE ap.id=roles.project_id AND ap.archived_at IS NOT NULL)`;
+
+/** 제작자의 배역 목록(보관한 프로젝트 제외). 스튜디오 홈·추천·비교·제안 화면이 쓴다. */
 export async function listRoles(ownerId: string) {
   return (
     await db()
       .prepare(
-        `${ROLE_STATS} WHERE roles.owner_id=? GROUP BY roles.id ORDER BY roles.created_at DESC`,
+        `${ROLE_STATS} WHERE roles.owner_id=? AND NOT ${IN_ARCHIVED_PROJECT}
+        GROUP BY roles.id ORDER BY roles.created_at DESC`,
       )
       .all(ownerId)
   ).map((row) => roleFromRow(row as Record<string, unknown>));
@@ -618,14 +639,53 @@ export async function listProjectRoles(projectId: string) {
   ).map((row) => roleFromRow(row as Record<string, unknown>));
 }
 
+const OPEN_ROLES = `${ROLE_STATS} WHERE roles.is_closed=0 AND roles.deadline>=? AND NOT ${IN_ARCHIVED_PROJECT}
+  GROUP BY roles.id`;
+
 export async function listOpenRoles(today: string) {
-  return (
-    await db()
-      .prepare(
-        `${ROLE_STATS} WHERE roles.is_closed=0 AND roles.deadline>=? GROUP BY roles.id ORDER BY roles.created_at DESC`,
-      )
-      .all(today)
-  ).map((row) => roleFromRow(row as Record<string, unknown>));
+  return (await db().prepare(`${OPEN_ROLES} ORDER BY roles.created_at DESC`).all(today)).map(
+    (row) => roleFromRow(row as Record<string, unknown>),
+  );
+}
+
+/** 배우 검색에 쓰는 모집 중 배역: 배역 정보 + 작품의 형식·장르·촬영 지역(시·도). */
+export type OpenRoleListing = Role & {
+  projectFormat: string;
+  projectGenres: string[];
+  projectRegion: string;
+};
+
+/**
+ * 배우의 배역 검색. 모집 중 배역을 작품 정보와 함께 읽고 검색 조건(role-search.ts)으로 거른다.
+ * all은 거르기 전 전체 목록이다(추천 공고·'전체 N개' 표시용).
+ * unavailableDates는 '내 출연 불가일 피하기'를 켰을 때 뺄 날짜(로그인한 배우의 프로필).
+ */
+export async function searchOpenRoles(
+  today: string,
+  filters: RoleFilters,
+  unavailableDates: string[] = [],
+) {
+  const rows = await db()
+    .prepare(
+      `SELECT s.*, p.genre project_format, p.genres project_genres, p.region project_region
+      FROM (${OPEN_ROLES}) s LEFT JOIN projects p ON p.id=s.project_id
+      ORDER BY s.created_at DESC`,
+    )
+    .all(today);
+  const all: OpenRoleListing[] = rows.map((row) => {
+    const role = roleFromRow(row);
+    return {
+      ...role,
+      projectFormat: String(row.project_format ?? ''),
+      projectGenres: stringList(row.project_genres),
+      // 시·도 칸이 생기기 전 프로젝트는 촬영 지역 글자에서 시·도를 추정한다.
+      projectRegion: splitLocation(role.location, String(row.project_region ?? '')).region,
+    };
+  });
+  return {
+    all,
+    roles: all.filter((listing) => matchesRoleFilters(listing, filters, unavailableDates)),
+  };
 }
 
 export async function getRole(slug: string) {
@@ -634,7 +694,13 @@ export async function getRole(slug: string) {
 }
 
 export async function getRoleById(id: string) {
-  const row = await db().prepare(`SELECT roles.*, ${POSTER} FROM roles WHERE id=?`).get(id);
+  const row = await db()
+    .prepare(
+      `SELECT roles.*, (SELECT p.audition_end FROM projects p WHERE p.id=roles.project_id) project_audition_end,
+      ${ROLE_COVER}
+      FROM roles WHERE id=?`,
+    )
+    .get(id);
   return row ? roleFromRow(row as Record<string, unknown>) : null;
 }
 
@@ -915,15 +981,18 @@ export async function reviewApplication(
   if (!current) return null;
   const now = new Date().toISOString();
   // 분류·메모·결과를 바꿨다면 지원서를 본 것이므로 열람 시각도 함께 남긴다(처음 한 번만).
+  // 제작진이 결과를 직접 정하면 더 이상 '자동 안내'가 아니다.
   await db()
     .prepare(
-      'UPDATE applications SET status=?,note=?,shortlist=?,public_stage=?,updated_at=?,viewed_at=COALESCE(viewed_at,?) WHERE id=?',
+      `UPDATE applications SET status=?,note=?,shortlist=?,public_stage=?,result_auto_at=?,updated_at=?,
+        viewed_at=COALESCE(viewed_at,?) WHERE id=?`,
     )
     .run(
       input.status ?? current.status,
       input.note ?? current.note,
       Number(input.shortlist ?? current.shortlist),
       input.publicStage ?? current.publicStage,
+      input.publicStage ? null : current.resultAutoAt,
       now,
       now,
       id,
@@ -946,6 +1015,48 @@ export async function markApplicationViewed(id: string) {
     .prepare('UPDATE applications SET viewed_at=? WHERE id=? AND viewed_at IS NULL')
     .run(new Date().toISOString(), id);
   return result.changes > 0;
+}
+
+/** 결과 자동 안내를 확인할 범위: 지원서 하나, 한 배우의 지원서, 한 제작자 배역의 지원서. */
+export type OverdueScope = { applicationId: string } | { actorId: string } | { ownerId: string };
+
+// YYYY-MM-DD 모양일 때만 날짜로 본다. 예전 공고의 '11월 20일' 같은 글자 값은 글자 비교가 틀리므로 뺀다.
+const ISO_DATE_SQL = `'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'`;
+
+/**
+ * 결과 자동 안내. 결과 기준일(결과 안내일, 오디션 종료일이 더 늦으면 그날)이 지났는데
+ * 아직 결과 전(received)인 지원서를 '불합격'으로 공개한다. (기준 계산은 result-deadline.ts와 같다)
+ *
+ * 따로 예약 작업을 두지 않고 페이지를 열 때 그 사람의 기록만 확인한다:
+ * 배우 지원 현황(지원서 하나)·배우 홈(그 배우)·제작자 스튜디오(그 제작자).
+ * today는 한국 날짜(kstToday). 처리한 지원서 수를 돌려준다.
+ */
+export async function closeOverdueResults(scope: OverdueScope, today: string) {
+  const now = new Date().toISOString();
+  const [appFilter, roleFilter, value] =
+    'applicationId' in scope
+      ? ['AND applications.id=?', '', scope.applicationId]
+      : 'actorId' in scope
+        ? ['AND applications.actor_id=?', '', scope.actorId]
+        : ['', 'AND r.owner_id=?', scope.ownerId];
+  const dueRoles = `SELECT r.id FROM roles r LEFT JOIN projects p ON p.id=r.project_id
+    WHERE r.announcement_date ~ ${ISO_DATE_SQL}
+      AND GREATEST(r.announcement_date,
+        CASE WHEN p.audition_end ~ ${ISO_DATE_SQL} THEN p.audition_end ELSE '' END) < ?
+      ${roleFilter}`;
+  const closed = (await db()
+    .prepare(
+      `UPDATE applications SET public_stage='not_selected', result_auto_at=?, updated_at=?
+      WHERE public_stage='received' ${appFilter} AND role_id IN (${dueRoles})
+      RETURNING id, role_id`,
+    )
+    // 자리표시자 순서: SET 2개 → (지원서 범위) → 기준일 → (제작자 범위)
+    .all(now, now, ...(appFilter ? [value, today] : [today, value]))) as {
+    id: string;
+    role_id: string;
+  }[];
+  for (const row of closed) await recordEvent(row.role_id, row.id, 'public_result_auto');
+  return closed.length;
 }
 
 export async function recordEvent(roleId: string, applicationId: string | null, name: string) {

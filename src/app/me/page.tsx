@@ -5,14 +5,18 @@ import ActorNav from '@/components/actor-nav';
 import { NotifBell } from '@/components/notif-bell';
 import RecentStrip from '@/components/recent-strip';
 import { RECENT_ROLES } from '@/lib/recent';
-import { getProfile, listActorProposals } from '@/lib/accounts';
+import { getProducerOrgLines, getProfile, listActorProposals } from '@/lib/accounts';
 import { getCurrentUser } from '@/lib/auth';
-import { listActorApplications, listOpenRoles } from '@/lib/db';
-import { matchHighlights, matchRoleForActor } from '@/lib/match';
+import RoleCard from '@/components/role-card';
+import RoleSearchForm from '@/components/role-search-form';
+import { closeOverdueResults, listActorApplications, searchOpenRoles } from '@/lib/db';
+import { matchRoleForActor } from '@/lib/match';
 import { profileCompletion } from '@/lib/profile';
+import { ROLE_FILTER_OPTIONS } from '@/lib/project-meta';
+import { kstToday } from '@/lib/result-deadline';
+import { hasRoleFilters, parseRoleFilters } from '@/lib/role-search';
 import { actorStageInfo, actorStageOf } from '@/lib/types';
 import ProposalActions from './proposal-actions';
-import RoleFinder from '@/components/role-finder';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,18 +27,31 @@ function shortDate(date: string) {
   });
 }
 
-export default async function ActorHome() {
+export default async function ActorHome({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/me');
   if (user.role !== 'actor') redirect('/studio');
   const profile = await getProfile(user.id);
   const completion = profile ? profileCompletion(profile) : 0;
   const proposals = await listActorProposals(user.id);
+  // 결과 기준일이 지나도록 결과가 없는 내 지원서는 여기서 자동으로 결과를 안내한다.
+  await closeOverdueResults({ actorId: user.id }, kstToday());
   const applications = await listActorApplications(user.id);
   const appliedRoleIds = new Set(applications.map((item) => item.roleId));
-  const roles = await listOpenRoles(new Date().toISOString().slice(0, 10));
+  const filters = parseRoleFilters(await searchParams, ROLE_FILTER_OPTIONS);
+  const searching = hasRoleFilters(filters);
+  const { all, roles } = await searchOpenRoles(
+    new Date().toISOString().slice(0, 10),
+    filters,
+    profile?.unavailableDates ?? [],
+  );
+  const orgLines = await getProducerOrgLines(all.map((role) => role.ownerId));
   const matched = profile
-    ? roles
+    ? all
         .map((role) => ({ role, fit: matchRoleForActor(profile, role) }))
         .filter((entry) => entry.fit.score >= 25 && !appliedRoleIds.has(entry.role.id))
         .sort((a, b) => b.fit.score - a.fit.score)
@@ -118,19 +135,12 @@ export default async function ActorHome() {
           </span>
         </div>
         {applications.length === 0 ? (
-          // 빈 화면에서 끝나지 않게 다음 할 일(공고 둘러보기)로 이어 준다.
-          <div className="empty-card empty-next">
-            <strong>아직 지원한 배역이 없어요</strong>
-            <span>
-              {matched.length > 0
-                ? `${user.name} 배우님께 맞는 공고부터 살펴보고 첫 지원을 시작해 보세요.`
-                : '아래 모집 중인 배역에서 첫 지원을 시작해 보세요.'}
-            </span>
-            <a
-              className="button button-primary"
-              href={matched.length > 0 ? '#match-roles' : '#open-roles'}
-            >
-              {matched.length > 0 ? '맞춤 공고 보기' : '모집 중인 배역 보기'}
+          <div className="empty-card">
+            아직 지원한 배역이 없습니다.
+            <br />
+            아래 공고에서 첫 지원을 시작해 보세요.
+            <a href="#open-roles" className="button button-soft empty-cta">
+              모집 중인 배역 보기
             </a>
           </div>
         ) : (
@@ -154,10 +164,10 @@ export default async function ActorHome() {
 
         {matched.length > 0 && (
           <>
-            <div className="section-head" id="match-roles">
-              <h2>{user.name} 배우님을 위한 맞춤 공고</h2>
+            <div className="section-head">
+              <h2>{user.name}배우님을 위한 맞춤 공고</h2>
               <span className="muted" style={{ fontSize: 12 }}>
-                프로필 조건 기준
+                프로필 기반 추천
               </span>
             </div>
             <div className="role-grid">
@@ -167,9 +177,11 @@ export default async function ActorHome() {
                   href={`/apply/${role.slug}`}
                   className="pcard role-link match-card"
                 >
-                  {/* 점수(50% 매치) 대신 무엇이 맞는지를 보인다. 알림 문구와 같은 근거다. */}
                   <h3>{role.projectTitle}</h3>
                   <p className="sub">{role.title}</p>
+                  {role.ownerId && orgLines.get(role.ownerId) && (
+                    <p className="org-line">{orgLines.get(role.ownerId)}</p>
+                  )}
                   <p className="meta">
                     촬영 {formatDates(role.shootDates, 1) || shortDate(role.shootDate)} ·{' '}
                     {role.location}
@@ -177,11 +189,9 @@ export default async function ActorHome() {
                     {role.pay}
                   </p>
                   <div className="match-reasons">
-                    {matchHighlights(fit.facts)
-                      .slice(0, 4)
-                      .map((item) => (
-                        <span key={item}>✓ {item}</span>
-                      ))}
+                    {fit.reasons.slice(0, 3).map((reason) => (
+                      <span key={reason}>{reason}</span>
+                    ))}
                   </div>
                 </Link>
               ))}
@@ -189,19 +199,40 @@ export default async function ActorHome() {
           </>
         )}
 
-        <RoleFinder
-          roles={roles}
-          appliedRoleIds={[...appliedRoleIds]}
-          me={
-            profile
-              ? {
-                  gender: profile.gender,
-                  // 맞춤 계산(match.ts)과 같은 나이 기준을 쓴다.
-                  age: profile.birthYear ? new Date().getFullYear() - profile.birthYear + 1 : null,
-                }
-              : undefined
-          }
+        <div className="section-head" id="open-roles">
+          <h2>모집 중인 배역</h2>
+          <span className="muted" style={{ fontSize: 12 }}>
+            {searching ? `${roles.length}개 / 전체 ${all.length}개` : `${all.length}개`}
+          </span>
+        </div>
+        <RoleSearchForm
+          initial={filters}
+          unavailableCount={profile?.unavailableDates.length ?? 0}
         />
+        {roles.length === 0 ? (
+          <div className="empty-card">
+            {searching ? (
+              <>
+                조건에 맞는 배역이 없어요.
+                <br />
+                <Link href="/me#open-roles">필터 초기화</Link>
+              </>
+            ) : (
+              '지금 모집 중인 배역이 없습니다.'
+            )}
+          </div>
+        ) : (
+          <div className="role-grid">
+            {roles.map((role) => (
+              <RoleCard
+                key={role.id}
+                role={role}
+                applied={appliedRoleIds.has(role.id)}
+                orgLine={role.ownerId ? orgLines.get(role.ownerId) : undefined}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

@@ -11,10 +11,6 @@ export async function GET() {
   const feed =
     user.role === 'producer'
       ? await producerFeed(user.id)
-      : await actorFeed(
-          user.id,
-          user.role === 'actor' ? await getProfile(user.id) : null,
-          user.name,
-        );
+      : await actorFeed(user.id, user.role === 'actor' ? await getProfile(user.id) : null);
   return NextResponse.json(feed);
 }

@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import {
   applyPick,
   buildBracket,
+  canDefer,
   champion,
   createState,
   currentMatch,
+  deferMatch,
   progress,
   roundProgress,
 } from '../src/lib/compare.ts';
@@ -109,51 +111,41 @@ test('잘못된 픽과 후보 수는 오류를 던진다', () => {
   assert.throws(() => buildBracket(ids8.concat('i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q')));
 });
 
-test('보류: 보류한 경기는 다른 경기를 먼저 치르고, 남은 게 그것뿐일 때 다시 나온다', async () => {
-  const { deferMatch, canDefer, deferredCount } = await import('../src/lib/compare.ts');
-  let state = createState(ids8, 3);
+test('보류한 대결은 같은 라운드 맨 뒤로 미뤄졌다가 다시 나온다', () => {
+  const state = createState(ids8, 4);
   const first = currentMatch(state);
-  assert.equal(first.deferred, false);
-  assert.equal(canDefer(state, first.roundIndex, first.pairIndex), true);
-  state = deferMatch(state, first.roundIndex, first.pairIndex);
-  assert.equal(deferredCount(state), 1);
-  // 보류한 경기 대신 다음 경기가 나온다
-  const second = currentMatch(state);
-  assert.notDeepEqual([second.roundIndex, second.pairIndex], [first.roundIndex, first.pairIndex]);
-  // 첫 라운드 나머지 3경기를 치르면 4강 1경기(보류 경기와 무관한 쪽)가 먼저 나오고,
-  // 결국 보류한 경기만 남으면 그 경기가 '보류했던 경기'로 다시 나온다.
-  let guard = 0;
-  let match = currentMatch(state);
-  while (match && !match.deferred && guard < 10) {
-    state = applyPick(state, match.roundIndex, match.pairIndex, match.pair.a);
-    match = currentMatch(state);
-    guard += 1;
+  assert.equal(first.pairIndex, 0);
+  assert.ok(canDefer(state));
+  let next = deferMatch(state, first.roundIndex, first.pairIndex);
+  assert.equal(state.deferred, undefined); // 원본 불변
+  assert.equal(currentMatch(next).pairIndex, 1);
+  // 나머지 3경기를 고르면 보류했던 0번 경기가 다시 나온다
+  for (let i = 0; i < 3; i += 1) {
+    const cur = currentMatch(next);
+    assert.notEqual(cur.pairIndex, 0);
+    next = applyPick(next, cur.roundIndex, cur.pairIndex, cur.pair.a);
   }
-  assert.equal(match.deferred, true);
-  assert.deepEqual([match.roundIndex, match.pairIndex], [first.roundIndex, first.pairIndex]);
-  // 남은 경기가 이것뿐이면 다시 보류할 수 없다
-  assert.equal(canDefer(state, match.roundIndex, match.pairIndex), false);
-  assert.throws(() => deferMatch(state, match.roundIndex, match.pairIndex));
-  // 고르면 보류 목록에서 빠지고 대회가 이어진다
-  state = applyPick(state, match.roundIndex, match.pairIndex, match.pair.b);
-  assert.equal(deferredCount(state), 0);
-  while ((match = currentMatch(state))) {
-    state = applyPick(state, match.roundIndex, match.pairIndex, match.pair.a);
-  }
-  assert.ok(champion(state));
+  const back = currentMatch(next);
+  assert.deepEqual([back.roundIndex, back.pairIndex], [0, 0]);
+  assert.equal(canDefer(next), false); // 라운드에 이 경기만 남으면 보류 불가
+  next = applyPick(next, 0, 0, back.pair.b);
+  assert.deepEqual(next.deferred, []);
+  assert.equal(currentMatch(next).roundIndex, 1);
 });
 
-test('보류: 이미 보류한 경기를 다시 보류하면 순서가 맨 뒤로 간다', async () => {
-  const { deferMatch } = await import('../src/lib/compare.ts');
-  let state = createState(ids8, 5);
-  // 첫 라운드 4경기를 모두 보류
-  for (let i = 0; i < 4; i += 1) {
-    const match = currentMatch(state);
-    state = deferMatch(state, match.roundIndex, match.pairIndex);
+test('여러 번 보류하면 미룬 순서대로 돌아오고, 끝까지 우승자가 나온다', () => {
+  let state = createState(ids8, 8);
+  state = deferMatch(state, 0, 0);
+  state = deferMatch(state, 0, 1);
+  state = deferMatch(state, 0, 0); // 다시 보류하면 또 맨 뒤로
+  assert.deepEqual(state.deferred, ['0:1', '0:0']);
+  const order = [];
+  while (!champion(state)) {
+    const cur = currentMatch(state);
+    if (cur.roundIndex === 0) order.push(cur.pairIndex);
+    state = applyPick(state, cur.roundIndex, cur.pairIndex, cur.pair.a);
   }
-  const again = currentMatch(state);
-  assert.equal(again.deferred, true);
-  assert.equal(again.pairIndex, 0); // 먼저 보류한 것부터
-  state = deferMatch(state, again.roundIndex, again.pairIndex);
-  assert.equal(currentMatch(state).pairIndex, 1); // 다시 보류하면 다음 것이 앞으로
+  assert.deepEqual(order, [2, 3, 1, 0]);
+  assert.equal(progress(state).percent, 100);
+  assert.throws(() => deferMatch(state, 0, 0)); // 이미 끝난 경기
 });

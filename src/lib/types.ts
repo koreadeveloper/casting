@@ -43,11 +43,13 @@ export type Role = {
   shortlistCount?: number;
   ownerId?: string | null;
   projectId?: string | null;
-  /** 작품 포스터 이미지 주소. 비어 있으면 기본 커버를 그린다. */
-  posterUrl?: string;
-  /** 작품 형식(단편영화·웹드라마 등)과 장르 태그. 배우의 공고 검색 필터에 쓴다. */
-  projectFormat?: string;
-  projectGenres?: string[];
+  /** 작품 이미지: 올린 포스터 또는 형식별 기본 커버(projectCover). */
+  coverUrl?: string;
+  /** 결과 기준일(결과 안내일, 오디션 종료일이 더 늦으면 그날). 날짜가 아니면 ''. */
+  resultDueDate?: string;
+  /** 아직 결과 전(received)인 지원자 수와 그중 오디션 후보로 표시한 수 */
+  pendingCount?: number;
+  pendingShortlistCount?: number;
 };
 
 export type Application = {
@@ -76,6 +78,8 @@ export type Application = {
   publicStage: PublicStage;
   /** 제작진이 지원서를 처음 연 시각. null이면 미열람. */
   viewedAt: string | null;
+  /** 결과 기준일이 지나 자동으로 결과를 안내한 시각. 제작진이 직접 정하면 null. */
+  resultAutoAt: string | null;
   receiptToken: string;
   createdAt: string;
   updatedAt: string;
@@ -147,4 +151,17 @@ export function actorStageOf(
 ): ActorStage {
   if (application.publicStage !== 'received') return application.publicStage;
   return application.viewedAt ? 'reviewing' : 'unread';
+}
+
+/** 결과 기준일이 지나 자동으로 불합격을 안내했을 때 배우에게 보여 줄 말 */
+export const AUTO_RESULT_MESSAGE =
+  '결과 안내일까지 제작진이 결과를 정하지 않아, 이번 지원은 불합격으로 마감되었어요.';
+
+/** 배우에게 보여 줄 단계 설명. 자동으로 안내된 결과는 그렇다는 걸 알려 준다. */
+export function actorStageMessage(
+  application: Pick<Application, 'publicStage' | 'viewedAt' | 'resultAutoAt'>,
+) {
+  const stage = actorStageOf(application);
+  if (stage === 'not_selected' && application.resultAutoAt) return AUTO_RESULT_MESSAGE;
+  return actorStageInfo[stage].message;
 }

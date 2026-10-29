@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { getProject } from '@/lib/accounts';
+import { getProject, projectUsage } from '@/lib/accounts';
 import { getCurrentUser } from '@/lib/auth';
 import { listProjectRoles } from '@/lib/db';
-import { splitLocation } from '@/lib/project-meta';
+import { projectRemovalMode, splitLocation } from '@/lib/project-meta';
 import ProjectWizard, { type ProjectDraft } from '../../new/project-wizard';
 
 export const dynamic = 'force-dynamic';
@@ -50,8 +50,8 @@ export default async function EditProjectPage({ params }: Context) {
     director: project.director,
     producerName: project.producerName,
     logline: project.logline,
-    description: project.description,
     posterUrl: project.posterUrl,
+    description: project.description,
     region: place.region,
     locationDetail: place.detail,
     auditionStart: project.auditionStart,
@@ -86,5 +86,18 @@ export default async function EditProjectPage({ params }: Context) {
     contactName: first?.contactName || user.orgName || user.name,
   };
 
-  return <ProjectWizard contactName={user.orgName || user.name} editId={id} initial={initial} />;
+  // 지원서·제안이 있으면 삭제 대신 보관만 할 수 있다(projectRemovalMode).
+  const usage = await projectUsage(id);
+  return (
+    <ProjectWizard
+      contactName={user.orgName || user.name}
+      editId={id}
+      initial={initial}
+      removal={{
+        mode: projectRemovalMode(usage),
+        usage,
+        archived: Boolean(project.archivedAt),
+      }}
+    />
+  );
 }

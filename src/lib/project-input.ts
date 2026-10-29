@@ -3,6 +3,7 @@ import type { ProjectConditions, ProjectInput, RoleEdit } from './accounts';
 import {
   FORMATS,
   GENRE_TAGS,
+  isPosterUrl,
   PERKS,
   PRODUCTION_TYPES,
   PROJECT_REGIONS,
@@ -10,7 +11,6 @@ import {
   ROLE_GENDERS,
   ROLE_TYPES,
   NO_SPECIAL_SCENE,
-  cleanPosterUrl,
   normalizeSpecialScenes,
   pickKnown,
 } from './project-meta';
@@ -89,7 +89,8 @@ export function parseProjectBody(body: Record<string, unknown>): Parsed {
     location: locationDetail ? `${region} ${locationDetail}` : region,
     description: requiredText(body.description, 2000),
     perks: pickKnown(body.perks, Object.keys(PERKS)),
-    posterUrl: cleanPosterUrl(body.posterUrl),
+    // 포스터는 업로드 라우트가 준 사진 주소만 받는다. 아니면 비워서 형식별 기본 커버를 쓴다.
+    posterUrl: isPosterUrl(body.posterUrl) ? body.posterUrl : '',
   };
 
   const deadline = optionalDate(body.deadline);

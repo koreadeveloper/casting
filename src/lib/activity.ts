@@ -1,7 +1,14 @@
 // 알림 피드 — 실제 DB 이벤트(지원·메시지·제안 응답·공고)를 모아 최근순으로 반환.
 // 별도 notifications 테이블 없이 파생 데이터로 구성해 항상 실제 상태와 일치한다.
 import { db } from './db';
-import { matchMessage, matchRoleForActor, type MatchProfileInput } from './match';
+import { matchNotice, matchRoleForActor, type MatchProfileInput } from './match';
+import {
+  dDayLabel,
+  daysUntilResult,
+  isResultDueSoon,
+  kstToday,
+  resultDueDate,
+} from './result-deadline';
 
 export type ActivityItem = {
   id: string;
@@ -21,15 +28,6 @@ const str = (value: unknown) => String(value ?? '');
 
 function clip(text: string, length = 34) {
   return text.length > length ? `${text.slice(0, length)}…` : text;
-}
-
-function dateList(value: unknown): string[] {
-  try {
-    const parsed = JSON.parse(str(value) || '[]');
-    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : [];
-  } catch {
-    return [];
-  }
 }
 
 function sortCap(items: ActivityItem[], cap = 10) {
@@ -118,14 +116,62 @@ export async function producerFeed(ownerId: string): Promise<ActivityFeed> {
     });
   }
 
-  return { items: sortCap(items), badge: unread.length };
+  // 결과 자동 안내 미리 알림: 결과 기준일이 며칠 안으로 다가왔는데 결과 전 지원자가 남은 배역.
+  // 할 일이라 배지 수에도 넣는다. (보관한 프로젝트는 접수가 마감돼 있어도 결과는 남아 있으니 함께 알린다)
+  const today = kstToday();
+  const pendingRoles = (await db()
+    .prepare(
+      `SELECT r.id, r.title, r.announcement_date, p.audition_end,
+         SUM(CASE WHEN a.public_stage = 'received' THEN 1 ELSE 0 END) pending
+       FROM roles r
+       JOIN applications a ON a.role_id = r.id
+       LEFT JOIN projects p ON p.id = r.project_id
+       WHERE r.owner_id = ?
+       GROUP BY r.id, p.id
+       HAVING SUM(CASE WHEN a.public_stage = 'received' THEN 1 ELSE 0 END) > 0`,
+    )
+    .all(ownerId)) as Row[];
+  let warnings = 0;
+  for (const row of pendingRoles) {
+    const due = resultDueDate(str(row.announcement_date), str(row.audition_end));
+    const days = daysUntilResult(due, today);
+    if (days === null || !isResultDueSoon(due, today)) continue;
+    warnings += 1;
+    items.push({
+      id: `due-${str(row.id)}`,
+      icon: '⚡',
+      text: `‘${str(row.title)}’ 결과 안내 ${dDayLabel(days)} — 결과 전 ${Number(row.pending)}명은 기준일 다음 날 자동으로 불합격 안내돼요`,
+      href: `/studio?tab=applicants&role=${encodeURIComponent(str(row.id))}`,
+      // 해야 할 일이라 목록 맨 위에 둔다.
+      at: new Date().toISOString(),
+    });
+  }
+
+  // 자동으로 결과를 안내한 기록(최근 7일): 제작진이 무슨 일이 있었는지 알 수 있게.
+  const autoClosed = (await db()
+    .prepare(
+      `SELECT e.role_id, r.title, COUNT(*) n, MAX(e.created_at) at
+       FROM events e JOIN roles r ON r.id = e.role_id
+       WHERE r.owner_id = ? AND e.name = 'public_result_auto' AND e.created_at >= ?
+       GROUP BY e.role_id, r.title`,
+    )
+    .all(ownerId, new Date(Date.now() - 7 * 86400 * 1000).toISOString())) as Row[];
+  for (const row of autoClosed) {
+    items.push({
+      id: `auto-${str(row.role_id)}-${str(row.at)}`,
+      icon: '📮',
+      text: `‘${str(row.title)}’ 결과 기준일이 지나 ${Number(row.n)}명에게 자동으로 불합격을 안내했어요`,
+      href: `/studio?tab=applicants&role=${encodeURIComponent(str(row.role_id))}`,
+      at: str(row.at),
+    });
+  }
+
+  return { items: sortCap(items), badge: unread.length + warnings };
 }
 
 export async function actorFeed(
   actorId: string,
-  profile: MatchProfileInput | null,
-  /** 맞춤 공고 알림에 부르는 이름 ("김하나 배우님께 맞는 …") */
-  actorName = '',
+  profile: (MatchProfileInput & { name?: string }) | null,
 ): Promise<ActivityFeed> {
   const items: ActivityItem[] = [];
   let badge = 0;
@@ -172,7 +218,8 @@ export async function actorFeed(
 
   const updates = (await db()
     .prepare(
-      `SELECT a.id, a.receipt_token, a.updated_at, a.viewed_at, a.public_stage, r.title role_title
+      `SELECT a.id, a.receipt_token, a.updated_at, a.viewed_at, a.public_stage, a.result_auto_at,
+         r.title role_title
        FROM applications a JOIN roles r ON r.id = a.role_id
        WHERE a.actor_id = ? AND (a.public_stage != 'received' OR a.viewed_at IS NOT NULL)
        ORDER BY a.updated_at DESC LIMIT 3`,
@@ -182,12 +229,15 @@ export async function actorFeed(
     // 결과 전이지만 제작진이 지원서를 열어 봤으면 '검토 중' 알림을 보낸다(미열람 → 검토 중).
     const viewedOnly = row.public_stage === 'received';
     const passed = row.public_stage !== 'not_selected';
+    const autoClosed = !passed && Boolean(row.result_auto_at);
     items.push({
       id: `upd-${str(row.id)}`,
       icon: viewedOnly ? '👀' : passed ? '🎉' : '📢',
       text: viewedOnly
         ? `‘${str(row.role_title)}’ 지원서를 제작진이 확인했어요`
-        : `‘${str(row.role_title)}’ 지원 결과가 업데이트됐어요`,
+        : autoClosed
+          ? `‘${str(row.role_title)}’ 결과 안내일이 지나 지원이 마감됐어요`
+          : `‘${str(row.role_title)}’ 지원 결과가 업데이트됐어요`,
       href: `/status/${str(row.receipt_token)}`,
       at: str(viewedOnly ? row.viewed_at : row.updated_at),
     });
@@ -197,35 +247,29 @@ export async function actorFeed(
     const since = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
     const roles = (await db()
       .prepare(
-        `SELECT slug, title, description, requirement, location, shoot_date, shoot_dates,
-           gender, age_min, age_max, project_title, created_at
+        `SELECT slug, title, description, requirement, location, shoot_date, project_title, created_at
          FROM roles WHERE is_closed = 0 AND created_at >= ? ORDER BY created_at DESC`,
       )
       .all(since)) as Row[];
     const matched = roles
-      .map((row) => ({
-        row,
-        fit: matchRoleForActor(profile, {
+      .map((row) => {
+        const role = {
           title: str(row.title),
           description: str(row.description),
           requirement: str(row.requirement),
           location: str(row.location),
           shootDate: str(row.shoot_date),
-          // 배역에 따로 적은 성별·연령대·촬영일을 함께 봐야 근거("20대 여성")를 정확히 말한다.
-          shootDates: dateList(row.shoot_dates),
-          gender: str(row.gender),
-          ageMin: Number(row.age_min || 0),
-          ageMax: Number(row.age_max || 0),
-        }),
-      }))
+        };
+        return { row, role, fit: matchRoleForActor(profile, role) };
+      })
       .filter((entry) => entry.fit.score >= 25)
       .sort((a, b) => b.fit.score - a.fit.score)
       .slice(0, 3);
-    for (const { row, fit } of matched) {
+    for (const { row, role, fit } of matched) {
       items.push({
         id: `role-${str(row.slug)}`,
         icon: '🎯',
-        text: `${matchMessage(actorName, fit.facts)} · ‘${str(row.project_title)} ${str(row.title)}’`,
+        text: `${matchNotice(profile.name ?? '', profile, role, fit.reasons)} — ‘${str(row.project_title)} ${role.title}’`,
         href: `/apply/${str(row.slug)}`,
         at: str(row.created_at),
       });

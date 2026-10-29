@@ -3,9 +3,15 @@ import assert from 'node:assert/strict';
 import {
   NO_SPECIAL_SCENE,
   normalizeSpecialScenes,
+  projectRemovalMode,
   specialScenesLabel,
 } from '../src/lib/project-meta.ts';
-import { actorStageInfo, actorStageOf } from '../src/lib/types.ts';
+import {
+  AUTO_RESULT_MESSAGE,
+  actorStageInfo,
+  actorStageMessage,
+  actorStageOf,
+} from '../src/lib/types.ts';
 
 test('특수 장면: 종류를 고르면 "없음"은 빠지고, 모르는 값은 버린다', () => {
   assert.deepEqual(normalizeSpecialScenes(['none', 'nudity', 'hack', 'nudity']), ['nudity']);
@@ -37,4 +43,31 @@ test('지원 현황: 결과가 정해지면 열람 여부와 상관없이 그 �
   assert.equal(actorStageOf({ publicStage: 'not_selected', viewedAt: 'x' }), 'not_selected');
   assert.equal(actorStageInfo.cast.label, '합격');
   assert.equal(actorStageInfo.not_selected.label, '불합격');
+});
+
+test('지원 현황: 자동으로 안내된 불합격은 그렇다는 걸 알려 준다', () => {
+  assert.equal(
+    actorStageMessage({ publicStage: 'not_selected', viewedAt: null, resultAutoAt: '2026-11-21' }),
+    AUTO_RESULT_MESSAGE,
+  );
+  // 제작진이 직접 정한 불합격은 기존 문구
+  assert.equal(
+    actorStageMessage({ publicStage: 'not_selected', viewedAt: 'x', resultAutoAt: null }),
+    actorStageInfo.not_selected.message,
+  );
+  // 자동 안내 뒤 제작진이 합격으로 바꾸면 합격 문구
+  assert.equal(
+    actorStageMessage({ publicStage: 'cast', viewedAt: 'x', resultAutoAt: '2026-11-21' }),
+    actorStageInfo.cast.message,
+  );
+  assert.equal(
+    actorStageMessage({ publicStage: 'received', viewedAt: null, resultAutoAt: null }),
+    actorStageInfo.unread.message,
+  );
+});
+
+test('프로젝트 정리: 지원서나 제안이 있으면 보관만, 없으면 삭제', () => {
+  assert.equal(projectRemovalMode({ applications: 0, proposals: 0 }), 'delete');
+  assert.equal(projectRemovalMode({ applications: 3, proposals: 0 }), 'archive');
+  assert.equal(projectRemovalMode({ applications: 0, proposals: 1 }), 'archive');
 });

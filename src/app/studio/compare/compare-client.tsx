@@ -10,7 +10,6 @@ import {
   createState,
   currentMatch,
   deferMatch,
-  deferredCount,
   progress,
   roundName,
   roundProgress,
@@ -113,17 +112,26 @@ export default function CompareClient() {
     }
   }, []);
 
+  // 지원자 화면의 '월드컵으로 비교'로 들어오면 주소에 배역(roleId)과 소스(role·final)가 있다.
+  // 그 배역을 골라 두고 후보를 바로 불러와서, 인원만 고르면 대결을 시작할 수 있게 한다.
+  const [autoLoad, setAutoLoad] = useState(false);
+
   useEffect(() => {
     void loadResults();
+    const params = new URLSearchParams(location.search);
+    const wantedRole = params.get('roleId');
+    const wantedSource = params.get('source');
+    if (wantedSource === 'role' || wantedSource === 'final') setSource(wantedSource);
     fetch('/api/roles', { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : { roles: [] }))
       .then((data) => {
         const list: RoleOption[] = data.roles ?? [];
         setRoles(list);
-        // 지원자 화면의 '이상형 월드컵으로 비교'에서 오면 그 배역을 먼저 고른다.
-        const wanted = new URLSearchParams(location.search).get('role');
-        const first = list.find((item) => item.id === wanted) ?? list[0];
-        if (first) setRoleId(first.id);
+        const known = list.find((role) => role.id === wantedRole);
+        if (known) {
+          setRoleId(known.id);
+          setAutoLoad(true);
+        } else if (list[0]) setRoleId(list[0].id);
       })
       .catch(() => setRoles([]));
   }, [loadResults]);
@@ -154,6 +162,12 @@ export default function CompareClient() {
       setLoading(false);
     }
   }, [source, roleId, gender]);
+
+  useEffect(() => {
+    if (!autoLoad || !roleId) return;
+    setAutoLoad(false);
+    void loadCandidates();
+  }, [autoLoad, roleId, loadCandidates]);
 
   function toggle(id: string) {
     setChecked((current) => {
@@ -202,15 +216,10 @@ export default function CompareClient() {
     }, PICK_DELAY_MS);
   }
 
-  // 보류: 두 후보를 지금 못 고르겠으면 이 경기를 뒤로 미루고 다른 경기를 먼저 한다.
-  // 대진은 그대로라 결국 다시 나온다(남은 경기가 이것뿐이면 그때 고른다).
-  function hold() {
+  // 결정하기 어려운 대결은 이 라운드의 맨 뒤로 미룬다.
+  function defer() {
     if (!state || !match || picked) return;
-    try {
-      setState(deferMatch(state, match.roundIndex, match.pairIndex));
-    } catch (reason) {
-      setNotice(reason instanceof Error ? reason.message : '보류하지 못했습니다.');
-    }
+    setState(deferMatch(state, match.roundIndex, match.pairIndex));
   }
 
   useEffect(
@@ -437,10 +446,7 @@ export default function CompareClient() {
                 {roundName(state, match.roundIndex)} · {round ? round.done + 1 : 1}/
                 {round?.total ?? 1} 경기
               </span>
-              <span className={styles.progressText}>
-                {state && deferredCount(state) > 0 && `보류 ${deferredCount(state)} · `}
-                {overall?.percent ?? 0}%
-              </span>
+              <span className={styles.progressText}>{overall?.percent ?? 0}%</span>
             </div>
             <div className={styles.progressBar}>
               <div className={styles.progressFill} style={{ width: `${overall?.percent ?? 0}%` }} />
@@ -471,28 +477,16 @@ export default function CompareClient() {
                 VS
               </span>
             </div>
-            {match.deferred && (
-              <p className={styles.heldNote}>
-                보류했던 대결이에요. 다른 대결을 모두 마쳤으니 이제 골라 주세요.
-              </p>
-            )}
             <p className={styles.hint}>더 어울리는 후보를 탭해 주세요.</p>
-            <div className={styles.holdRow}>
+            {canDefer(state) && (
               <button
-                type="button"
-                className="button button-outline"
-                onClick={hold}
-                disabled={Boolean(picked) || !canDefer(state, match.roundIndex, match.pairIndex)}
+                className={`button button-soft ${styles.deferButton}`}
+                onClick={defer}
+                disabled={Boolean(picked)}
               >
-                보류 · 나중에 고르기
+                보류 — 이 대결은 나중에 다시 보기
               </button>
-              <small>
-                {canDefer(state, match.roundIndex, match.pairIndex)
-                  ? '둘 다 놓치기 아까우면 이 대결을 뒤로 미뤄요. 다른 대결을 먼저 하고 다시 나와요.'
-                  : '남은 대결이 이것뿐이라 지금 골라야 해요.'}
-              </small>
-            </div>
-            {notice && <p className={styles.notice}>{notice}</p>}
+            )}
           </section>
         )}
 

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 264" width="240" height="264">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#1c212c"/>
+      <stop offset="1" stop-color="#0b0d12"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.55">
+      <stop offset="0" stop-color="#ff9d8a" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#ff9d8a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="chrome" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbfcfe"/>
+      <stop offset="0.35" stop-color="#c3cad7"/>
+      <stop offset="0.55" stop-color="#eef1f6"/>
+      <stop offset="0.8" stop-color="#98a2b3"/>
+      <stop offset="1" stop-color="#e3e7ee"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="264" fill="url(#bg)"/>
+  <rect width="240" height="264" fill="url(#glow)"/>
+  <g fill="none" stroke="url(#chrome)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" transform="translate(78 70) scale(3.5)">
+    <path d="M3 4h18M4 4c0 6 1.5 11 5 15M20 4c0 6-1.5 11-5 15M9 19h6M8 4c0 4 1 7 4 9 3-2 4-5 4-9"/>
+  </g>
+  <circle cx="186" cy="52" r="5" fill="#c5ff45"/>
+  <text x="120" y="226" text-anchor="middle" fill="#e9edf5" font-family="Pretendard Variable, Pretendard, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="19" font-weight="700" letter-spacing="1">연극</text>
+</svg>

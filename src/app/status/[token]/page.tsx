@@ -1,8 +1,15 @@
 import Link from 'next/link';
-import { getApplicationByReceipt, getLatestOffer, getRoleById } from '@/lib/db';
-import { actorStageInfo, actorStageOf, type ActorStage } from '@/lib/types';
+import {
+  closeOverdueResults,
+  getApplicationByReceipt,
+  getLatestOffer,
+  getRoleById,
+} from '@/lib/db';
+import { kstToday } from '@/lib/result-deadline';
+import { actorStageInfo, actorStageMessage, actorStageOf, type ActorStage } from '@/lib/types';
 import ChatThread from '@/components/chat-thread';
 import OfferResponse from '@/components/offer-response';
+import { projectCover } from '@/lib/project-meta';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,10 +55,14 @@ function ReceiptNotFound() {
 
 export default async function StatusPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const application = await getApplicationByReceipt(token);
-  if (!application) return <ReceiptNotFound />;
+  const found = await getApplicationByReceipt(token);
+  if (!found) return <ReceiptNotFound />;
+  // 결과 기준일이 지났는데 아직 결과 전이면 여기서 자동으로 결과를 안내한다.
+  const closed = await closeOverdueResults({ applicationId: found.id }, kstToday());
+  const application = closed ? ((await getApplicationByReceipt(token)) ?? found) : found;
   const role = await getRoleById(application.roleId);
   if (!role) return <ReceiptNotFound />;
+  const resultDue = role.resultDueDate || role.announcementDate;
   const offer = await getLatestOffer(application.id);
   return (
     <main className="app-shell narrow">
@@ -88,7 +99,11 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
           </div>
           {application.chatOpen && <a href="#chat">대화 보기 ›</a>}
         </div>
-        <StageProgress stage={actorStageOf(application)} />
+        <StageProgress
+          stage={actorStageOf(application)}
+          message={actorStageMessage(application)}
+          auto={Boolean(application.resultAutoAt) && application.publicStage === 'not_selected'}
+        />
         {offer && <OfferResponse applicationId={application.id} receipt={token} offer={offer} />}
         <div className="info-panel">
           <div>
@@ -101,10 +116,17 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
           </div>
           <div>
             <span>결과 안내 예정</span>
-            <strong>{role.announcementDate}</strong>
+            <strong>{resultDue}</strong>
           </div>
         </div>
         <p className="small-note">
+          {application.publicStage === 'received' && role.resultDueDate && (
+            <>
+              결과 안내 예정일이 지나도록 결과가 정해지지 않으면 다음 날 자동으로 결과가 안내돼요.
+              무작정 기다리지 않아도 돼요.
+              <br />
+            </>
+          )}
           이 페이지 주소를 보관하면 공개된 진행 상태를 다시 확인할 수 있습니다. 제작진의 내부 검토
           상태와 메모는 공개되지 않습니다.
         </p>
@@ -118,7 +140,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
               peerSub={`${role.projectTitle} · ${role.title}`}
               projectTitle={role.projectTitle}
               roleTitle={role.title}
-              projectImage={role.posterUrl}
+              projectImage={role.coverUrl || projectCover('')}
               profileHref={`/apply/${role.slug}`}
             />
           </section>
@@ -136,7 +158,16 @@ const STAGE_STEPS: { key: ActorStage | 'result'; label: string }[] = [
   { key: 'result', label: '결과' },
 ];
 
-function StageProgress({ stage }: { stage: ActorStage }) {
+function StageProgress({
+  stage,
+  message,
+  auto,
+}: {
+  stage: ActorStage;
+  message: string;
+  /** 결과 기준일이 지나 자동으로 안내된 결과인지 */
+  auto: boolean;
+}) {
   const done = stage === 'cast' || stage === 'not_selected';
   const current = done ? 3 : STAGE_STEPS.findIndex((step) => step.key === stage);
   const info = actorStageInfo[stage];
@@ -145,8 +176,11 @@ function StageProgress({ stage }: { stage: ActorStage }) {
       <div className="stage-head">
         <span className="status-orb">{stage === 'not_selected' ? '·' : '✓'}</span>
         <div>
-          <strong>{info.label}</strong>
-          <p>{info.message}</p>
+          <strong>
+            {info.label}
+            {auto && <small className="auto-tag">자동 안내</small>}
+          </strong>
+          <p>{message}</p>
         </div>
       </div>
       <ol className="stage-steps" aria-label="지원 진행 단계">
