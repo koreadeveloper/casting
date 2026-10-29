@@ -20,6 +20,8 @@ import type { Role } from '@/lib/types';
 import { saveReceipt } from '@/lib/receipts';
 import { pushRecent, RECENT_ROLES } from '@/lib/recent';
 import { MAX_APPLICATION_PHOTOS } from '@/lib/validation';
+import TrustBadges from '@/components/trust-badges';
+import type { ProducerBadges } from '@/lib/verification-rules';
 
 export type Prefill = {
   name: string;
@@ -50,12 +52,15 @@ export default function ApplyForm({
   project,
   prefill,
   producer,
+  trust,
   proposalId,
 }: {
   role: Role;
   project: Project | null;
   prefill: Prefill | null;
   producer: ProducerIntro | null;
+  /** 제작진 인증 배지(학교·제작사). 없으면 '이전 작품 이력이 확인되지 않았어요' */
+  trust?: ProducerBadges;
   proposalId: string;
 }) {
   const [step, setStep] = useState<'brief' | 'form'>('brief');
@@ -292,6 +297,7 @@ export default function ApplyForm({
           </section>
           <section className="brief-card producer-card">
             <h3>이 공고를 올린 제작진</h3>
+            <TrustBadges badges={trust} withNames />
             <div>
               <span>담당</span>
               <strong>{role.contactName || '미기재'}</strong>
@@ -324,8 +330,9 @@ export default function ApplyForm({
                   </strong>
                 </div>
                 <p className="producer-note">
-                  위 내용은 제작자가 직접 등록한 정보입니다. 재학·사업자 확인 절차는 아직 없어서
-                  인증 표시는 붙이지 않습니다. 출연료·촬영 조건은 꼭 담당자와 직접 확인해 주세요.
+                  {trust?.school || trust?.business
+                    ? '인증 표시는 재학증명서·학교 이메일·사업자등록증을 확인한 결과예요. 나머지 내용은 제작자가 직접 등록한 정보이니, 출연료·촬영 조건은 꼭 담당자와 직접 확인해 주세요.'
+                    : '위 내용은 제작자가 직접 등록한 정보이고, 학교·제작사 인증을 아직 받지 않은 제작진이에요. 출연료·촬영 조건은 꼭 담당자와 직접 확인해 주세요.'}
                 </p>
               </>
             ) : (

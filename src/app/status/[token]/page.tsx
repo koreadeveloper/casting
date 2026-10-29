@@ -4,8 +4,16 @@ import {
   getApplicationByReceipt,
   getLatestOffer,
   getRoleById,
+  listAttendance,
 } from '@/lib/db';
 import { kstToday } from '@/lib/result-deadline';
+import {
+  isAttendanceAskOpen,
+  nextShootDate,
+  shootDateLabel,
+  shootDayLabel,
+} from '@/lib/attendance';
+import AttendanceCard from '@/components/attendance-card';
 import { actorStageInfo, actorStageMessage, actorStageOf, type ActorStage } from '@/lib/types';
 import ChatThread from '@/components/chat-thread';
 import OfferResponse from '@/components/offer-response';
@@ -64,6 +72,10 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
   if (!role) return <ReceiptNotFound />;
   const resultDue = role.resultDueDate || role.announcementDate;
   const offer = await getLatestOffer(application.id);
+  // 출연 확정(합격)이면 다음 촬영일의 참석 재확인 카드를 띄운다.
+  const today = kstToday();
+  const nextShoot = application.publicStage === 'cast' ? nextShootDate(role.shootDates, today) : '';
+  const attendance = nextShoot ? await listAttendance(application.id) : [];
   return (
     <main className="app-shell narrow">
       <header className="sub-header">
@@ -104,6 +116,16 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
           message={actorStageMessage(application)}
           auto={Boolean(application.resultAutoAt) && application.publicStage === 'not_selected'}
         />
+        {nextShoot && (
+          <AttendanceCard
+            receipt={token}
+            shootDate={nextShoot}
+            dateLabel={shootDateLabel(nextShoot)}
+            dayLabel={shootDayLabel(nextShoot, today)}
+            askOpen={isAttendanceAskOpen(nextShoot, today)}
+            answer={attendance.find((item) => item.shootDate === nextShoot) ?? null}
+          />
+        )}
         {offer && <OfferResponse applicationId={application.id} receipt={token} offer={offer} />}
         <div className="info-panel">
           <div>

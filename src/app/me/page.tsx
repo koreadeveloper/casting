@@ -8,6 +8,8 @@ import { RECENT_ROLES } from '@/lib/recent';
 import { getProducerOrgLines, getProfile, listActorProposals } from '@/lib/accounts';
 import { getCurrentUser } from '@/lib/auth';
 import RoleCard from '@/components/role-card';
+import TrustBadges from '@/components/trust-badges';
+import { getProducerBadges } from '@/lib/verifications';
 import RoleSearchForm from '@/components/role-search-form';
 import { closeOverdueResults, listActorApplications, searchOpenRoles } from '@/lib/db';
 import { matchRoleForActor } from '@/lib/match';
@@ -50,6 +52,7 @@ export default async function ActorHome({
     profile?.unavailableDates ?? [],
   );
   const orgLines = await getProducerOrgLines(all.map((role) => role.ownerId));
+  const badges = await getProducerBadges(all.map((role) => role.ownerId));
   const matched = profile
     ? all
         .map((role) => ({ role, fit: matchRoleForActor(profile, role) }))
@@ -182,6 +185,7 @@ export default async function ActorHome({
                   {role.ownerId && orgLines.get(role.ownerId) && (
                     <p className="org-line">{orgLines.get(role.ownerId)}</p>
                   )}
+                  <TrustBadges badges={role.ownerId ? badges.get(role.ownerId) : undefined} />
                   <p className="meta">
                     촬영 {formatDates(role.shootDates, 1) || shortDate(role.shootDate)} ·{' '}
                     {role.location}
@@ -229,6 +233,7 @@ export default async function ActorHome({
                 role={role}
                 applied={appliedRoleIds.has(role.id)}
                 orgLine={role.ownerId ? orgLines.get(role.ownerId) : undefined}
+                trust={(role.ownerId && badges.get(role.ownerId)) || null}
               />
             ))}
           </div>

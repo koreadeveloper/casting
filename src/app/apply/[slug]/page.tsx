@@ -3,6 +3,7 @@ import { getProducerIntro, getProfile, getProject, getUserById } from '@/lib/acc
 import { getActorId } from '@/lib/auth';
 import { getRole } from '@/lib/db';
 import { ageOf } from '@/lib/profile';
+import { getProducerBadges } from '@/lib/verifications';
 import ApplyForm, { type Prefill } from './apply-form';
 
 export const dynamic = 'force-dynamic';
@@ -50,6 +51,7 @@ export default async function ApplyPage({
       project={role.projectId ? await getProject(role.projectId) : null}
       prefill={prefill}
       producer={role.ownerId ? await getProducerIntro(role.ownerId) : null}
+      trust={role.ownerId ? (await getProducerBadges([role.ownerId])).get(role.ownerId) : undefined}
       proposalId={actorId && proposal && /^[\w-]{8,60}$/.test(proposal) ? proposal : ''}
     />
   );

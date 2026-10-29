@@ -5159,3 +5159,255 @@ img {
 .compare-entry .chevron {
   color: var(--lime);
 }
+
+/* ── 제작진 인증 배지 ── */
+.trust-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 5px 0 2px;
+}
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trust-school {
+  background: #e4efff;
+  color: #1f5fbf;
+}
+.trust-business {
+  background: #e6f6ea;
+  color: #1d7a3b;
+}
+.trust-none {
+  font-size: 10.5px;
+  color: var(--faint);
+  margin: 4px 0 2px;
+}
+.producer-card .trust-badges,
+.producer-card .trust-none {
+  margin: 0 0 10px;
+}
+
+/* ── 제작진 인증 화면 ── */
+.verify-page {
+  max-width: 640px;
+}
+.verify-lead {
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 6px 0 14px;
+}
+.verify-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--card);
+  border: 1px dashed var(--lavender-strong);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.verify-preview > span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.verify-warn {
+  background: #fff6e5;
+  color: #8a5a00;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.verify-result {
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.verify-result.ok {
+  background: #e6f6ea;
+  color: #1d7a3b;
+}
+.verify-result.no,
+.verify-status.no {
+  background: #fdecec;
+  color: #a12c2c;
+}
+.verify-result ul,
+.verify-status ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.verify-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  margin: 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.verify-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.verify-head h2 {
+  font-size: 16px;
+  margin: 0;
+}
+.verify-status {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 0;
+  border-radius: 10px;
+}
+.verify-status.ok {
+  color: #1d7a3b;
+}
+.verify-status.no {
+  padding: 10px 12px;
+}
+.verify-card .small-note {
+  margin: 0;
+}
+.verify-method {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.verify-method > strong {
+  font-size: 13px;
+}
+.verify-method > p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+.verify-input {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 13px;
+  background: var(--page);
+  color: var(--ink);
+}
+.verify-sent {
+  color: var(--ink) !important;
+  font-weight: 600;
+}
+.verify-privacy {
+  margin-top: 4px;
+}
+.verify-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--card);
+  border: 1px solid var(--lavender-strong);
+  border-radius: 16px;
+  padding: 13px 15px;
+  margin-top: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.verify-entry strong {
+  font-size: 14px;
+}
+.verify-entry span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── 촬영 참석 재확인 ── */
+.attend-card {
+  border-radius: 18px;
+  padding: 16px;
+  margin-top: 14px;
+  border: 1px solid var(--lavender-strong);
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.attend-card p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.attend-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.attend-head strong {
+  font-size: 15px;
+}
+.attend-chip {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.attend-ask {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--lime-glow);
+}
+.attend-yes {
+  background: #e6f6ea;
+  border-color: #b9e3c5;
+}
+.attend-no {
+  background: #fff3e8;
+  border-color: #f3cfa9;
+}
+.attend-later .attend-chip {
+  background: var(--lavender);
+  color: var(--primary);
+}
+.attend-note {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.attend-note textarea {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+  background: var(--page);
+  color: var(--ink);
+}
+.attend-card .text-button {
+  align-self: flex-start;
+  padding: 0;
+  font-size: 12px;
+}

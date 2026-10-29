@@ -836,6 +836,8 @@ export async function deleteAccount(userId: string) {
     await run(`DELETE FROM board_votes WHERE user_id=? OR application_id IN (${appIds})`, 3);
     await run(`DELETE FROM board_notes WHERE user_id=? OR application_id IN (${appIds})`, 3);
     await run(`DELETE FROM chat_messages WHERE application_id IN (${appIds})`, 2);
+    await run(`DELETE FROM attendance_checks WHERE application_id IN (${appIds})`, 2);
+    await run('DELETE FROM verifications WHERE user_id=?', 1);
     await run(`DELETE FROM audition_events WHERE owner_id=? OR application_id IN (${appIds})`, 3);
     await run(
       `DELETE FROM events WHERE role_id IN (${roleIds}) OR application_id IN (${appIds})`,

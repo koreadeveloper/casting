@@ -1282,6 +1282,10 @@ export default function Studio({
                 </span>
               </div>
             </div>
+            <a className="verify-entry" href="/studio/verify">
+              <strong>제작진 인증</strong>
+              <span>학교·제작사 인증을 받으면 공고에 인증 표시가 붙어요 ›</span>
+            </a>
             {/*
               추천·비교·보드·캘린더는 하단 탭에 자리가 없어 데스크톱 메뉴에만 있다.
               링크 자체는 전부터 여기 있었지만 계정 항목과 한 줄로 섞여 있어서

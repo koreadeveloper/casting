@@ -2,6 +2,7 @@
 // 별도 notifications 테이블 없이 파생 데이터로 구성해 항상 실제 상태와 일치한다.
 import { db } from './db';
 import { MESSAGE_PREVIEW_SQL } from './chat-files';
+import { isAttendanceAskOpen, nextShootDate, shootDateLabel, shootDayLabel } from './attendance';
 import { matchNotice, matchRoleForActor, type MatchProfileInput } from './match';
 import {
   dDayLabel,
@@ -33,6 +34,65 @@ function clip(text: string, length = 34) {
 
 function sortCap(items: ActivityItem[], cap = 10) {
   return items.sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, cap);
+}
+
+type CastShoot = {
+  applicationId: string;
+  name: string;
+  receiptToken: string;
+  roleId: string;
+  roleTitle: string;
+  shootDate: string;
+  answer: { status: string; respondedAt: string } | null;
+};
+
+/**
+ * 출연 확정(합격)된 지원서 중 참석 재확인 기간(촬영 D-3 ~ 당일)에 든 것과 그 답.
+ * owner = 제작자 기준, actor = 배우 기준.
+ */
+async function castShootsInWindow(by: 'owner' | 'actor', userId: string): Promise<CastShoot[]> {
+  const where = by === 'owner' ? 'r.owner_id = ?' : 'a.actor_id = ?';
+  const rows = (await db()
+    .prepare(
+      `SELECT a.id, a.name, a.receipt_token, r.id role_id, r.title, r.shoot_dates, r.shoot_date
+       FROM applications a JOIN roles r ON r.id = a.role_id
+       WHERE ${where} AND a.public_stage = 'cast'`,
+    )
+    .all(userId)) as Row[];
+  const today = kstToday();
+  const due = rows
+    .map((row) => {
+      let dates: string[] = [];
+      try {
+        dates = JSON.parse(str(row.shoot_dates) || '[]') as string[];
+      } catch {
+        dates = [];
+      }
+      if (!dates.length) dates = [str(row.shoot_date)];
+      return { row, shootDate: nextShootDate(dates, today) };
+    })
+    .filter(({ shootDate }) => isAttendanceAskOpen(shootDate, today));
+  if (!due.length) return [];
+  const answers = (await db()
+    .prepare(
+      `SELECT application_id, shoot_date, status, responded_at FROM attendance_checks
+       WHERE application_id IN (${due.map(() => '?').join(',')})`,
+    )
+    .all(...due.map(({ row }) => str(row.id)))) as Row[];
+  return due.map(({ row, shootDate }) => {
+    const answer = answers.find(
+      (item) => str(item.application_id) === str(row.id) && str(item.shoot_date) === shootDate,
+    );
+    return {
+      applicationId: str(row.id),
+      name: str(row.name),
+      receiptToken: str(row.receipt_token),
+      roleId: str(row.role_id),
+      roleTitle: str(row.title),
+      shootDate,
+      answer: answer ? { status: str(answer.status), respondedAt: str(answer.responded_at) } : null,
+    };
+  });
 }
 
 export async function producerFeed(ownerId: string): Promise<ActivityFeed> {
@@ -167,6 +227,24 @@ export async function producerFeed(ownerId: string): Promise<ActivityFeed> {
     });
   }
 
+  // 촬영 참석 재확인: 출연 확정 배우의 답. '어렵다'는 바로 대처해야 하니 배지에 넣는다.
+  for (const shoot of await castShootsInWindow('owner', ownerId)) {
+    const when = `${shootDateLabel(shoot.shootDate)} 촬영`;
+    const href = `/studio?tab=applicants&role=${encodeURIComponent(shoot.roleId)}`;
+    if (shoot.answer?.status === 'no') warnings += 1;
+    items.push({
+      id: `attend-${shoot.applicationId}-${shoot.shootDate}`,
+      icon: !shoot.answer ? '⏳' : shoot.answer.status === 'yes' ? '✅' : '⚠️',
+      text: !shoot.answer
+        ? `${shoot.name}님 ${when} 참석 확인 대기 중 (${shootDayLabel(shoot.shootDate, today)})`
+        : shoot.answer.status === 'yes'
+          ? `${shoot.name}님이 ${when} 참석을 확인했어요`
+          : `${shoot.name}님이 ${when} 참석이 어렵다고 했어요 — 대화에서 사유를 확인해 주세요`,
+      href,
+      at: shoot.answer?.respondedAt || new Date().toISOString(),
+    });
+  }
+
   return { items: sortCap(items), badge: unread.length + warnings };
 }
 
@@ -241,6 +319,20 @@ export async function actorFeed(
           : `‘${str(row.role_title)}’ 지원 결과가 업데이트됐어요`,
       href: `/status/${str(row.receipt_token)}`,
       at: str(viewedOnly ? row.viewed_at : row.updated_at),
+    });
+  }
+
+  // 촬영 참석 재확인 요청: 아직 답하지 않은 촬영은 할 일이라 배지에 넣고 맨 위에 둔다.
+  const today = kstToday();
+  for (const shoot of await castShootsInWindow('actor', actorId)) {
+    if (shoot.answer) continue;
+    badge += 1;
+    items.push({
+      id: `attend-${shoot.applicationId}-${shoot.shootDate}`,
+      icon: '🎬',
+      text: `‘${shoot.roleTitle}’ 촬영 ${shootDayLabel(shoot.shootDate, today)} (${shootDateLabel(shoot.shootDate)}) — 참석 여부를 알려 주세요`,
+      href: `/status/${shoot.receiptToken}`,
+      at: new Date().toISOString(),
     });
   }
 
