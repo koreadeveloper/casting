@@ -4798,9 +4798,9 @@ img {
   object-fit: contain;
   vertical-align: middle;
 }
-/* 로고의 CF 마크: 앱 아이콘처럼 둥근 네모로 보이게 (.brand-mark는 다른 곳에서 쓰는 이름이라 피한다) */
+/* 로고의 캐릭터 마크(배경 투명). .brand-mark는 다른 곳에서 쓰는 이름이라 피한다. */
 .brand-cf {
-  border-radius: 24%;
+  border-radius: 0;
 }
 .brand-wordmark {
   display: block;
