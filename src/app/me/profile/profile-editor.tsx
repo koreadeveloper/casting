@@ -782,8 +782,9 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                 <span>제작자 배우 검색에 내 프로필 공개</span>
               </label>
               <p className="small-note">
-                연락처와 이메일은 검색에 공개되지 않습니다. 제안을 수락하고 지원한 배역의
-                제작자에게만 전달됩니다.
+                공개하면 로그인 전 &lsquo;배우 프로필 둘러보기&rsquo;에도 대표
+                사진·이름·나이대·이미지 태그가 보여요. 연락처와 이메일은 검색에 공개되지 않습니다.
+                제안을 수락하고 지원한 배역의 제작자에게만 전달됩니다.
               </p>
             </section>
           </div>

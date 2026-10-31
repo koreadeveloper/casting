@@ -5638,3 +5638,60 @@ img {
     text-align: center;
   }
 }
+
+/* 로그인 전 배우 둘러보기 (/actors) */
+.preview-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 14px 0 4px;
+}
+.preview-stats > div {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+.preview-stats strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.preview-stats span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.preview-filter {
+  margin-top: 16px;
+}
+.preview-filter .filter {
+  text-decoration: none;
+}
+.preview-more {
+  text-align: center;
+  margin: -8px 0 32px;
+}
+.preview-more p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.preview-more strong {
+  color: var(--ink);
+}
+/* 첫 화면: '배우 둘러보기'와 '배역 보기'를 한 줄에 나란히 */
+.lp-cta-pair {
+  display: flex;
+  gap: 10px;
+}
+@media (max-width: 719px) {
+  .lp-cta-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .lp-cta-pair .button {
+    padding: 15px 10px;
+    font-size: 14px;
+  }
+}

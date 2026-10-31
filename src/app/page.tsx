@@ -111,9 +111,14 @@ export default async function Landing() {
       <Link className="button button-primary" href="/signup/producer">
         제작진으로 시작하기 →
       </Link>
-      <Link className="button button-outline" href="/actor">
-        배우로 배역 보기
-      </Link>
+      <div className="lp-cta-pair">
+        <Link className="button button-outline" href="/actors">
+          배우 프로필 둘러보기
+        </Link>
+        <Link className="button button-outline" href="/actor">
+          배우로 배역 보기
+        </Link>
+      </div>
     </div>
   );
 
