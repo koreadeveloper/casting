@@ -9,7 +9,8 @@ export const dynamic = 'force-dynamic';
 const collage = [1, 2, 7, 6, 4];
 
 // 기획서의 차별점. 실제로 들어가 있는 기능만 적는다(없는 기능을 적지 않는다).
-const strengths: { who: string; title: string; desc: string }[] = [
+// pass: 정식 출시 후 프로젝트 패스에 들어갈 예정인 부분. 파일럿 중에는 무료로 열려 있다.
+const strengths: { who: string; title: string; desc: string; pass?: string }[] = [
   {
     who: '신뢰',
     title: '제작진 인증 배지',
@@ -28,17 +29,20 @@ const strengths: { who: string; title: string; desc: string }[] = [
   {
     who: '제작진',
     title: '이상형 월드컵 비교',
-    desc: '최종 후보를 1:1로 붙여 가며 골라요. 비슷한 후보 사이에서 고민하는 시간을 줄여요.',
+    desc: '최종 후보를 1:1로 붙여 가며 골라요. 비슷한 후보 사이에서 하나씩 비교해 정할 수 있어요.',
+    pass: '후보 비교',
   },
   {
     who: '제작진',
     title: '팀보드',
-    desc: '지원자를 서류 검토 → 서류 통과 → 오디션 후보로 옮기고, 팀원과 투표·메모로 함께 정해요.',
+    desc: '기본 후보 관리: 지원자를 서류 검토 → 서류 통과 → 오디션 후보로 옮겨요. 공동 평가: 초대한 팀원과 투표·메모를 남겨 함께 정해요.',
+    pass: '공동 평가·투표·메모',
   },
   {
     who: '현장',
     title: '촬영 참석 재확인',
-    desc: '출연이 확정되면 촬영 3일 전부터 배우에게 참석 여부를 다시 물어 노쇼를 줄여요.',
+    desc: '출연이 확정되면 촬영 3일 전부터 배우 화면에 참석 여부를 묻는 카드가 뜨고, 답은 제작진 알림으로 전달돼요.',
+    pass: '참석 재확인',
   },
 ];
 
@@ -59,25 +63,58 @@ const actorFlow: [string, string][] = [
   ['오디션·촬영', '오디션 시간을 고르고, 촬영 전에 참석 여부를 알려 줘요.'],
 ];
 
-// 기획서의 가격(안). 아직 결제 기능이 없어 '출시 예정'으로만 보여 준다.
-const plans: { name: string; price: string; desc: string; accent?: boolean }[] = [
+// 정식 출시 예정 요금제(안). 결제 기능이 없으므로 안내만 하고, 파일럿 중에는 한도를 적용하지 않는다.
+// 기능 이름 뒤 '(준비 중)'은 아직 앱에 없는 기능이다.
+type Plan = {
+  name: string;
+  price: string;
+  unit: string;
+  rows: [string, string][];
+  accent?: boolean;
+};
+
+const plans: Plan[] = [
   {
     name: '무료',
     price: '0원',
-    desc: '공고 1건, 지원서 통합 관리, 팀원 2명까지. 배우는 언제나 무료예요.',
+    unit: '제작팀 기본 이용',
+    rows: [
+      ['적용 범위', '제작팀당 진행 중인 작품 1개'],
+      ['모집', '한 작품에서 여러 배역 모집 가능'],
+      ['팀원', '소유자 포함 2명'],
+      ['기본 기능', '지원서 접수·열람, 기본 검색, 후보 저장·단계 관리, 결과 안내'],
+    ],
   },
   {
     name: '프로젝트 패스',
-    price: '19,900원 / 작품 1편',
-    desc: '90일 동안 추천·이상형 월드컵·팀보드 무제한, 촬영 참석 재확인 알림.',
+    price: '19,900원',
+    unit: '작품당 · 90일 · 예정 가격',
+    rows: [
+      ['적용 범위', '구매한 작품 1개에만 유료 기능 적용'],
+      ['모집', '한 작품에서 여러 배역 모집 가능'],
+      ['팀원', '해당 작품에 소유자 포함 최대 10명'],
+      ['기본 기능', '무료 기능 모두 포함'],
+      [
+        '추가 기능',
+        '공동 평가·투표·메모, 후보 비교(이상형 월드컵), 복합 필터, 참석 재확인, 일괄 안내(준비 중)',
+      ],
+    ],
     accent: true,
   },
-  { name: '학기 패스', price: '49,000원 / 6개월', desc: '동아리·연속 제작팀용, 공고 무제한.' },
-  {
-    name: '학과 라이선스',
-    price: '연 60만 원 / 학과',
-    desc: '학과 소속 팀 전체 사용, 학교 인증 자동화, 학과 관리 화면.',
-  },
+];
+
+// 수요를 확인한 뒤 도입을 검토할 상품. 가격·제공 범위는 정하지 않았다.
+const laterPlans: [string, string, string][] = [
+  [
+    '학기 패스',
+    '여러 작품을 제작하는 동아리·반복 제작팀용',
+    '반복 이용과 재구매 수요를 확인한 후 도입을 검토해요.',
+  ],
+  [
+    '학과 라이선스',
+    '여러 학생팀의 이용을 지원하는 대학 영화과용',
+    '학과의 구매 의사·예산·필요 기능을 확인한 후 도입을 검토해요.',
+  ],
 ];
 
 function FlowList({ items }: { items: [string, string][] }) {
@@ -194,9 +231,15 @@ export default async function Landing() {
               <span className="lp-tag">{item.who}</span>
               <strong>{item.title}</strong>
               <p>{item.desc}</p>
+              {item.pass && (
+                <span className="lp-pass-note">정식 출시 후 프로젝트 패스 · {item.pass}*</span>
+              )}
             </div>
           ))}
         </div>
+        <p className="lp-footnote">
+          * 정식 출시 예정 기준이에요. 지금은 파일럿 기간이라 위 기능을 모두 무료로 쓸 수 있어요.
+        </p>
       </section>
 
       <section className="lp-section" id="how">
@@ -226,17 +269,70 @@ export default async function Landing() {
       <section className="lp-section" id="pricing">
         <h2>요금제</h2>
         <p className="lp-lead">
-          지금은 파일럿 기간이라 모든 기능을 무료로 쓸 수 있어요. 아래는 정식 출시 때 적용할 예정
-          가격(안)이고, 바뀔 수 있어요.
+          배우는 언제나 무료예요. 제작팀은 팀원과 함께 평가하고 후보를 비교하는 등 캐스팅을 더
+          효율적으로 만드는 기능에 비용을 내는 구조로 준비하고 있어요.
         </p>
-        <div className="lp-grid">
+
+        <div className="lp-pilot">
+          <span className="lp-pilot-tag">지금 · 파일럿 기간</span>
+          <strong>제공 중인 기능을 모두 무료로 이용할 수 있어요.</strong>
+          <p>
+            아래 요금제는 정식 출시를 위한 예정안이며, 가격과 제공 범위는 변경될 수 있어요. 유료
+            전환은 사전에 안내하며, 별도로 구매하지 않으면 자동으로 결제되지 않아요. 파일럿 중에는
+            팀원 수·작품 수 한도도 적용하지 않아요.
+          </p>
+          {session ? (
+            <Link className="button button-primary" href={home}>
+              내 화면으로 →
+            </Link>
+          ) : (
+            <Link className="button button-primary" href="/signup/producer">
+              무료로 시작하기 →
+            </Link>
+          )}
+        </div>
+
+        <div className="lp-plans-head">
+          <span className="lp-tag">정식 출시 예정안</span>
+          <span>아직 결제는 받지 않아요. 아래 내용은 검증 중인 안이에요.</span>
+        </div>
+        <div className="lp-grid two lp-plans">
           {plans.map((plan) => (
             <div key={plan.name} className={`lp-card${plan.accent ? ' accent' : ''}`}>
               <span className="badge-soft">{plan.name}</span>
               <strong className="price">{plan.price}</strong>
-              <p>{plan.desc}</p>
+              <span className="lp-plan-unit">{plan.unit}</span>
+              <dl className="lp-plan-rows">
+                {plan.rows.map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
           ))}
+        </div>
+        <ul className="lp-plan-notes">
+          <li>프로젝트 패스는 구매한 작품 1개에만 적용돼요. 다른 작품은 무료 기준으로 이용해요.</li>
+          <li>90일은 정식 유료 운영 시 결제 완료일부터 계산하며, 자동 갱신 없는 1회 결제예요.</li>
+          <li>
+            인증 정보 확인·지원 현황 확인 같은 기본 신뢰 기능은 어느 요금제에서나 제한 없이
+            제공해요.
+          </li>
+        </ul>
+
+        <div className="lp-later">
+          <strong>추후 상품 · 도입 검토 중</strong>
+          <div className="lp-later-list">
+            {laterPlans.map(([name, who, when]) => (
+              <div key={name}>
+                <b>{name}</b>
+                <span>{who}</span>
+                <small>{when}</small>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -247,7 +343,7 @@ export default async function Landing() {
             <br />
             지금 시작해 보세요
           </h2>
-          <p>제작진은 지금 무료로 공고를 올리고, 배우는 언제나 무료로 지원해요.</p>
+          <p>파일럿 기간에는 제작진도 무료로 공고를 올리고, 배우는 언제나 무료로 지원해요.</p>
           {ctas}
         </div>
       </section>

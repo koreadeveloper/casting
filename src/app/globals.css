@@ -5695,3 +5695,148 @@ img {
     font-size: 14px;
   }
 }
+
+/* ── 첫 화면 요금제: 지금(파일럿)과 정식 출시 예정안을 눈으로 구분 ── */
+.lp-pass-note {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  border: 1px dashed var(--lavender-strong);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+.lp-footnote {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.lp-pilot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--obsidian);
+  color: #fff;
+  border-radius: 20px;
+  padding: 24px 20px;
+  margin-bottom: 28px;
+  box-shadow: 0 12px 30px #0b0d1226;
+}
+.lp-pilot-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--obsidian);
+  background: var(--lime);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.lp-pilot strong {
+  font-size: 19px;
+  letter-spacing: -0.4px;
+}
+.lp-pilot p {
+  margin: 0;
+  max-width: 720px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #c8cfdb;
+}
+.lp-pilot .button {
+  margin-top: 4px;
+  background: #fff;
+  color: var(--obsidian);
+}
+.lp-plans-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.lp-plans-head .lp-tag {
+  margin-bottom: 0;
+}
+.lp-plan-unit {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin: -4px 0 14px;
+}
+.lp-plan-rows {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.lp-plan-rows div {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 10px;
+}
+.lp-plan-rows dt {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--faint);
+}
+.lp-plan-rows dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.lp-plan-notes {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.lp-later {
+  margin-top: 26px;
+  border: 1px dashed var(--lavender-strong);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+.lp-later > strong {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.lp-later-list {
+  display: grid;
+  gap: 12px;
+}
+.lp-later-list div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.lp-later-list b {
+  font-size: 14px;
+}
+.lp-later-list span,
+.lp-later-list small {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+@media (min-width: 720px) {
+  .lp-pilot {
+    padding: 28px 30px;
+  }
+  .lp-later-list {
+    grid-template-columns: 1fr 1fr;
+  }
+}
