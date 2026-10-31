@@ -281,7 +281,47 @@ async function initialize(database: Conn) {
     await seedAccounts(database);
     await seedTeams(database);
     await seedDemoActivity(database);
+    await refreshDemoFaces(database);
   }
+}
+
+// 예전에 채운 데모 DB에서 여러 배우가 같은 사진을 쓰던 것을 새 사진으로 바꾼다.
+// 아직 예전 사진 그대로인 데모 계정·샘플 지원서만 고치므로 여러 번 돌아도 한 번만 바뀐다.
+async function refreshDemoFaces(connection: Conn) {
+  const swaps: [string, string, number, number, number?][] = [
+    // [이메일, 이름, 예전 사진, 새 사진, 새 출생연도]
+    ['actor07@demo.casting', '한지민', 7, 14],
+    ['actor08@demo.casting', '최민재', 2, 16],
+    ['actor09@demo.casting', '윤태오', 9, 15, 1982],
+    ['actor10@demo.casting', '오수아', 4, 10],
+    ['actor13@demo.casting', '서예린', 8, 13],
+    ['actor14@demo.casting', '배준서', 2, 11],
+    ['actor16@demo.casting', '조현우', 6, 12, 1964],
+  ];
+  for (const [email, name, from, to, birthYear] of swaps) {
+    const oldPhotos = JSON.stringify([demoFace(from)]);
+    const newPhotos = JSON.stringify([demoFace(to)]);
+    const profile = `WHERE photos=? AND user_id=(SELECT id FROM users WHERE email=?)`;
+    if (birthYear) {
+      await connection
+        .prepare(`UPDATE actor_profiles SET birth_year=? ${profile}`)
+        .run(birthYear, oldPhotos, email);
+    }
+    await connection
+      .prepare(`UPDATE actor_profiles SET photos=? ${profile}`)
+      .run(newPhotos, oldPhotos, email);
+    await connection
+      .prepare(
+        `UPDATE applications SET photo_url=?, photo_urls=?
+        WHERE name=? AND photo_url=? AND email LIKE '%@example.com'`,
+      )
+      .run(demoFace(to), newPhotos, name, demoFace(from));
+  }
+  await connection
+    .prepare(
+      `UPDATE applications SET age=44 WHERE name='윤태오' AND age=27 AND email LIKE '%@example.com'`,
+    )
+    .run();
 }
 
 // 데모가 "살아있는" 느낌이 들도록 최근 시각 기준의 활동 데이터를 보장한다.
@@ -1303,8 +1343,8 @@ async function seedDemo(connection: Conn) {
     ['박서연', 24, '독립영화 2편, 웹드라마 조연', 'yes', 'reviewing', 7],
     ['이준호', 25, '단편 4편, 연극 무대 경험', 'unsure', 'interested', 9],
     ['정하은', 23, '독립영화 조연, 연극 1편', 'yes', 'new', 4],
-    ['윤태오', 27, '단편 2편, 광고 다수 출연', 'yes', 'hold', 9],
-    ['한지민', 24, '웹드라마 주연, 단편 1편', 'unsure', 'new', 7],
+    ['윤태오', 44, '단편 2편, 광고 다수 출연', 'yes', 'hold', 15],
+    ['한지민', 24, '웹드라마 주연, 단편 1편', 'unsure', 'new', 14],
   ] as const;
   for (const [name, age, introduction, available, status, photo] of examples) {
     const application = await createApplication(role.id, {
@@ -1453,7 +1493,7 @@ async function seedAccounts(connection: Conn) {
       '인천',
       ['따뜻한', '청순한'],
       ['자연스러운 대화 연기', '악기 연주'],
-      [7],
+      [14],
       '독립영화 2편, 피아노 연주가 가능합니다.',
     ],
     [
@@ -1464,18 +1504,18 @@ async function seedAccounts(connection: Conn) {
       '경기',
       ['소년미', '유쾌한'],
       ['댄스', '즉흥 연기'],
-      [2],
+      [16],
       '연기 전공 재학 중, 숏폼 콘텐츠 출연 다수.',
     ],
     [
       '윤태오',
       'male',
-      1996,
+      1982,
       180,
       '부산',
       ['도시적인', '시크한'],
       ['사투리', '운전'],
-      [9],
+      [15],
       '부산 사투리 가능, 단편 5편 출연.',
     ],
     [
@@ -1486,7 +1526,7 @@ async function seedAccounts(connection: Conn) {
       '서울',
       ['사랑스러운', '청순한'],
       ['노래'],
-      [4],
+      [10],
       '연기학원 수강생, 첫 작품을 찾고 있습니다.',
     ],
     [
@@ -1519,7 +1559,7 @@ async function seedAccounts(connection: Conn) {
       '경기',
       ['신비로운', '차분한'],
       ['일본어', '악기 연주'],
-      [8],
+      [13],
       '단편영화 2편, 일본어 원어민 수준.',
     ],
     [
@@ -1530,7 +1570,7 @@ async function seedAccounts(connection: Conn) {
       '서울',
       ['따뜻한', '소년미'],
       ['수영', '노래'],
-      [2],
+      [11],
       '웹드라마 단역, 수영 강사 자격 보유.',
     ],
     [
@@ -1547,12 +1587,12 @@ async function seedAccounts(connection: Conn) {
     [
       '조현우',
       'male',
-      1998,
+      1964,
       185,
       '서울',
       ['강인한', '도시적인'],
       ['무술', '액션', '운전'],
-      [6],
+      [12],
       '무술 유단자, 액션 단편 3편.',
     ],
   ];
