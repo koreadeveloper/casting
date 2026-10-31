@@ -885,6 +885,23 @@
   }
 }
 
+/* 배우용 요금 안내 아래 '제작자로 보기' */
+.pricingSwitch {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.pricingSwitch button {
+  border: 0;
+  background: none;
+  padding: 12px 4px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* ── 마지막: 서비스 시작 ───────────────── */
 .final {
   padding: 24px 0 80px;

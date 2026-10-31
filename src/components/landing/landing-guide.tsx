@@ -295,7 +295,37 @@ export default function LandingGuide({
         </div>
       </section>
 
-      {children}
+      {/* 요금제도 고른 역할을 따른다. 배우는 요금이 없으므로 무료 범위만 짧게 알린다. */}
+      {role === 'actor' ? (
+        <section className="lp-section" id="pricing">
+          <h2>요금제</h2>
+          <div className="lp-pilot">
+            <span className="lp-pilot-tag">배우 · 언제나 무료</span>
+            <strong>배우는 모든 기능을 무료로 이용할 수 있어요.</strong>
+            <p>
+              프로필 만들기와 PDF 자동 입력, 배역 보기와 지원, 지원 현황 확인, 캐스팅 제안 받기에
+              비용이 들지 않아요. 앞으로 제작팀 요금제가 생겨도 배우에게는 요금을 받지 않아요.
+            </p>
+            {home ? (
+              <Link className="button button-primary" href={home}>
+                내 화면으로 →
+              </Link>
+            ) : (
+              <Link className="button button-primary" href="/signup/actor">
+                배우로 무료 가입하기 →
+              </Link>
+            )}
+          </div>
+          <p className={s.pricingSwitch}>
+            제작팀 요금이 궁금하다면{' '}
+            <button type="button" onClick={() => choose('producer', 'stay')}>
+              제작자로 보기
+            </button>
+          </p>
+        </section>
+      ) : (
+        children
+      )}
 
       <section className={`${s.wrap} ${s.final}`} id="start">
         <div className={s.finalCard} data-reveal="">
