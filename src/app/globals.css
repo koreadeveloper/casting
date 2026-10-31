@@ -1724,6 +1724,24 @@ img {
 .role-form label i {
   color: #9ea5b2;
 }
+/* 라벨은 세로로 쌓이는 구조라 별표·'선택'이 항목 이름 아랫줄로 떨어졌다.
+   표시가 있는 라벨은 첫 줄에 '항목 이름 + 표시'를 나란히 두고, 입력칸·안내 문구는 다음 줄부터 꽉 채운다. */
+.auth-form label:has(> em, > i),
+.role-form label:has(> em, > i) {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 4px;
+  row-gap: 6px;
+  align-items: baseline;
+}
+.auth-form label:has(> em, > i) > :not(em, i),
+.role-form label:has(> em, > i) > :not(em, i) {
+  grid-column: 1 / -1;
+}
+.auth-form label:has(> em, > i) > :is(em, i),
+.role-form label:has(> em, > i) > :is(em, i) {
+  justify-self: start;
+}
 .form-legend {
   margin: 0 0 2px;
   font-size: 11.5px;
