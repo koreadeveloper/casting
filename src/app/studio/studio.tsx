@@ -10,7 +10,13 @@ import { BrandLogo } from '@/components/brand';
 import PhotoLightbox from '@/components/photo-lightbox';
 import ProducerNav from '@/components/producer-nav';
 import type { Project } from '@/lib/accounts';
-import { dDayLabel, daysUntilResult, isResultDueSoon, kstToday } from '@/lib/result-deadline';
+import {
+  dDayLabel,
+  daysUntilResult,
+  isResultOverdue,
+  kstToday,
+  resultNoticeKind,
+} from '@/lib/result-deadline';
 import { formatDates } from '@/lib/schedule';
 import { useBackClose } from '@/lib/use-back-close';
 import { projectCover } from '@/lib/project-meta';
@@ -750,12 +756,10 @@ export default function Studio({
                   dates[0] === dates[dates.length - 1]
                     ? formattedDate(dates[0])
                     : `${formattedDate(dates[0])} – ${formattedDate(dates[dates.length - 1])}`;
-                // 결과 기준일이 3일 안으로 다가왔는데 결과 전 지원자가 남은 배역. 가장 이른 기준일을 알린다.
+                // 결과 기준일이 3일 안으로 다가왔거나 지났는데 결과 전 지원자가 남은 배역. 가장 이른 기준일을 알린다.
                 const dueSoon = project.roles
-                  .filter(
-                    (item) =>
-                      (item.pendingCount ?? 0) > 0 &&
-                      isResultDueSoon(item.resultDueDate ?? '', today),
+                  .filter((item) =>
+                    resultNoticeKind(item.resultDueDate ?? '', today, item.pendingCount ?? 0),
                   )
                   .sort((a, b) => (a.resultDueDate ?? '').localeCompare(b.resultDueDate ?? ''));
                 const pending = dueSoon.reduce((sum, item) => sum + (item.pendingCount ?? 0), 0);
@@ -810,13 +814,16 @@ export default function Studio({
                         }}
                       >
                         <strong>
-                          결과 안내 {dDayLabel(dueDays)} ·{' '}
+                          {dueDays < 0 ? '결과 기준일 지남' : `결과 안내 ${dDayLabel(dueDays)}`} ·{' '}
                           {formattedDate(firstDue.resultDueDate ?? '')}
                         </strong>
                         <span>
                           결과 전 지원자 {pending}명
-                          {pendingShortlist > 0 ? `(오디션 후보 ${pendingShortlist}명 포함)` : ''}은
-                          기준일 다음 날 자동으로 &lsquo;불합격&rsquo; 안내돼요. 결과 정하기 ›
+                          {pendingShortlist > 0 ? `(오디션 후보 ${pendingShortlist}명 포함)` : ''}
+                          {dueDays < 0
+                            ? '의 결과를 입력해 주세요. 배우에게는 ‘결과 안내 지연’으로 보여요.'
+                            : '의 결과를 기준일까지 정해 주세요.'}{' '}
+                          결과 정하기 ›
                         </span>
                       </button>
                     )}
@@ -1503,15 +1510,16 @@ export default function Studio({
               </select>
               {selected.resultAutoAt && selected.publicStage === 'not_selected' ? (
                 <p className="auto-result-note">
-                  <b>자동 안내</b> 결과 기준일이 지나 자동으로 불합격이 안내됐어요. 결과를 바꾸면
+                  <b>자동 안내</b> 예전 자동 마감 기능으로 불합격이 안내된 지원서예요. 결과를 바꾸면
                   배우의 지원 현황에 바로 반영돼요.
                 </p>
               ) : (
                 selected.publicStage === 'received' &&
                 role?.resultDueDate && (
                   <p className="auto-result-note">
-                    결과 기준일 {formattedDate(role.resultDueDate)}이 지나도록 결과를 정하지 않으면
-                    다음 날 자동으로 불합격이 안내돼요.
+                    {isResultOverdue(role.resultDueDate, today)
+                      ? `결과 기준일 ${formattedDate(role.resultDueDate)}이 지났어요. 배우에게는 ‘결과 안내 지연’으로 보이니 결과를 입력해 주세요.`
+                      : `결과 기준일 ${formattedDate(role.resultDueDate)}이 지나도록 결과를 정하지 않으면 배우에게 ‘결과 안내 지연’으로 보여요. 결과는 자동으로 정해지지 않아요.`}
                   </p>
                 )
               )}

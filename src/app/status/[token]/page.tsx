@@ -1,12 +1,6 @@
 import Link from 'next/link';
-import {
-  closeOverdueResults,
-  getApplicationByReceipt,
-  getLatestOffer,
-  getRoleById,
-  listAttendance,
-} from '@/lib/db';
-import { kstToday } from '@/lib/result-deadline';
+import { getApplicationByReceipt, getLatestOffer, getRoleById, listAttendance } from '@/lib/db';
+import { isResultDelayed, kstToday } from '@/lib/result-deadline';
 import {
   isAttendanceAskOpen,
   nextShootDate,
@@ -14,7 +8,13 @@ import {
   shootDayLabel,
 } from '@/lib/attendance';
 import AttendanceCard from '@/components/attendance-card';
-import { actorStageInfo, actorStageMessage, actorStageOf, type ActorStage } from '@/lib/types';
+import {
+  RESULT_DELAYED_LABEL,
+  actorStageInfo,
+  actorStageMessage,
+  actorStageOf,
+  type ActorStage,
+} from '@/lib/types';
 import ChatThread from '@/components/chat-thread';
 import OfferResponse from '@/components/offer-response';
 import { projectCover } from '@/lib/project-meta';
@@ -63,17 +63,16 @@ function ReceiptNotFound() {
 
 export default async function StatusPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const found = await getApplicationByReceipt(token);
-  if (!found) return <ReceiptNotFound />;
-  // 결과 기준일이 지났는데 아직 결과 전이면 여기서 자동으로 결과를 안내한다.
-  const closed = await closeOverdueResults({ applicationId: found.id }, kstToday());
-  const application = closed ? ((await getApplicationByReceipt(token)) ?? found) : found;
+  const application = await getApplicationByReceipt(token);
+  if (!application) return <ReceiptNotFound />;
   const role = await getRoleById(application.roleId);
   if (!role) return <ReceiptNotFound />;
   const resultDue = role.resultDueDate || role.announcementDate;
   const offer = await getLatestOffer(application.id);
-  // 출연 확정(합격)이면 다음 촬영일의 참석 재확인 카드를 띄운다.
   const today = kstToday();
+  // 결과 기준일이 지났는데 결과 전이면 결과를 대신 정하지 않고 '결과 안내 지연'으로 알린다.
+  const delayed = isResultDelayed(application.publicStage, role.resultDueDate ?? '', today);
+  // 출연 확정(합격)이면 다음 촬영일의 참석 재확인 카드를 띄운다.
   const nextShoot = application.publicStage === 'cast' ? nextShootDate(role.shootDates, today) : '';
   const attendance = nextShoot ? await listAttendance(application.id) : [];
   return (
@@ -113,8 +112,9 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
         </div>
         <StageProgress
           stage={actorStageOf(application)}
-          message={actorStageMessage(application)}
+          message={actorStageMessage(application, delayed)}
           auto={Boolean(application.resultAutoAt) && application.publicStage === 'not_selected'}
+          delayed={delayed}
         />
         {nextShoot && (
           <AttendanceCard
@@ -142,10 +142,10 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
           </div>
         </div>
         <p className="small-note">
-          {application.publicStage === 'received' && role.resultDueDate && (
+          {application.publicStage === 'received' && role.resultDueDate && !delayed && (
             <>
-              결과 안내 예정일이 지나도록 결과가 정해지지 않으면 다음 날 자동으로 결과가 안내돼요.
-              무작정 기다리지 않아도 돼요.
+              결과 안내 예정일이 지나도록 결과가 정해지지 않으면 &lsquo;결과 안내 지연&rsquo;으로
+              표시하고, 제작진에게 결과 입력을 요청해요.
               <br />
             </>
           )}
@@ -184,11 +184,14 @@ function StageProgress({
   stage,
   message,
   auto,
+  delayed,
 }: {
   stage: ActorStage;
   message: string;
-  /** 결과 기준일이 지나 자동으로 안내된 결과인지 */
+  /** 예전 자동 마감으로 안내된 결과인지(과거 기록) */
   auto: boolean;
+  /** 결과 기준일이 지났는데 아직 결과 전인지 */
+  delayed: boolean;
 }) {
   const done = stage === 'cast' || stage === 'not_selected';
   const current = done ? 3 : STAGE_STEPS.findIndex((step) => step.key === stage);
@@ -201,6 +204,7 @@ function StageProgress({
           <strong>
             {info.label}
             {auto && <small className="auto-tag">자동 안내</small>}
+            {delayed && <small className="auto-tag">{RESULT_DELAYED_LABEL}</small>}
           </strong>
           <p>{message}</p>
         </div>

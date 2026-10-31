@@ -1043,9 +1043,9 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                     {resultDue
                       ? `결과 기준일은 ${formatPeriod(resultDue)}${resultDue !== draft.announcementDate ? '(오디션 종료일)' : ''}이에요. `
                       : '결과 안내일(오디션 종료일이 더 늦으면 그날)이 결과 기준일이에요. '}
-                    배우가 무기한 기다리지 않도록, 이날까지 결과를 정하지 않은 지원자에게는 다음 날
-                    자동으로 &lsquo;불합격&rsquo;이 안내돼요. {RESULT_WARNING_DAYS}일 전부터
-                    스튜디오와 알림에서 미리 알려 드리고, 기준일을 미루면 자동 안내도 함께 미뤄져요.
+                    배우가 무기한 기다리지 않도록 {RESULT_WARNING_DAYS}일 전부터 스튜디오와 알림에서
+                    결과 입력을 요청드려요. 이날이 지나도 결과를 정하지 않은 지원자에게는
+                    &lsquo;결과 안내 지연&rsquo;으로 보이며, 결과가 자동으로 정해지지는 않아요.
                   </p>
                   <label>
                     출연료·교통·식비 <em>*</em>

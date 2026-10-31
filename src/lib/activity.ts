@@ -7,9 +7,9 @@ import { matchNotice, matchRoleForActor, type MatchProfileInput } from './match'
 import {
   dDayLabel,
   daysUntilResult,
-  isResultDueSoon,
   kstToday,
   resultDueDate,
+  resultNoticeKind,
 } from './result-deadline';
 
 export type ActivityItem = {
@@ -177,8 +177,10 @@ export async function producerFeed(ownerId: string): Promise<ActivityFeed> {
     });
   }
 
-  // 결과 자동 안내 미리 알림: 결과 기준일이 며칠 안으로 다가왔는데 결과 전 지원자가 남은 배역.
+  // 결과 입력 알림: 결과 기준일이 며칠 안으로 다가왔거나 이미 지났는데 결과 전 지원자가 남은 배역.
   // 할 일이라 배지 수에도 넣는다. (보관한 프로젝트는 접수가 마감돼 있어도 결과는 남아 있으니 함께 알린다)
+  // 알림은 저장하지 않고 매번 현재 상태에서 만들며, id가 배역마다 하나라 같은 알림이 쌓이지 않는다.
+  // 결과를 입력하면(결과 전 지원자가 0명이 되면) 알림도 사라진다.
   const today = kstToday();
   const pendingRoles = (await db()
     .prepare(
@@ -196,19 +198,24 @@ export async function producerFeed(ownerId: string): Promise<ActivityFeed> {
   for (const row of pendingRoles) {
     const due = resultDueDate(str(row.announcement_date), str(row.audition_end));
     const days = daysUntilResult(due, today);
-    if (days === null || !isResultDueSoon(due, today)) continue;
+    const pending = Number(row.pending);
+    const kind = resultNoticeKind(due, today, pending);
+    if (days === null || !kind) continue;
     warnings += 1;
     items.push({
       id: `due-${str(row.id)}`,
-      icon: '⚡',
-      text: `‘${str(row.title)}’ 결과 안내 ${dDayLabel(days)} — 결과 전 ${Number(row.pending)}명은 기준일 다음 날 자동으로 불합격 안내돼요`,
+      icon: kind === 'overdue' ? '⏰' : '⚡',
+      text:
+        kind === 'overdue'
+          ? `‘${str(row.title)}’ 결과 기준일이 지났어요 — 결과 전 ${pending}명의 결과를 입력해 주세요. 배우에게는 ‘결과 안내 지연’으로 보여요`
+          : `‘${str(row.title)}’ 결과 안내 ${dDayLabel(days)} — 결과 전 ${pending}명의 결과를 정해 주세요`,
       href: `/studio?tab=applicants&role=${encodeURIComponent(str(row.id))}`,
       // 해야 할 일이라 목록 맨 위에 둔다.
       at: new Date().toISOString(),
     });
   }
 
-  // 자동으로 결과를 안내한 기록(최근 7일): 제작진이 무슨 일이 있었는지 알 수 있게.
+  // 예전 자동 마감 기능이 남긴 기록(최근 7일). 새로 생기지는 않고, 과거 기록만 보여 준다.
   const autoClosed = (await db()
     .prepare(
       `SELECT e.role_id, r.title, COUNT(*) n, MAX(e.created_at) at

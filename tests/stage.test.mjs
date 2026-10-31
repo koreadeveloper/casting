@@ -8,6 +8,8 @@ import {
 } from '../src/lib/project-meta.ts';
 import {
   AUTO_RESULT_MESSAGE,
+  RESULT_DELAYED_LABEL,
+  RESULT_DELAYED_MESSAGE,
   actorStageInfo,
   actorStageMessage,
   actorStageOf,
@@ -64,6 +66,25 @@ test('지원 현황: 자동으로 안내된 불합격은 그렇다는 걸 알려
     actorStageMessage({ publicStage: 'received', viewedAt: null, resultAutoAt: null }),
     actorStageInfo.unread.message,
   );
+});
+
+test('지원 현황: 기준일이 지나도 결과 전이면 불합격이 아니라 결과 안내 지연', () => {
+  const pending = { publicStage: 'received', viewedAt: 'x', resultAutoAt: null };
+  // 단계는 여전히 결과 전(검토 중)이다 — 날짜만으로 불합격이 되지 않는다
+  assert.equal(actorStageOf(pending), 'reviewing');
+  assert.equal(actorStageMessage(pending, true), RESULT_DELAYED_MESSAGE);
+  assert.notEqual(actorStageMessage(pending, true), actorStageInfo.not_selected.message);
+  assert.equal(actorStageMessage(pending, false), actorStageInfo.reviewing.message);
+  // 제작진이 정한 결과는 지연 여부와 상관없이 그대로 보인다
+  assert.equal(
+    actorStageMessage({ publicStage: 'cast', viewedAt: 'x', resultAutoAt: null }, true),
+    actorStageInfo.cast.message,
+  );
+  assert.equal(
+    actorStageMessage({ publicStage: 'not_selected', viewedAt: 'x', resultAutoAt: null }, true),
+    actorStageInfo.not_selected.message,
+  );
+  assert.equal(RESULT_DELAYED_LABEL, '결과 안내 지연');
 });
 
 test('프로젝트 정리: 지원서나 제안이 있으면 보관만, 없으면 삭제', () => {

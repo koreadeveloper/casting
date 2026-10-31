@@ -78,8 +78,10 @@ export type Application = {
   publicStage: PublicStage;
   /** 제작진이 지원서를 처음 연 시각. null이면 미열람. */
   viewedAt: string | null;
-  /** 결과 기준일이 지나 자동으로 결과를 안내한 시각. 제작진이 직접 정하면 null. */
+  /** 예전 자동 마감 기능으로 불합격이 안내된 시각(과거 기록). 제작진이 직접 정하면 null. */
   resultAutoAt: string | null;
+  /** 배역의 결과 기준일. 배우 지원 목록처럼 함께 불러온 경우에만 있다. */
+  resultDueDate?: string;
   receiptToken: string;
   createdAt: string;
   updatedAt: string;
@@ -164,15 +166,28 @@ export function actorStageOf(
   return application.viewedAt ? 'reviewing' : 'unread';
 }
 
-/** 결과 기준일이 지나 자동으로 불합격을 안내했을 때 배우에게 보여 줄 말 */
+/**
+ * 예전 방식(기준일이 지나면 자동 불합격)으로 이미 마감된 지원서에 보여 줄 말.
+ * 지금은 자동으로 불합격을 정하지 않지만, 과거 기록은 바꾸지 않고 그대로 설명한다.
+ */
 export const AUTO_RESULT_MESSAGE =
   '결과 안내일까지 제작진이 결과를 정하지 않아, 이번 지원은 불합격으로 마감되었어요.';
 
-/** 배우에게 보여 줄 단계 설명. 자동으로 안내된 결과는 그렇다는 걸 알려 준다. */
+/** 결과 기준일이 지났는데 제작진이 아직 결과를 정하지 않았을 때 */
+export const RESULT_DELAYED_LABEL = '결과 안내 지연';
+export const RESULT_DELAYED_MESSAGE =
+  '결과 안내가 지연되고 있습니다. 제작진에게 결과 입력을 요청해 두었어요.';
+
+/**
+ * 배우에게 보여 줄 단계 설명.
+ * delayed: 결과 전인데 결과 기준일이 지남(isResultDelayed). 결과를 대신 정하지 않고 지연으로 알린다.
+ */
 export function actorStageMessage(
   application: Pick<Application, 'publicStage' | 'viewedAt' | 'resultAutoAt'>,
+  delayed = false,
 ) {
   const stage = actorStageOf(application);
   if (stage === 'not_selected' && application.resultAutoAt) return AUTO_RESULT_MESSAGE;
+  if (delayed && application.publicStage === 'received') return RESULT_DELAYED_MESSAGE;
   return actorStageInfo[stage].message;
 }

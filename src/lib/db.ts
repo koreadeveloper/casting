@@ -242,7 +242,7 @@ async function initialize(database: Conn) {
     await addColumn(database, 'roles', 'special_note', text);
     // 프로젝트 보관(숨김): 보관한 시각. 비어 있으면 진행 중. 지원자가 있는 프로젝트는 지우지 않고 보관한다.
     await addColumn(database, 'projects', 'archived_at', 'TEXT');
-    // 결과 자동 안내: 결과 기준일이 지나 자동으로 불합격을 안내한 시각. 제작진이 직접 정하면 비운다.
+    // 예전 자동 마감 기능이 불합격을 안내한 시각(과거 기록 보존용, 새로 채우지 않음). 제작진이 직접 정하면 비운다.
     await addColumn(database, 'applications', 'result_auto_at', 'TEXT');
     // 작품 포스터: /api/uploads/ 사진 주소. 비어 있으면 형식별 기본 커버(projectCover)를 쓴다.
     await addColumn(database, 'projects', 'poster_url', text);
@@ -915,12 +915,23 @@ export async function listActorApplications(actorId: string) {
   return (
     await db()
       .prepare(
-        `SELECT applications.*, roles.title role_title, roles.project_title
+        `SELECT applications.*, roles.title role_title, roles.project_title, roles.announcement_date,
+        (SELECT p.audition_end FROM projects p WHERE p.id=roles.project_id) project_audition_end
       FROM applications JOIN roles ON roles.id=applications.role_id
       WHERE applications.actor_id=? ORDER BY applications.created_at DESC`,
       )
       .all(actorId)
-  ).map((row) => appFromRow(row as Record<string, unknown>));
+  ).map((row) => {
+    const item = row as Record<string, unknown>;
+    // 결과 기준일을 함께 넘겨 배우 목록에서도 '결과 안내 지연'을 보여 줄 수 있게 한다.
+    return {
+      ...appFromRow(item),
+      resultDueDate: resultDueDate(
+        String(item.announcement_date ?? ''),
+        String(item.project_audition_end ?? ''),
+      ),
+    };
+  });
 }
 
 /**
@@ -1087,47 +1098,9 @@ export async function markApplicationViewed(id: string) {
   return result.changes > 0;
 }
 
-/** 결과 자동 안내를 확인할 범위: 지원서 하나, 한 배우의 지원서, 한 제작자 배역의 지원서. */
-export type OverdueScope = { applicationId: string } | { actorId: string } | { ownerId: string };
-
-// YYYY-MM-DD 모양일 때만 날짜로 본다. 예전 공고의 '11월 20일' 같은 글자 값은 글자 비교가 틀리므로 뺀다.
-const ISO_DATE_SQL = `'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'`;
-
-/**
- * 결과 자동 안내. 결과 기준일(결과 안내일, 오디션 종료일이 더 늦으면 그날)이 지났는데
- * 아직 결과 전(received)인 지원서를 '불합격'으로 공개한다. (기준 계산은 result-deadline.ts와 같다)
- *
- * 따로 예약 작업을 두지 않고 페이지를 열 때 그 사람의 기록만 확인한다:
- * 배우 지원 현황(지원서 하나)·배우 홈(그 배우)·제작자 스튜디오(그 제작자).
- * today는 한국 날짜(kstToday). 처리한 지원서 수를 돌려준다.
- */
-export async function closeOverdueResults(scope: OverdueScope, today: string) {
-  const now = new Date().toISOString();
-  const [appFilter, roleFilter, value] =
-    'applicationId' in scope
-      ? ['AND applications.id=?', '', scope.applicationId]
-      : 'actorId' in scope
-        ? ['AND applications.actor_id=?', '', scope.actorId]
-        : ['', 'AND r.owner_id=?', scope.ownerId];
-  const dueRoles = `SELECT r.id FROM roles r LEFT JOIN projects p ON p.id=r.project_id
-    WHERE r.announcement_date ~ ${ISO_DATE_SQL}
-      AND GREATEST(r.announcement_date,
-        CASE WHEN p.audition_end ~ ${ISO_DATE_SQL} THEN p.audition_end ELSE '' END) < ?
-      ${roleFilter}`;
-  const closed = (await db()
-    .prepare(
-      `UPDATE applications SET public_stage='not_selected', result_auto_at=?, updated_at=?
-      WHERE public_stage='received' ${appFilter} AND role_id IN (${dueRoles})
-      RETURNING id, role_id`,
-    )
-    // 자리표시자 순서: SET 2개 → (지원서 범위) → 기준일 → (제작자 범위)
-    .all(now, now, ...(appFilter ? [value, today] : [today, value]))) as {
-    id: string;
-    role_id: string;
-  }[];
-  for (const row of closed) await recordEvent(row.role_id, row.id, 'public_result_auto');
-  return closed.length;
-}
+// 결과 기준일이 지나도 결과를 자동으로 정하거나 공개하지 않는다(예전 자동 불합격 처리는 없앴다).
+// 배우 화면의 '결과 안내 지연' 표시는 result-deadline.ts의 isResultDelayed,
+// 제작진의 결과 입력 요청은 activity.ts의 결과 알림이 맡는다. 결과는 updateApplication으로만 바뀐다.
 
 export async function recordEvent(roleId: string, applicationId: string | null, name: string) {
   await db()

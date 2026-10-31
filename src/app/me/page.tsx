@@ -11,13 +11,13 @@ import RoleCard from '@/components/role-card';
 import TrustBadges from '@/components/trust-badges';
 import { getProducerBadges } from '@/lib/verifications';
 import RoleSearchForm from '@/components/role-search-form';
-import { closeOverdueResults, listActorApplications, searchOpenRoles } from '@/lib/db';
+import { listActorApplications, searchOpenRoles } from '@/lib/db';
 import { matchRoleForActor } from '@/lib/match';
 import { profileCompletion } from '@/lib/profile';
 import { ROLE_FILTER_OPTIONS } from '@/lib/project-meta';
-import { kstToday } from '@/lib/result-deadline';
+import { isResultDelayed, kstToday } from '@/lib/result-deadline';
 import { hasRoleFilters, parseRoleFilters } from '@/lib/role-search';
-import { actorStageInfo, actorStageOf } from '@/lib/types';
+import { RESULT_DELAYED_LABEL, actorStageInfo, actorStageOf } from '@/lib/types';
 import ProposalActions from './proposal-actions';
 
 export const dynamic = 'force-dynamic';
@@ -40,9 +40,9 @@ export default async function ActorHome({
   const profile = await getProfile(user.id);
   const completion = profile ? profileCompletion(profile) : 0;
   const proposals = await listActorProposals(user.id);
-  // 결과 기준일이 지나도록 결과가 없는 내 지원서는 여기서 자동으로 결과를 안내한다.
-  await closeOverdueResults({ actorId: user.id }, kstToday());
   const applications = await listActorApplications(user.id);
+  // 결과 기준일이 지났는데 결과 전인 지원서는 '결과 안내 지연'으로 보여 준다(결과를 대신 정하지 않는다).
+  const today = kstToday();
   const appliedRoleIds = new Set(applications.map((item) => item.roleId));
   const filters = parseRoleFilters(await searchParams, ROLE_FILTER_OPTIONS);
   const searching = hasRoleFilters(filters);
@@ -153,7 +153,10 @@ export default async function ActorHome({
               <span className="txt">
                 {item.projectTitle} · {item.roleTitle}
                 <small>
-                  {actorStageInfo[actorStageOf(item)].label} ·{' '}
+                  {isResultDelayed(item.publicStage, item.resultDueDate ?? '', today)
+                    ? RESULT_DELAYED_LABEL
+                    : actorStageInfo[actorStageOf(item)].label}{' '}
+                  ·{' '}
                   {new Date(item.createdAt).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' })}{' '}
                   접수
                 </small>

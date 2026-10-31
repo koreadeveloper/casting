@@ -1,9 +1,10 @@
-// 결과 자동 안내 기준. 순수 함수만 둔다.
+// 결과 기준일 계산. 순수 함수만 둔다.
 // (리프 모듈 유지: node --test에서 바로 불러오도록 lib 내부 import를 두지 않는다)
 //
 // 제작진이 결과를 정하지 않으면 배우가 무기한 기다리게 된다.
-// 그래서 '결과 기준일'(결과 안내일, 오디션 종료일이 더 늦으면 그날)의 다음 날이 되면
-// 아직 결과 전인 지원자에게 자동으로 '불합격'을 안내한다. 제작진에게는 며칠 전부터 미리 알린다.
+// '결과 기준일'(결과 안내일, 오디션 종료일이 더 늦으면 그날)이 지나도 결과 전이면
+// 배우에게는 '결과 안내 지연'으로 보여 주고, 제작진에게는 결과 입력을 요청한다.
+// 날짜가 지났다는 이유만으로 불합격을 정하거나 공개하지 않는다. 결과는 제작진만 정한다.
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -36,7 +37,7 @@ export function resultDueDate(announcementDate: string, auditionEnd = '') {
   return isIsoDate(announcementDate) ? dates[dates.length - 1] : '';
 }
 
-/** 기준일 다음 날부터 자동 안내 대상이다. 기준일 당일까지는 제작진이 정할 수 있다. */
+/** 기준일이 지났는지. 기준일 당일까지는 지연이 아니다. */
 export function isResultOverdue(due: string, today: string) {
   return Boolean(due) && today > due;
 }
@@ -52,6 +53,22 @@ export function daysUntilResult(due: string, today: string): number | null {
 export function isResultDueSoon(due: string, today: string) {
   const days = daysUntilResult(due, today);
   return days !== null && days >= 0 && days <= RESULT_WARNING_DAYS;
+}
+
+/** 결과 전(received) 지원서가 기준일을 넘겨 '결과 안내 지연' 상태인지 */
+export function isResultDelayed(publicStage: string, due: string, today: string) {
+  return publicStage === 'received' && isResultOverdue(due, today);
+}
+
+/**
+ * 제작진에게 띄울 결과 알림 종류. 결과 전 지원자가 없으면 띄우지 않는다.
+ * soon: 기준일까지 0~RESULT_WARNING_DAYS일 남음 / overdue: 기준일이 지남(결과 입력 요청)
+ */
+export function resultNoticeKind(due: string, today: string, pending: number) {
+  if (pending <= 0) return null;
+  if (isResultOverdue(due, today)) return 'overdue' as const;
+  if (isResultDueSoon(due, today)) return 'soon' as const;
+  return null;
 }
 
 /** 'D-2', 오늘이면 'D-day' */
