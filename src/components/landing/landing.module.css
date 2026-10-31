@@ -1,0 +1,1061 @@
+/* 첫 화면(랜딩). 제품 화면을 중심에 두고, 큰 제목·넉넉한 여백·짧은 문구로 읽히게 한다.
+   색은 서비스 팔레트(아이스 화이트·옵시디언·라임)만 쓴다. */
+
+.wrap {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ── 첫 화면 ───────────────────────────── */
+.hero {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 20px 20px 56px;
+  display: grid;
+  gap: 36px;
+}
+.heroCopy > * {
+  animation: rise 0.7s var(--ease) both;
+}
+.heroCopy > :nth-child(2) {
+  animation-delay: 0.06s;
+}
+.heroCopy > :nth-child(3) {
+  animation-delay: 0.12s;
+}
+.heroCopy > :nth-child(n + 4) {
+  animation-delay: 0.18s;
+}
+.h1 {
+  font-size: clamp(38px, 6vw, 66px);
+  line-height: 1.1;
+  letter-spacing: -0.045em;
+  font-weight: 850;
+  margin: 18px 0 18px;
+}
+.h1 em {
+  font-style: normal;
+  box-shadow: inset 0 -0.26em 0 var(--lime);
+}
+.lead {
+  font-size: clamp(16px, 1.5vw, 18px);
+  line-height: 1.7;
+  color: #474c56;
+  max-width: 33em;
+  margin: 0;
+}
+.roleButtons {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-width: 480px;
+}
+.roleBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  box-shadow: 0 10px 24px -14px #0b0d1240;
+  transition:
+    transform 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    background-color 0.18s var(--ease),
+    color 0.18s var(--ease);
+}
+.roleBtn:hover {
+  border-color: var(--obsidian);
+  transform: translateY(-1px);
+}
+.roleBtn strong {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.roleBtn small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.roleBtn[aria-pressed='true'] {
+  background: var(--obsidian);
+  border-color: var(--obsidian);
+  color: #fff;
+}
+.roleBtn[aria-pressed='true'] small {
+  color: #c4cad6;
+}
+.heroNote {
+  margin: 16px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.heroNote a {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  display: inline-block;
+  padding: 10px 2px;
+}
+.homeLink {
+  margin-top: 16px;
+}
+
+/* 첫 화면 오른쪽: 두 역할의 실제 화면. 고른 역할이 앞으로 나온다. */
+.heroVisual {
+  --pw: 236;
+  position: relative;
+  height: 440px;
+  overflow: hidden;
+  animation: rise 0.9s 0.15s var(--ease) both;
+  -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent);
+  mask-image: linear-gradient(to bottom, #000 78%, transparent);
+}
+.heroVisual::before {
+  content: '';
+  position: absolute;
+  inset: 12% 8% 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #c5ff4573, transparent 70%);
+  filter: blur(8px);
+}
+.heroPhone {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transition:
+    transform 0.6s var(--ease),
+    filter 0.6s var(--ease),
+    opacity 0.6s var(--ease);
+}
+.front {
+  z-index: 2;
+  transform: translateX(-66%);
+}
+.back {
+  z-index: 1;
+  transform: translateX(-12%) translateY(34px) scale(0.9);
+  filter: saturate(0.85) brightness(0.97);
+}
+.heroCaption {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+/* ── 휴대폰 틀 ─────────────────────────── */
+.phone {
+  /* --pw(휴대폰 너비, px 숫자)는 감싸는 영역(heroVisual·stepVisual)이 화면 크기별로 정한다 */
+  width: calc(var(--pw) * 1px);
+  height: calc(var(--pw) * 2.07px);
+  flex: none;
+  padding: 9px;
+  border-radius: calc(var(--pw) * 0.15px);
+  background: linear-gradient(150deg, #2b303c, #0b0d12 55%);
+  box-shadow:
+    inset 0 0 0 1px #ffffff1f,
+    0 34px 60px -24px #0b0d1266,
+    0 14px 26px -16px #0b0d1255;
+}
+.screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: calc(var(--pw) * 0.15px - 9px);
+  background: var(--page);
+}
+.island {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 30%;
+  height: calc(var(--pw) * 0.075px);
+  transform: translateX(-50%);
+  border-radius: 20px;
+  background: #0b0d12;
+  z-index: 3;
+}
+.statusBar {
+  position: absolute;
+  top: calc(var(--pw) * 0.035px);
+  left: 9%;
+  z-index: 3;
+  font-size: calc(var(--pw) * 0.042px);
+  font-weight: 700;
+  color: var(--ink);
+}
+/* 안쪽 화면은 실제 앱과 같은 340px 너비로 그리고 틀에 맞게 줄인다 */
+.ui {
+  position: absolute;
+  top: calc(var(--pw) * 0.12px);
+  left: 0;
+  width: 340px;
+  padding: 0 18px;
+  transform-origin: top left;
+  transform: scale(calc((var(--pw) - 18) / 340));
+  pointer-events: none;
+  user-select: none;
+  text-align: left;
+}
+.ui :global(.page-title) {
+  margin-bottom: 14px;
+}
+.ui :global(.greet-sub) {
+  margin-top: 0;
+}
+.ui :global(.actor-grid) {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 10px;
+  margin: 0;
+}
+.ui :global(.pcard) {
+  margin-bottom: 10px;
+}
+.ui :global(.section-head) {
+  margin: 20px 0 10px;
+}
+.ui :global(.mini-proj) {
+  padding: 8px 0 16px;
+}
+.ui :global(.info-panel) {
+  margin: 16px 0;
+}
+.ui :global(.draft-result) {
+  margin-top: 12px;
+}
+.uiLogo {
+  margin-bottom: 10px;
+}
+.uiBack {
+  margin: 4px 0 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.uiTitle {
+  margin-bottom: 2px;
+}
+.uiSection :global(.muted) {
+  font-size: 12px;
+}
+.uiChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.chip,
+.chipOn {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--muted);
+}
+.chipOn {
+  background: var(--obsidian);
+  border-color: var(--obsidian);
+  color: var(--lime);
+}
+.uiRoleBox {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+}
+.uiRoleHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.uiRoleHead strong {
+  display: block;
+  font-size: 14px;
+}
+.uiRoleHead small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.uiLive {
+  flex: none;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: var(--obsidian);
+  color: var(--lime);
+}
+.uiBtnRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+.uiBtnRow span {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  padding: 9px 2px;
+  border-radius: 10px;
+  background: var(--lavender);
+}
+.uiStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 12px 0;
+}
+.uiStats div {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 4px;
+  text-align: center;
+}
+.uiStats b {
+  display: block;
+  font-family: var(--mono);
+  font-size: 22px;
+}
+.uiStats span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.uiList {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 4px 12px;
+}
+.uiPerson {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+}
+.uiPerson + .uiPerson {
+  border-top: 1px solid var(--line);
+}
+.uiPerson img,
+.uiBoardCard img {
+  width: 44px;
+  height: 52px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex: none;
+}
+.uiPerson div,
+.uiBoardCard div {
+  flex: 1;
+  min-width: 0;
+}
+.uiPerson strong,
+.uiBoardCard strong {
+  display: block;
+  font-size: 14px;
+}
+.uiPerson small,
+.uiBoardCard small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.uiMembers {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.uiAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  background: #fff;
+  border: 2px solid var(--obsidian);
+}
+.uiAvatarAlt {
+  background: var(--lime);
+}
+.uiInvite {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--chrome);
+  color: var(--muted);
+}
+.uiStages {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.uiStages div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.uiStages small {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--faint);
+}
+.uiStages span {
+  font-size: 12px;
+  font-weight: 700;
+}
+.uiStages b {
+  font-family: var(--mono);
+  font-size: 18px;
+}
+.uiStageOn small::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 0 1px var(--obsidian);
+}
+.uiBoardCard {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 10px;
+  margin-top: 8px;
+}
+.uiHearts {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ec4f7a;
+}
+.uiMemo {
+  margin: 6px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--lavender);
+  font-size: 12px;
+  line-height: 1.55;
+  color: #474c56;
+}
+.uiMemo b {
+  color: var(--ink);
+  margin-right: 4px;
+}
+.uiMoveRow {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+.uiMoveRow span {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px 11px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.uiMoveRow .uiMoveOn {
+  background: var(--obsidian);
+  border-color: var(--obsidian);
+  color: var(--lime);
+}
+.uiRound {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.uiRound span {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--lavender);
+}
+.uiRound small {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.uiProgress {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--lavender);
+  margin: 12px 0 16px;
+  overflow: hidden;
+}
+.uiProgress i {
+  display: block;
+  height: 100%;
+  background: var(--obsidian);
+}
+.uiVs {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.uiPick {
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  text-align: center;
+  padding-bottom: 12px;
+}
+.uiPick img {
+  width: 100%;
+  aspect-ratio: 4 / 4.6;
+  object-fit: cover;
+}
+.uiPick strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 15px;
+}
+.uiPick small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.uiPick p {
+  margin: 4px 8px 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #6d727d;
+}
+.uiVsBadge {
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--lime);
+  border: 3px solid #fff;
+  font-weight: 900;
+  font-size: 14px;
+  box-shadow: 0 6px 16px #0b0d1233;
+}
+.uiHint {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+.uiCard {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+}
+.uiCardTitle {
+  display: block;
+  font-size: 15px;
+}
+.uiCardTitle small {
+  margin-left: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.uiCardNote {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.uiFile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--page);
+  font-size: 12px;
+  font-weight: 700;
+}
+.uiFile span {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: var(--obsidian);
+  color: var(--lime);
+}
+.uiCheck {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  background: var(--obsidian);
+  color: var(--lime);
+  font-size: 10px;
+  font-weight: 900;
+}
+.uiFull {
+  width: 100%;
+  margin-top: 10px;
+}
+.uiSlots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.uiSlots span {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--page);
+}
+.uiSlots .uiSlotOn {
+  background: var(--obsidian);
+  border-color: var(--obsidian);
+  color: var(--lime);
+}
+
+/* ── 역할별 안내 ───────────────────────── */
+.guide {
+  padding: 40px 0 24px;
+  scroll-margin-top: 0;
+}
+/* 역할 전환 버튼: 안내를 읽는 동안 화면 위쪽에 따라온다 */
+.switchBar {
+  position: sticky;
+  top: 12px;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  padding: 0 20px;
+  margin-bottom: 44px;
+  pointer-events: none;
+}
+.switch {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 999px;
+  background: #ffffffd9;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 28px -14px #0b0d1240;
+}
+.switchLabel {
+  padding: 0 10px 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.switch button {
+  min-height: 46px;
+  min-width: 118px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition:
+    background-color 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+.switch button:hover {
+  color: var(--ink);
+}
+.switch button[aria-pressed='true'] {
+  background: var(--obsidian);
+  color: #fff;
+}
+.switch button[aria-pressed='true']::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 8px var(--lime-glow);
+}
+
+.swap {
+  animation: swapIn 0.45s var(--ease) both;
+}
+.guideHead {
+  max-width: 760px;
+  margin: 0 auto 64px;
+  text-align: center;
+}
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 13px 6px 8px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 800;
+}
+.guideHead h2 {
+  margin: 18px 0 14px;
+  font-size: clamp(30px, 4.4vw, 50px);
+  line-height: 1.16;
+  letter-spacing: -0.045em;
+  font-weight: 850;
+  white-space: pre-line;
+}
+.guideHead p {
+  margin: 0 auto;
+  max-width: 34em;
+  font-size: clamp(16px, 1.5vw, 18px);
+  line-height: 1.7;
+  color: #474c56;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+}
+.step {
+  display: grid;
+  gap: 24px;
+  align-items: center;
+}
+.stepNo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.stepNo::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--lime);
+  box-shadow: 0 0 0 1px var(--obsidian);
+}
+.stepTitle {
+  margin: 12px 0 12px;
+  font-size: clamp(26px, 3.1vw, 36px);
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+  font-weight: 800;
+}
+.stepDesc {
+  margin: 0;
+  max-width: 30em;
+  font-size: 16px;
+  line-height: 1.75;
+  color: #474c56;
+}
+.outcome {
+  margin: 20px 0 0;
+  max-width: 30em;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+.outcome b {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 3px 7px;
+  margin-top: 1px;
+  border-radius: 6px;
+  background: var(--obsidian);
+  color: var(--lime);
+}
+.stepVisual {
+  --pw: 268;
+  position: relative;
+  height: 400px;
+  overflow: hidden;
+  border-radius: 28px;
+  padding-top: 36px;
+  display: flex;
+  justify-content: center;
+}
+.tone-ice {
+  background: linear-gradient(165deg, #ffffff, #e2e7f1);
+  border: 1px solid var(--line);
+}
+.tone-lime {
+  background: radial-gradient(120% 80% at 20% 0%, #e4ffad 0%, transparent 60%), var(--lime);
+}
+.tone-dark {
+  background: radial-gradient(90% 70% at 80% 0%, #2a3142 0%, transparent 65%), var(--obsidian);
+}
+.tone-dark .phone {
+  box-shadow:
+    inset 0 0 0 1px #ffffff2e,
+    0 0 0 1px #ffffff14,
+    0 34px 60px -24px #000000;
+}
+.sample {
+  position: absolute;
+  /* 휴대폰 위쪽 여백에 두어 화면 내용을 가리지 않게 한다 */
+  right: 14px;
+  top: 9px;
+  z-index: 2;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #ffffffd9;
+  color: var(--muted);
+}
+
+/* 스크롤에 맞춰 살짝 떠오르며 나타난다. 자바스크립트가 준비된 뒤(armed)에만 숨기므로 내용이 사라질 일은 없다. */
+@media (prefers-reduced-motion: no-preference) {
+  .armed [data-reveal] {
+    transition:
+      opacity 0.75s var(--ease),
+      transform 0.75s var(--ease);
+  }
+  .armed [data-reveal]:not([data-in]) {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  .armed [data-reveal='late'] {
+    transition-delay: 0.12s;
+  }
+}
+
+/* ── 마지막: 서비스 시작 ───────────────── */
+.final {
+  padding: 24px 0 80px;
+}
+.finalCard {
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  padding: 56px 22px;
+  text-align: center;
+  color: #fff;
+  background:
+    radial-gradient(70% 90% at 50% 120%, #c5ff4533 0%, transparent 60%),
+    radial-gradient(60% 60% at 90% 0%, #2a3142 0%, transparent 70%), var(--obsidian);
+}
+.finalCard h2 {
+  margin: 16px 0 14px;
+  font-size: clamp(30px, 4.4vw, 48px);
+  line-height: 1.18;
+  letter-spacing: -0.045em;
+  font-weight: 850;
+  white-space: pre-line;
+}
+.finalCard > p {
+  margin: 0 auto;
+  max-width: 30em;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #c4cad6;
+}
+.finalKicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 13px 6px 8px;
+  border-radius: 999px;
+  background: #ffffff14;
+  border: 1px solid #ffffff24;
+  font-size: 13px;
+  font-weight: 800;
+}
+.finalActions {
+  margin-top: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.finalActions a {
+  min-height: 54px;
+  padding: 0 24px;
+  font-size: 15.5px;
+}
+.ctaMain {
+  background: var(--lime) !important;
+  color: var(--obsidian) !important;
+  box-shadow: 0 10px 30px -8px #c5ff4580 !important;
+}
+.ctaMain:hover {
+  background: #d4ff70 !important;
+}
+.ctaSub {
+  background: transparent !important;
+  color: #fff !important;
+  border-color: #ffffff3d !important;
+}
+.ctaSub:hover {
+  border-color: #fff !important;
+}
+.finalSwitch {
+  margin: 22px 0 0;
+  font-size: 14px;
+  color: #c4cad6;
+}
+.finalSwitch button,
+.finalSwitch a {
+  border: 0;
+  background: none;
+  color: var(--lime);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 12px 4px;
+  font-size: 14px;
+}
+.finalSwitch span {
+  margin: 0 6px;
+  opacity: 0.4;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+@keyframes swapIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ── 화면 크기별 ───────────────────────── */
+@media (max-width: 519px) {
+  .roleBtn {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px 14px;
+  }
+  .roleBtn strong {
+    font-size: 15px;
+  }
+  .switchLabel {
+    display: none;
+  }
+  .switch button {
+    min-width: 0;
+    flex: 1;
+    padding: 0 20px;
+  }
+}
+@media (min-width: 520px) {
+  .heroVisual {
+    --pw: 270;
+    height: 500px;
+  }
+  .stepVisual {
+    --pw: 290;
+    height: 460px;
+  }
+}
+@media (min-width: 960px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
+    align-items: center;
+    gap: 40px;
+    padding: 44px 32px 96px;
+  }
+  .heroVisual {
+    --pw: 290;
+    height: 600px;
+  }
+  .wrap {
+    padding: 0 32px;
+  }
+  .guide {
+    padding-top: 56px;
+  }
+  .guideHead {
+    margin-bottom: 96px;
+  }
+  .steps {
+    gap: 120px;
+  }
+  .step {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+    gap: 72px;
+  }
+  .step:nth-child(even) .stepText {
+    order: 2;
+  }
+  .stepVisual {
+    --pw: 320;
+    height: 540px;
+    padding-top: 48px;
+  }
+  .final {
+    padding: 56px 0 104px;
+  }
+  .finalCard {
+    padding: 80px 40px;
+  }
+}
