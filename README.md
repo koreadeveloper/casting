@@ -79,7 +79,7 @@ pnpm install && cp .env.example .env.local && pnpm dev
 
 **공개 화면**: 랜딩(`/`)의 역할별 이용 방법·실제 화면 미리보기, 로그인 전 제작진용 배우 프로필 둘러보기(`/actors`), 이용약관(`/terms`)·개인정보처리방침(`/privacy`), 문의하기(`/contact`: 일반·오류·개인정보·신고)
 
-**계정·보안**: 이메일 가입(만 14세 이상·약관 동의), 비밀번호 재설정(`/reset`, 1회용 메일 링크), 회원 탈퇴(`/account/delete`) 시 관련 개인정보·파일 삭제, 지원 시 개인정보 수집·이용 동의, 로그인·가입·지원 요청 횟수 제한, PDF 자료는 로그인 사용자만 열람
+**계정·보안**: 이메일 가입, 구글·카카오 로그인(처음이면 역할·약관 동의 후 가입, 이메일이 같은 기존 계정에는 자동으로 합치지 않음)(만 14세 이상·약관 동의), 비밀번호 재설정(`/reset`, 1회용 메일 링크), 회원 탈퇴(`/account/delete`) 시 관련 개인정보·파일 삭제, 지원 시 개인정보 수집·이용 동의, 로그인·가입·지원 요청 횟수 제한, PDF 자료는 로그인 사용자만 열람
 
 ---
 
@@ -99,6 +99,8 @@ pnpm dev                     # http://localhost:3000
 | `DATABASE_URL` | ✅ | Supabase Postgres 연결 문자열 (대시보드 Connect → Session pooler) |
 | `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | | 사진·PDF 저장(비공개 버킷 `uploads`). 없으면 로컬 `data/uploads/` |
 | `ANTHROPIC_API_KEY` (+ `ANTHROPIC_BASE_URL`) | | AI 프로필 읽기·인증 서류 확인. 없으면 해당 기능은 '준비 중'으로 표시 |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | | 구글 로그인. 콘솔에 콜백 `…/api/auth/google/callback` 등록. 없으면 버튼이 안 보임 |
+| `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET` | | 카카오 로그인. 콜백 `…/api/auth/kakao/callback` 등록. 없으면 버튼이 안 보임 |
 | `RESEND_API_KEY`, `MAIL_FROM` | | 비밀번호 재설정·학교 메일 인증 메일 발송. 로컬에서 없으면 서버 로그에 출력 |
 | `DEMO_MODE`, `NEXT_PUBLIC_DEMO_MODE` | | `true`면 체험 모드(데모 입장 버튼·샘플 데이터). **운영에서는 비워 둡니다** |
 
@@ -147,7 +149,7 @@ src/
     actor/  actors/      # 배역 찾기(배우용) / 배우 프로필 둘러보기·상세
     apply/[slug]/        # 공개 지원 (무가입)
     status/[token]/      # 지원 현황·오디션 응답·참석 재확인
-    login/ signup/ reset/
+    login/ signup/ reset/   # signup/social: 소셜 로그인 가입 마무리
     terms/ privacy/ contact/ account/delete/   # 약관·처리방침·문의·탈퇴 (운영 정보는 lib/legal.ts)
     api/                 # roles, applications, actors, board, calendar, chat, compare, verify,
                          # attendance, recommendations, proposals, favorites, auth, me, uploads ...

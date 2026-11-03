@@ -5,9 +5,17 @@ import { useState } from 'react';
 import { Brand } from '@/components/brand';
 import { DemoEntry } from '@/components/demo-entry';
 
-export default function LoginForm({ next }: { next: string }) {
+export default function LoginForm({
+  next,
+  notice = '',
+  social = null,
+}: {
+  next: string;
+  notice?: string;
+  social?: React.ReactNode;
+}) {
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(notice);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,6 +74,14 @@ export default function LoginForm({ next }: { next: string }) {
             비밀번호를 잊으셨나요?
           </Link>
         </form>
+        {social && (
+          <>
+            <div className="divider-text">
+              <span>또는 간편하게 로그인</span>
+            </div>
+            {social}
+          </>
+        )}
         <DemoEntry caption="또는 데모로 바로 보기" />
         <p className="small-note center">
           아직 계정이 없나요? <Link href="/signup">회원가입</Link>
