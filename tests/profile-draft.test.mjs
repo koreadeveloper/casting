@@ -22,7 +22,8 @@ test('이름표가 붙은 프로필에서 기본 항목을 읽는다', () => {
   const draft = draftFromText(RESUME);
   assert.equal(draft.name?.value, '김도윤');
   assert.equal(draft.gender?.value, 'male');
-  assert.equal(draft.birthYear?.value, 1999);
+  // 날짜까지 적혀 있으면 출생 연도 대신 생년월일로 읽는다.
+  assert.equal(draft.birthDate?.value, '1999-04-12');
   assert.equal(draft.height?.value, 178);
   assert.equal(draft.weight?.value, 68);
   assert.equal(draft.region?.value, '서울');
@@ -127,4 +128,22 @@ test('AI 결과가 이상하면 범위를 벗어난 값은 버린다', () => {
     tags: 'x',
   });
   assert.equal(draftSize(draft), 0);
+});
+
+test('생년월일이 날짜까지 적혀 있으면 생년월일로 읽는다', async () => {
+  const { draftFromText, draftFromFacts, birthDateFrom } =
+    await import('../src/lib/profile-draft.ts');
+  assert.equal(birthDateFrom('1999.5.17'), '1999-05-17');
+  assert.equal(birthDateFrom('1999년 5월 17일생'), '1999-05-17');
+  assert.equal(birthDateFrom('1999-02-30'), '');
+  const draft = draftFromText('이름: 홍길동\n생년월일: 1999.05.17\n키 165cm');
+  assert.equal(draft.birthDate?.value, '1999-05-17');
+  assert.equal(draft.birthYear, undefined);
+  // 연도만 있으면 예전처럼 출생 연도
+  assert.equal(draftFromText('이름: 홍길동\n1999년생\n키 165cm').birthYear?.value, 1999);
+  assert.equal(
+    draftFromFacts({ birth_year: 1999, birth_date: '1999-05-17' }).birthDate?.value,
+    '1999-05-17',
+  );
+  assert.equal(draftFromFacts({ birth_year: 1999, birth_date: '' }).birthYear?.value, 1999);
 });

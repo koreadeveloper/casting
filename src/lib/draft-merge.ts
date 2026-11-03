@@ -5,6 +5,7 @@
 // './profile.ts'처럼 확장자를 적는 건 node --test가 이 파일을 그대로 읽을 수 있게 하려는 것이다.
 import { REGIONS, type Gender } from './profile.ts';
 import type { FilmoItem, ProfileDraft } from './profile-draft.ts';
+import { manAge } from './age.ts';
 
 export type DraftKey = keyof ProfileDraft;
 
@@ -12,6 +13,7 @@ export type DraftKey = keyof ProfileDraft;
 export const EDITABLE_DRAFT_KEYS: DraftKey[] = [
   'name',
   'gender',
+  'birthDate',
   'birthYear',
   'height',
   'weight',
@@ -52,12 +54,22 @@ export function fieldText(key: DraftKey, value: unknown): string {
   if (key === 'height') return `${value}cm`;
   if (key === 'weight') return `${value}kg`;
   if (key === 'birthYear') return `${value}년`;
+  if (key === 'birthDate') {
+    const [y, m, d] = String(value).split('-').map(Number);
+    return y && m && d ? `${y}년 ${m}월 ${d}일` : String(value);
+  }
   return String(value);
 }
 
 /** 지금 프로필의 같은 항목 값 */
 export function currentValue(profile: MergeProfile, key: DraftKey): unknown {
   return profile[key];
+}
+
+/** '지금' 칸 글자. 출생 연도는 저장해 둔 생년월일이 있으면 날짜로 보여 준다. */
+export function currentText(profile: MergeProfile, key: DraftKey): string {
+  if (key === 'birthYear' && profile.birthDate) return fieldText('birthDate', profile.birthDate);
+  return fieldText(key, currentValue(profile, key));
 }
 
 function isEmpty(value: unknown) {
@@ -82,6 +94,8 @@ export function newFilmography(current: FilmoItem[], draft: FilmoItem[]) {
 export function sameAsCurrent(profile: MergeProfile, key: DraftKey, value: unknown) {
   if (key === 'filmography')
     return newFilmography(profile.filmography, value as FilmoItem[]).length === 0;
+  // 초안이 연도만 알 때, 저장해 둔 생년월일과 연도가 같으면 바꿀 게 없다.
+  if (key === 'birthYear' && profile.birthDate) return profile.birthDate.startsWith(String(value));
   const current = currentValue(profile, key);
   if (Array.isArray(current) && Array.isArray(value))
     return current.length === value.length && current.every((item) => value.includes(item));
@@ -121,6 +135,10 @@ export function parseEdit(key: DraftKey, text: string): unknown {
       return ['female', 'male', 'other'].includes(value) ? value : undefined;
     case 'birthYear':
       return int(1930, new Date().getFullYear());
+    case 'birthDate':
+      return /^\d{4}-\d{2}-\d{2}$/.test(value) && value >= '1930-01-01' && manAge(value) !== null
+        ? value
+        : undefined;
     case 'height':
       return int(100, 230);
     case 'weight':

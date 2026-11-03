@@ -7,6 +7,7 @@ import type { ActorProfileFull, ProfileDocument } from '@/lib/accounts';
 import { readApiJson, shrinkImage } from '@/lib/image-resize';
 import type { ProfileDraft } from '@/lib/profile-draft';
 import {
+  currentText,
   defaultPick,
   EDITABLE_DRAFT_KEYS,
   editText,
@@ -50,6 +51,7 @@ const MAX_DOCUMENTS = 5;
 const DRAFT_FIELDS: [keyof ProfileDraft, string][] = [
   ['name', '이름'],
   ['gender', '성별'],
+  ['birthDate', '생년월일'],
   ['birthYear', '출생 연도'],
   ['height', '키'],
   ['weight', '몸무게'],
@@ -262,6 +264,11 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
       if (name) next.name = name;
       const gender = take('gender') as Gender | undefined;
       if (gender) next.gender = gender;
+      const birthDate = take('birthDate') as string | undefined;
+      if (birthDate) {
+        next.birthDate = birthDate;
+        next.birthYear = Number(birthDate.slice(0, 4));
+      }
       const birthYear = take('birthYear') as number | undefined;
       if (birthYear) {
         next.birthYear = birthYear;
@@ -429,7 +436,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                     넣어 둔 값은 직접 고른 경우에만 바뀌어요.
                   </p>
                   {DRAFT_FIELDS.filter(([key]) => draft[key]).map(([key, label]) => {
-                    const now = fieldText(key, profile[key]);
+                    const now = currentText(profile, key);
                     const same = sameAsCurrent(profile, key, draft[key]!.value);
                     const editable = EDITABLE_DRAFT_KEYS.includes(key);
                     const invalid =
@@ -495,6 +502,15 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                                   <option key={region}>{region}</option>
                                 ))}
                               </select>
+                            ) : key === 'birthDate' ? (
+                              <input
+                                type="date"
+                                min="1930-01-01"
+                                max={koreaToday()}
+                                value={edits[key] ?? ''}
+                                onChange={(event) => setEdit(event.target.value)}
+                                aria-label={`${label} 초안`}
+                              />
                             ) : key === 'intro' ? (
                               <textarea
                                 rows={3}
@@ -519,11 +535,13 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                             <small className="form-error">
                               {key === 'birthYear'
                                 ? '1930년부터 올해 사이 연도를 숫자로 넣어 주세요.'
-                                : key === 'height'
-                                  ? '키는 100~230 사이 숫자로 넣어 주세요.'
-                                  : key === 'weight'
-                                    ? '몸무게는 25~200 사이 숫자로 넣어 주세요.'
-                                    : '값을 확인해 주세요. 이대로면 채우지 않아요.'}
+                                : key === 'birthDate'
+                                  ? '생년월일을 달력에서 골라 주세요.'
+                                  : key === 'height'
+                                    ? '키는 100~230 사이 숫자로 넣어 주세요.'
+                                    : key === 'weight'
+                                      ? '몸무게는 25~200 사이 숫자로 넣어 주세요.'
+                                      : '값을 확인해 주세요. 이대로면 채우지 않아요.'}
                             </small>
                           )}
                           {!editable && (

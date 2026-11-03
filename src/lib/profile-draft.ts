@@ -6,6 +6,7 @@
 // './profile.ts'처럼 확장자를 적는 건 node --test가 이 파일을 그대로 읽을 수 있게 하려는 것이다.
 // (calendar-grid.ts와 같은 이유로, 규칙 자체는 테스트로 지켜져야 한다.)
 import { IMAGE_TAGS, MAX_SKILLS, MAX_TAGS, REGIONS, SKILLS, type Gender } from './profile.ts';
+import { manAge } from './age.ts';
 
 export type DraftField<T> = {
   value: T;
@@ -18,6 +19,8 @@ export type FilmoItem = { year: string; title: string; role: string };
 export type ProfileDraft = {
   name?: DraftField<string>;
   gender?: DraftField<Gender>;
+  /** 서류에 날짜까지 적혀 있을 때만 'YYYY-MM-DD'. 있으면 출생 연도 대신 이 값을 보여 준다. */
+  birthDate?: DraftField<string>;
   birthYear?: DraftField<number>;
   height?: DraftField<number>;
   weight?: DraftField<number>;
@@ -103,6 +106,28 @@ function readGender(rows: string[]): DraftField<Gender> | undefined {
   const text = tagged?.value ?? '';
   if (/여/.test(text)) return { value: 'female', source: tagged!.source };
   if (/남/.test(text)) return { value: 'male', source: tagged!.source };
+  return undefined;
+}
+
+/** '1999.05.17', '1999-5-17', '1999년 5월 17일' 같은 날짜를 'YYYY-MM-DD'로. 없는 날짜면 ''. */
+export function birthDateFrom(text: string): string {
+  const match = /(\d{4})\s*(?:[.\-/]|년)\s*(\d{1,2})\s*(?:[.\-/]|월)\s*(\d{1,2})/.exec(text);
+  if (!match) return '';
+  const date = `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`;
+  return date >= '1930-01-01' && manAge(date) !== null ? date : '';
+}
+
+function readBirthDate(rows: string[]): DraftField<string> | undefined {
+  const tagged = labelled(rows, LABELS.birth);
+  if (tagged) {
+    const date = birthDateFrom(tagged.value);
+    if (date) return { value: date, source: tagged.source };
+  }
+  for (const row of rows) {
+    if (!/생|출생|태어/.test(row)) continue;
+    const date = birthDateFrom(row);
+    if (date) return { value: date, source: row };
+  }
   return undefined;
 }
 
@@ -221,7 +246,10 @@ export function draftFromText(text: string): ProfileDraft {
 
   put('name', readName(rows));
   put('gender', readGender(rows));
-  put('birthYear', readBirthYear(rows));
+  // 날짜까지 있으면 생년월일만, 없으면 출생 연도만 담는다(둘이 어긋나지 않게).
+  const birthDate = readBirthDate(rows);
+  if (birthDate) put('birthDate', birthDate);
+  else put('birthYear', readBirthYear(rows));
   put('height', readMeasure(rows, LABELS.height, /(\d{3})\s*(?:cm|센치|센티)/i, 120, 220));
   put('weight', readMeasure(rows, LABELS.weight, /(\d{2,3})\s*(?:kg|킬로)/i, 30, 200));
   put('region', readRegion(rows));
@@ -262,8 +290,10 @@ export function draftFromFacts(raw: unknown): ProfileDraft {
   if (name) draft.name = { value: name, source: source('name') };
   if (facts.gender === 'female' || facts.gender === 'male' || facts.gender === 'other')
     draft.gender = { value: facts.gender, source: source('gender') };
+  const birthDate = typeof facts.birth_date === 'string' ? birthDateFrom(facts.birth_date) : '';
   const birthYear = number(facts.birth_year, MIN_BIRTH_YEAR, THIS_YEAR);
-  if (birthYear) draft.birthYear = { value: birthYear, source: source('birth_year') };
+  if (birthDate) draft.birthDate = { value: birthDate, source: source('birth_date') };
+  else if (birthYear) draft.birthYear = { value: birthYear, source: source('birth_year') };
   const height = number(facts.height, 120, 220);
   if (height) draft.height = { value: height, source: source('height') };
   const weight = number(facts.weight, 30, 200);
