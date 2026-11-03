@@ -64,3 +64,19 @@ test('값을 한 줄 글자로 보여 준다', () => {
   assert.equal(fieldText('region', ''), '');
   assert.equal(fieldText('filmography', profile.filmography), '2024 여름 (주연)');
 });
+
+test('생년월일: 저장해 둔 날짜를 지금 값으로 보여 주고, 연도만 같은 초안은 바꿀 게 없다', async () => {
+  const { currentText } = await import('../src/lib/draft-merge.ts');
+  assert.equal(currentText(profile, 'birthYear'), '1999년 5월 17일');
+  assert.equal(currentText(profile, 'birthDate'), '1999년 5월 17일');
+  assert.equal(sameAsCurrent(profile, 'birthYear', 1999), true);
+  assert.equal(sameAsCurrent(profile, 'birthYear', 1998), false);
+  assert.equal(sameAsCurrent(profile, 'birthDate', '1999-05-17'), true);
+  assert.equal(defaultPick(profile, 'birthDate', '1999-05-18'), false);
+  assert.equal(
+    defaultPick({ ...profile, birthDate: '', birthYear: null }, 'birthDate', '1999-05-18'),
+    true,
+  );
+  assert.equal(parseEdit('birthDate', '1999-05-17'), '1999-05-17');
+  assert.equal(parseEdit('birthDate', '1999-02-30'), undefined);
+});
