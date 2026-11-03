@@ -133,7 +133,7 @@ export async function producerFeed(ownerId: string): Promise<ActivityFeed> {
       id: `msg-${str(row.id)}`,
       icon: '💬',
       text: `${str(row.actor_name)}님의 메시지 — “${clip(str(row.body))}”`,
-      href: '/studio',
+      href: '/studio/chat',
       at: str(row.created_at),
     });
   }
@@ -297,7 +297,7 @@ export async function actorFeed(
       id: `msg-${str(row.id)}`,
       icon: '💬',
       text: `‘${str(row.role_title)}’ 제작팀 — “${clip(str(row.body))}”`,
-      href: `/status/${str(row.receipt_token)}/chat`,
+      href: '/me/chat',
       at: str(row.created_at),
     });
   }

@@ -61,7 +61,7 @@ async function initialize(database: Conn) {
   const migrated = await database
     .prepare(
       `SELECT 1 FROM information_schema.columns
-       WHERE table_schema = current_schema() AND table_name='chat_messages' AND column_name='room'`,
+       WHERE table_schema = current_schema() AND table_name='chat_reads' AND column_name='read_at'`,
     )
     .get();
   if (!migrated) {
@@ -295,8 +295,22 @@ async function initialize(database: Conn) {
     await addColumn(database, 'projects', 'chat_mode', text);
     // 보낸 제작진(사용자 id, 배우가 보낸 글은 '')과 방(''은 기본 방, 개별방은 그 팀원의 id)
     await addColumn(database, 'chat_messages', 'sender_id', text);
-    // 이 칸이 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 추가한다.
     await addColumn(database, 'chat_messages', 'room', text);
+    await database.exec(`
+    -- 공고(프로젝트)별 팀 내부 대화방: 주인과 팀원만, 배우는 들어오지 않는다.
+    CREATE TABLE IF NOT EXISTS team_messages (
+      id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id),
+      sender_id TEXT NOT NULL REFERENCES users(id), body TEXT NOT NULL, created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS team_messages_project ON team_messages(project_id, created_at);
+    -- 사람마다 방을 마지막으로 읽은 시각(안 읽은 수 계산). user_key: 제작진 id 또는 'actor:지원서id'
+    -- thread_key: 'app:지원서id:방' 또는 'team:프로젝트id'. lib/inbox-rules.ts 참고.
+    -- 이 표가 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 만든다.
+    CREATE TABLE IF NOT EXISTS chat_reads (
+      user_key TEXT NOT NULL, thread_key TEXT NOT NULL, read_at TEXT NOT NULL,
+      PRIMARY KEY (user_key, thread_key)
+    );
+  `);
   }
   // 목록을 고쳤을 때 다음 시작에 반영된다. 한 번에 넣고, 이미 있는 도메인은 이름·줄임말만 갱신한다.
   const quote = (text: string) => `'${text.replace(/'/g, "''")}'`;

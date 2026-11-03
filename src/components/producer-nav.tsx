@@ -94,7 +94,7 @@ const icons: Record<ProducerSection, React.ReactNode> = {
 const items: { key: ProducerSection; label: string; href: string; mobile: boolean }[] = [
   { key: 'home', label: '프로젝트', href: '/studio', mobile: true },
   { key: 'actors', label: '배우 찾기', href: '/studio/actors', mobile: true },
-  { key: 'messages', label: '메시지', href: '/studio?tab=messages', mobile: true },
+  { key: 'messages', label: '채팅', href: '/studio/chat', mobile: true },
   { key: 'recommend', label: '배우 추천', href: '/studio/recommend', mobile: false },
   { key: 'compare', label: '이상형 월드컵', href: '/studio/compare', mobile: false },
   { key: 'board', label: '팀 보드', href: '/studio/board', mobile: true },
@@ -133,7 +133,8 @@ export default function ProducerNav({
           </>
         );
         const className = `${active === item.key ? 'active' : ''}${item.mobile ? '' : ' desk-only'}`;
-        const isTab = ['home', 'messages', 'profile'].includes(item.key);
+        // 채팅은 따로 연 화면(/studio/chat)으로 간다.
+        const isTab = ['home', 'profile'].includes(item.key);
         return onTab && isTab ? (
           <button
             key={item.key}

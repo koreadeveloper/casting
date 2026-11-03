@@ -20,6 +20,8 @@ type Props = {
   onViewProfile?: () => void;
   profileHref?: string;
   onClose?: () => void;
+  /** 채팅 목록에서 특정 방을 골라 열었을 때(배우). 이때는 위의 방 고르기를 숨긴다. */
+  fixedRoom?: string;
 };
 
 function slotLabel(slot: string) {
@@ -181,6 +183,7 @@ export default function ChatThread({
   onViewProfile,
   profileHref,
   onClose,
+  fixedRoom,
 }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -196,7 +199,7 @@ export default function ChatThread({
   const fileInput = useRef<HTMLInputElement>(null);
   const messageList = useRef<HTMLDivElement>(null);
   // 대화방: 배우는 개별방 방식이면 팀원별 방을 골라 들어간다(''은 기본 방). 제작진의 방은 서버가 정한다.
-  const [room, setRoom] = useState('');
+  const [room, setRoom] = useState(fixedRoom ?? '');
   const [rooms, setRooms] = useState<{ room: string; name: string }[]>([]);
   const [chatMode, setChatMode] = useState<'group' | 'private'>('group');
   const [me, setMe] = useState('');
@@ -378,8 +381,18 @@ export default function ChatThread({
         </div>
       ) : (
         <div className="chat-peer">
+          {onClose && (
+            <button
+              className="text-button"
+              style={{ padding: 0 }}
+              onClick={onClose}
+              aria-label="뒤로"
+            >
+              {Svg.back}
+            </button>
+          )}
           <div className="who">
-            <strong>제작진과의 대화</strong>
+            <strong>{fixedRoom !== undefined ? peerName : '제작진과의 대화'}</strong>
             <span>{peerSub}</span>
           </div>
         </div>
@@ -410,24 +423,27 @@ export default function ChatThread({
         )}
         {mode === 'actor' && profileHref && <a href={profileHref}>공고 보기 ›</a>}
       </div>
-      {mode === 'actor' && chatMode === 'private' && rooms.length > 0 && (
-        <div className="chat-rooms" role="tablist" aria-label="대화방">
-          {[{ room: '', name: peerName || '제작진' }, ...rooms].map((item) => (
-            <button
-              key={item.room || 'main'}
-              role="tab"
-              aria-selected={room === item.room}
-              className={room === item.room ? 'on' : ''}
-              onClick={() => {
-                setRoom(item.room);
-                setMessages([]);
-              }}
-            >
-              {item.name}
-            </button>
-          ))}
-        </div>
-      )}
+      {mode === 'actor' &&
+        fixedRoom === undefined &&
+        chatMode === 'private' &&
+        rooms.length > 0 && (
+          <div className="chat-rooms" role="tablist" aria-label="대화방">
+            {[{ room: '', name: peerName || '제작진' }, ...rooms].map((item) => (
+              <button
+                key={item.room || 'main'}
+                role="tab"
+                aria-selected={room === item.room}
+                className={room === item.room ? 'on' : ''}
+                onClick={() => {
+                  setRoom(item.room);
+                  setMessages([]);
+                }}
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
+        )}
       {mode === 'producer' && chatMode === 'private' && (
         <p className="chat-room-note">개별방이에요. 이 대화는 나와 배우만 볼 수 있어요.</p>
       )}
