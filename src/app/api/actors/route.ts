@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listFavoriteIds, listPublicProfiles } from '@/lib/accounts';
 import { getProducerId } from '@/lib/auth';
-import { profileAge, availabilityIn, dateRange, matchesFilters, type ActorFilters } from '@/lib/profile';
+import {
+  profileAge,
+  availabilityIn,
+  dateRange,
+  matchesFilters,
+  type ActorFilters,
+} from '@/lib/profile';
 
 function num(value: string | null) {
   const parsed = Number(value);

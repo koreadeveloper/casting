@@ -151,7 +151,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
   const birthAgeText =
     birthAge !== null ? `만 ${birthAge}세` : profile.birthYear ? `${profile.birthYear}년생` : '';
 
-  const numberOrNull =(value: string) => (value === '' ? null : Number(value));
+  const numberOrNull = (value: string) => (value === '' ? null : Number(value));
 
   async function upload(files: FileList | null) {
     if (!files?.length) return;

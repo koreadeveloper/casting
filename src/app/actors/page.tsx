@@ -113,9 +113,7 @@ export default async function ActorPreview({
                 <Link href={`/actors/${actor.userId}`} className="tile-info">
                   <strong>{actor.name}</strong>
                   <span>
-                    {[ageBand(actor), genderLabel[actor.gender]]
-                      .filter(Boolean)
-                      .join(' · ')}
+                    {[ageBand(actor), genderLabel[actor.gender]].filter(Boolean).join(' · ')}
                   </span>
                   <div className="tag-row">
                     {actor.tags.slice(0, 2).map((tag) => (
