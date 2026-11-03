@@ -9,6 +9,7 @@ import { NotifBell } from '@/components/notif-bell';
 import { BrandLogo } from '@/components/brand';
 import PhotoLightbox from '@/components/photo-lightbox';
 import ProducerNav from '@/components/producer-nav';
+import CoverImage from '@/components/cover-image';
 import type { Project } from '@/lib/accounts';
 import {
   dDayLabel,
@@ -776,7 +777,7 @@ export default function Studio({
                     <div className="pcard-top">
                       <div className="pcard-img">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={first.coverUrl || projectCover('')} alt="" loading="lazy" />
+                        <CoverImage src={first.coverUrl || projectCover('')} loading="lazy" />
                       </div>
                       <div className="pcard-info">
                         <span className={`badge-soft${project.closed ? ' state-off' : ''}`}>

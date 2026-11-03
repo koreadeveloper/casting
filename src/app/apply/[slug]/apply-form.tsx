@@ -24,7 +24,7 @@ import { MAX_APPLICATION_PHOTOS } from '@/lib/validation';
 import TrustBadges from '@/components/trust-badges';
 import type { ProducerBadges } from '@/lib/verification-rules';
 import { PRIVACY_PATH } from '@/lib/legal';
-import { koreaToday, manAge } from '@/lib/age';
+import { latestBirthDate, manAge } from '@/lib/age';
 
 export type Prefill = {
   name: string;
@@ -423,7 +423,7 @@ export default function ApplyForm({
                 <input
                   type="date"
                   min="1900-01-01"
-                  max={koreaToday()}
+                  max={latestBirthDate()}
                   value={birthDate}
                   onChange={(event) => setBirthDate(event.target.value)}
                 />

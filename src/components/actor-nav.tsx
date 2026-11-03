@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { BrandLogo } from './brand';
+import NavCollapse from './nav-collapse';
 
 const stroke = {
   width: 21,
@@ -24,6 +25,7 @@ export default function ActorNav({
     <nav className="pnav" aria-label="배우 메뉴">
       <div className="pnav-brand">
         <BrandLogo />
+        <NavCollapse />
       </div>
       <Link href="/me" className={active === 'home' ? 'active' : ''}>
         <span className="nav-ic">
@@ -31,7 +33,7 @@ export default function ActorNav({
             <path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z" strokeLinejoin="round" />
           </svg>
         </span>
-        홈
+        <span className="nav-label">홈</span>
       </Link>
       <Link href="/me/profile" className={active === 'profile' ? 'active' : ''}>
         <span className="nav-ic">
@@ -40,7 +42,7 @@ export default function ActorNav({
             <path d="M5 20c.8-3.8 3.7-6 7-6s6.2 2.2 7 6" strokeLinecap="round" />
           </svg>
         </span>
-        프로필 관리
+        <span className="nav-label">프로필 관리</span>
       </Link>
       <Link href={`/actors/${actorId}`} className={active === 'preview' ? 'active' : ''}>
         <span className="nav-ic">
@@ -49,7 +51,7 @@ export default function ActorNav({
             <circle cx="12" cy="12" r="2.8" />
           </svg>
         </span>
-        미리보기
+        <span className="nav-label">미리보기</span>
       </Link>
       <button
         onClick={async () => {
@@ -66,7 +68,7 @@ export default function ActorNav({
             />
           </svg>
         </span>
-        로그아웃
+        <span className="nav-label">로그아웃</span>
       </button>
     </nav>
   );

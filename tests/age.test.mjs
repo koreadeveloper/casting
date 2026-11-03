@@ -39,3 +39,16 @@ test('만 나이: 없는 날짜·형식이 틀린 값·범위 밖은 null', () =
   assert.equal(manAge('2026-06-01', korea('2026-11-03')), null); // 0세
   assert.equal(manAge('2030-01-01', korea('2026-11-03')), null); // 미래
 });
+
+test('달력에서 고를 수 있는 가장 늦은 생년월일은 만 1세가 되는 날', async () => {
+  const { latestBirthDate, manAge } = await import('../src/lib/age.ts');
+  // 한국 시간 2026-11-03 오후
+  const now = new Date('2026-11-03T07:00:00Z');
+  assert.equal(latestBirthDate(now), '2025-11-03');
+  assert.equal(manAge(latestBirthDate(now), now), 1);
+  // 그보다 하루 늦으면 만 0세라 저장되지 않는다
+  assert.equal(manAge('2025-11-04', now), null);
+  assert.equal(manAge('2026-11-02', now), null);
+  // 2월 29일
+  assert.equal(latestBirthDate(new Date('2028-02-29T03:00:00Z')), '2027-02-28');
+});

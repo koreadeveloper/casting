@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { BrandLogo } from './brand';
+import NavCollapse from './nav-collapse';
 
 // 지원자 화면은 프로젝트 아래 화면이라 메뉴에 따로 두지 않는다(프로젝트 카드의 [지원자 검토하기]로 들어간다).
 export type ProducerSection =
@@ -119,6 +120,7 @@ export default function ProducerNav({
         <Link href="/" className="pnav-brand-link" aria-label="캐스팅플로우 첫 화면으로">
           <BrandLogo />
         </Link>
+        <NavCollapse />
       </div>
       {items.map((item) => {
         const content = (
@@ -127,17 +129,22 @@ export default function ProducerNav({
               {icons[item.key]}
               {badge?.[item.key] && <span className="nav-dot" />}
             </span>
-            {item.label}
+            <span className="nav-label">{item.label}</span>
           </>
         );
         const className = `${active === item.key ? 'active' : ''}${item.mobile ? '' : ' desk-only'}`;
         const isTab = ['home', 'messages', 'profile'].includes(item.key);
         return onTab && isTab ? (
-          <button key={item.key} className={className} onClick={() => onTab(item.key as StudioTab)}>
+          <button
+            key={item.key}
+            className={className}
+            title={item.label}
+            onClick={() => onTab(item.key as StudioTab)}
+          >
             {content}
           </button>
         ) : (
-          <Link key={item.key} href={item.href} className={className}>
+          <Link key={item.key} href={item.href} className={className} title={item.label}>
             {content}
           </Link>
         );

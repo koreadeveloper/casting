@@ -4,6 +4,7 @@ import { ROLE_GENDERS, ROLE_TYPES, ageRangeLabel, projectCover } from '@/lib/pro
 import { formatDates } from '@/lib/schedule';
 import TrustBadges from '@/components/trust-badges';
 import type { ProducerBadges } from '@/lib/verification-rules';
+import CoverImage from './cover-image';
 
 function shortDate(date: string) {
   return new Date(`${date}T00:00:00`).toLocaleDateString('ko-KR', {
@@ -36,8 +37,10 @@ export default function RoleCard({
     <Link href={`/apply/${role.slug}`} className="pcard role-link">
       <div className="pcard-top">
         <div className="pcard-img" style={{ width: 96, height: 104 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={role.coverUrl || projectCover(role.projectFormat)} alt="" />
+          <CoverImage
+            src={role.coverUrl || projectCover(role.projectFormat)}
+            fallback={projectCover(role.projectFormat)}
+          />
         </div>
         <div className="pcard-info">
           <span className="badge-soft">

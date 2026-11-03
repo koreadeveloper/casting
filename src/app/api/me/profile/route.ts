@@ -67,6 +67,12 @@ export async function PUT(request: NextRequest) {
     manAge(body.birthDate) !== null
       ? body.birthDate
       : '';
+  // 생년월일을 넣었는데 받을 수 없는 날짜면, 말없이 버리지 않고 알려 준다(출생 연도만 남는 일을 막는다).
+  if (typeof body.birthDate === 'string' && body.birthDate.trim() && !birthDate)
+    return NextResponse.json(
+      { error: '생년월일을 확인해 주세요. 1930년 이후, 만 1세 이상인 날짜만 저장할 수 있어요.' },
+      { status: 400 },
+    );
   const birthYear = birthDate
     ? Number(birthDate.slice(0, 4))
     : intIn(body.birthYear, 1930, new Date().getFullYear());
