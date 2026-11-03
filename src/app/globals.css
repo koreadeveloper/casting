@@ -6594,3 +6594,8 @@ button.agree-view {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* 화면 폭 전체를 쓰는 버튼 묶음(스튜디오 홈 '프로젝트 등록') */
+.split-actions.wide-action {
+  max-width: none;
+}

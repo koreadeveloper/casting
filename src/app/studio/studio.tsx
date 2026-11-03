@@ -886,7 +886,8 @@ export default function Studio({
               </div>
             )}
             {/* 배역 추가·수정은 각 프로젝트의 '프로젝트 수정'에서 한다. */}
-            <div className="split-actions">
+            {/* 위 프로젝트 카드의 '지원자 검토하기'와 같은 폭으로 둔다(넓은 화면의 520px 제한을 풀어서) */}
+            <div className="split-actions wide-action">
               <a className="button button-primary" href="/studio/projects/new">
                 {Icon.plus} 프로젝트 등록
               </a>
