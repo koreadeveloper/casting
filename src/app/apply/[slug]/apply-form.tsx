@@ -30,6 +30,8 @@ export type Prefill = {
   email: string;
   phone: string;
   age: number | null;
+  /** 프로필의 생년월일 'YYYY-MM-DD'. 출생연도만 있는 예전 프로필은 '' */
+  birthDate: string;
   introduction: string;
   photoUrl: string;
   photos: string[];
@@ -73,7 +75,7 @@ export default function ApplyForm({
   // 프로필 사진 중 이 공고에 낼 사진. 첫 번째가 대표 사진이 된다.
   const [picked, setPicked] = useState<string[]>(prefill?.photos.slice(0, 1) ?? []);
   // 생년월일을 고르면 만 나이를 자동으로 넣는다. 안 고르면 프로필의 나이를 그대로 쓴다.
-  const [birthDate, setBirthDate] = useState('');
+  const [birthDate, setBirthDate] = useState(prefill?.birthDate ?? '');
   const age = birthDate ? manAge(birthDate) : (prefill?.age ?? null);
   const closed = role.isClosed || role.deadline < new Date().toISOString().slice(0, 10);
 

@@ -30,6 +30,8 @@ export default async function ApplyPage({
         email: user.email,
         phone: user.phone,
         age: profileAge(profile),
+        // 프로필에 넣어 둔 생년월일을 지원서 날짜 칸에 그대로 채운다 (예전 프로필은 빈 값).
+        birthDate: profile.birthDate,
         introduction: [
           profile.intro,
           ...profile.filmography.map((f) => `${f.year} ${f.title} ${f.role}`),
