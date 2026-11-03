@@ -1,5 +1,11 @@
 import Link from 'next/link';
-import { getApplicationByReceipt, getLatestOffer, getRoleById, listAttendance } from '@/lib/db';
+import {
+  getApplicationByReceipt,
+  getLatestOffer,
+  getRoleById,
+  listAttendance,
+  listChatMessages,
+} from '@/lib/db';
 import { isResultDelayed, kstToday } from '@/lib/result-deadline';
 import {
   isAttendanceAskOpen,
@@ -15,9 +21,7 @@ import {
   actorStageOf,
   type ActorStage,
 } from '@/lib/types';
-import ChatThread from '@/components/chat-thread';
 import OfferResponse from '@/components/offer-response';
-import { projectCover } from '@/lib/project-meta';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +79,11 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
   // 출연 확정(합격)이면 다음 촬영일의 참석 재확인 카드를 띄운다.
   const nextShoot = application.publicStage === 'cast' ? nextShootDate(role.shootDates, today) : '';
   const attendance = nextShoot ? await listAttendance(application.id) : [];
+  // 대화는 따로 연 화면(/status/[token]/chat)에서 하고, 여기서는 마지막 메시지만 미리 보여 준다.
+  const lastMessage = application.chatOpen
+    ? (await listChatMessages(application.id)).at(-1)
+    : undefined;
+  const chatHref = `/status/${token}/chat`;
   return (
     <main className="app-shell narrow">
       <header className="sub-header">
@@ -108,7 +117,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
             <strong>{role.contactName}</strong>
             <p>프로젝트 관련 문의는 언제든지 대화로 남겨주세요.</p>
           </div>
-          {application.chatOpen && <a href="#chat">대화 보기 ›</a>}
+          {application.chatOpen && <Link href={chatHref}>대화 보기 ›</Link>}
         </div>
         <StageProgress
           stage={actorStageOf(application)}
@@ -153,19 +162,25 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
           상태와 메모는 공개되지 않습니다.
         </p>
         {application.chatOpen && (
-          <section id="chat" className="actor-chat">
-            <ChatThread
-              applicationId={application.id}
-              mode="actor"
-              receipt={token}
-              peerName={role.contactName}
-              peerSub={`${role.projectTitle} · ${role.title}`}
-              projectTitle={role.projectTitle}
-              roleTitle={role.title}
-              projectImage={role.coverUrl || projectCover('')}
-              profileHref={`/apply/${role.slug}`}
-            />
-          </section>
+          <Link href={chatHref} className="status-chat-link">
+            <span className="scl-icon" aria-hidden>
+              💬
+            </span>
+            <span className="scl-main">
+              <strong>제작진과의 대화</strong>
+              <span>
+                {lastMessage
+                  ? `${lastMessage.sender === 'producer' ? role.contactName : '나'}: ${
+                      lastMessage.kind === 'offer'
+                        ? '오디션 일정 제안'
+                        : lastMessage.body ||
+                          (lastMessage.attachment ? `📎 ${lastMessage.attachment.name}` : '')
+                    }`
+                  : '궁금한 점을 제작진에게 물어보세요.'}
+              </span>
+            </span>
+            <span className="scl-go">대화 열기 ›</span>
+          </Link>
         )}
       </div>
     </main>

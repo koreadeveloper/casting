@@ -187,7 +187,14 @@ export default function ApplyForm({
           <div className={isPosterUrl(role.coverUrl) ? 'apply-cover has-poster' : 'apply-cover'}>
             {isPosterUrl(role.coverUrl) && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className="apply-cover-poster" src={role.coverUrl} alt="" />
+              <img
+                className="apply-cover-poster"
+                src={role.coverUrl}
+                alt=""
+                onError={(event) => {
+                  event.currentTarget.style.display = 'none';
+                }}
+              />
             )}
             <span className="cover-kicker">CASTING CALL</span>
             {!isPosterUrl(role.coverUrl) && (
