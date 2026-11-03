@@ -17,7 +17,7 @@ import {
   type PickGroup,
 } from '@/lib/profile';
 import { embedUrl } from '@/lib/video';
-import { manAge } from '@/lib/age';
+import { koreaToday, manAge } from '@/lib/age';
 
 const SECTIONS = [
   ['basic', '기본 정보'],
@@ -146,7 +146,12 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
       setError('');
       return { ...current, [key]: [...list, value] };
     });
-  const numberOrNull = (value: string) => (value === '' ? null : Number(value));
+  // 생년월일 옆에 연하게 붙는 나이. 예전 프로필(출생연도만)은 'OOOO년생'으로 보여 준다.
+  const birthAge = profile.birthDate ? manAge(profile.birthDate) : null;
+  const birthAgeText =
+    birthAge !== null ? `만 ${birthAge}세` : profile.birthYear ? `${profile.birthYear}년생` : '';
+
+  const numberOrNull =(value: string) => (value === '' ? null : Number(value));
 
   async function upload(files: FileList | null) {
     if (!files?.length) return;
@@ -447,11 +452,15 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                     </select>
                   </label>
                   <label>
-                    생년월일
+                    {/* 라벨이 세로로 쌓이는 폼이어도 '만 N세'가 글자 바로 옆에 오도록 한 덩어리로 묶는다 */}
+                    <span>
+                      생년월일
+                      {birthAgeText && <span className="label-age">{birthAgeText}</span>}
+                    </span>
                     <input
                       type="date"
                       min="1930-01-01"
-                      max={new Date().toISOString().slice(0, 10)}
+                      max={koreaToday()}
                       value={profile.birthDate ?? ''}
                       onChange={(event) => {
                         const birthDate = event.target.value;
@@ -465,14 +474,6 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                     />
                   </label>
                 </div>
-                {/* 칸 안에 두면 그 칸만 길어져 옆 '성별' 칸이 밀리므로 두 칸 아래 한 줄로 둔다 */}
-                <p className="muted field-hint">
-                  {profile.birthDate && manAge(profile.birthDate) !== null
-                    ? `만 ${manAge(profile.birthDate)}세`
-                    : profile.birthYear
-                      ? `${profile.birthYear}년생 · 생년월일을 넣으면 만 나이로 정확히 보여요`
-                      : '생년월일을 넣으면 만 나이가 자동으로 계산돼요'}
-                </p>
                 <div className="form-three">
                   <label>
                     키 (cm)

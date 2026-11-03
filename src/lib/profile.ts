@@ -1,5 +1,5 @@
 // 확장자를 적는 건 node --test가 이 파일을 그대로 읽을 수 있게 하려는 것이다 (profile-draft.ts와 같은 이유).
-import { manAge } from './age.ts';
+import { koreaToday, manAge } from './age.ts';
 
 export type Gender ='female' | 'male' | 'other' | '';
 
@@ -168,7 +168,7 @@ export function profileAge(
 ) {
   return profile.birthDate
     ? manAge(profile.birthDate, today)
-    : ageOf(profile.birthYear, today.getFullYear());
+    : ageOf(profile.birthYear, Number(koreaToday(today).slice(0, 4)));
 }
 
 export function profileCompletion(profile: ActorProfile) {

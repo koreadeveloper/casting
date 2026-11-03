@@ -1712,10 +1712,11 @@ img {
   /* 한쪽 라벨이 두 줄이 돼도 입력칸 아래선은 맞춘다 */
   align-items: end;
 }
-/* 생년월일 칸 아래 '만 25세' 같은 안내 한 줄 */
-.field-hint {
-  font-size: 12px;
-  margin-top: -4px;
+/* '생년월일 만 25세'처럼 라벨 옆에 연하게 붙는 나이 */
+.label-age {
+  margin-left: 6px;
+  font-weight: 400;
+  color: var(--faint);
 }
 /* 아이폰 Safari의 날짜 칸은 자체 최소 너비·가운데 정렬이 있어 옆 칸과 어긋난다 */
 input[type='date'] {

@@ -23,7 +23,7 @@ import { MAX_APPLICATION_PHOTOS } from '@/lib/validation';
 import TrustBadges from '@/components/trust-badges';
 import type { ProducerBadges } from '@/lib/verification-rules';
 import { PRIVACY_PATH } from '@/lib/legal';
-import { manAge } from '@/lib/age';
+import { koreaToday, manAge } from '@/lib/age';
 
 export type Prefill = {
   name: string;
@@ -395,11 +395,19 @@ export default function ApplyForm({
             </label>
             <div className="form-two">
               <label>
-                생년월일
+                {/* 이 폼의 라벨은 세로로 쌓이므로 '만 N세'가 글자 바로 옆에 오도록 한 덩어리로 묶는다 */}
+                <span>
+                  생년월일
+                  {age !== null && (
+                    <span className="label-age">
+                      만 {age}세{birthDate ? '' : ' (프로필 기준)'}
+                    </span>
+                  )}
+                </span>
                 <input
                   type="date"
                   min="1900-01-01"
-                  max={new Date().toISOString().slice(0, 10)}
+                  max={koreaToday()}
                   value={birthDate}
                   onChange={(event) => setBirthDate(event.target.value)}
                 />
@@ -418,12 +426,6 @@ export default function ApplyForm({
                 />
               </label>
             </div>
-            {/* 칸 안에 두면 그 칸만 길어져 옆 '연락처' 칸이 밀리므로 두 칸 아래 한 줄로 둔다 */}
-            <p className="muted field-hint">
-              {age !== null
-                ? `만 ${age}세${birthDate ? '' : ' (프로필 기준)'}`
-                : '생년월일은 선택이에요 · 넣으면 만 나이가 자동으로 들어가요'}
-            </p>
             <label>
               이메일 <em>필수</em>
               <input
