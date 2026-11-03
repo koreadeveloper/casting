@@ -61,7 +61,7 @@ async function initialize(database: Conn) {
   const migrated = await database
     .prepare(
       `SELECT 1 FROM information_schema.columns
-       WHERE table_schema = current_schema() AND table_name='chat_reads' AND column_name='read_at'`,
+       WHERE table_schema = current_schema() AND table_name='app_meta' AND column_name='value'`,
     )
     .get();
   if (!migrated) {
@@ -305,12 +305,16 @@ async function initialize(database: Conn) {
     CREATE INDEX IF NOT EXISTS team_messages_project ON team_messages(project_id, created_at);
     -- 사람마다 방을 마지막으로 읽은 시각(안 읽은 수 계산). user_key: 제작진 id 또는 'actor:지원서id'
     -- thread_key: 'app:지원서id:방' 또는 'team:프로젝트id'. lib/inbox-rules.ts 참고.
-    -- 이 표가 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 만든다.
     CREATE TABLE IF NOT EXISTS chat_reads (
       user_key TEXT NOT NULL, thread_key TEXT NOT NULL, read_at TEXT NOT NULL,
       PRIMARY KEY (user_key, thread_key)
     );
   `);
+    await enableRowLevelSecurity(database);
+    // 이 표가 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 만든다.
+    await database.exec(
+      `CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')`,
+    );
   }
   // 목록을 고쳤을 때 다음 시작에 반영된다. 한 번에 넣고, 이미 있는 도메인은 이름·줄임말만 갱신한다.
   const quote = (text: string) => `'${text.replace(/'/g, "''")}'`;
@@ -323,6 +327,29 @@ async function initialize(database: Conn) {
       .join(',')}
      ON CONFLICT (domain) DO UPDATE SET school_name = EXCLUDED.school_name, aliases = EXCLUDED.aliases`,
   );
+}
+
+/**
+ * Supabase가 자동으로 여는 REST API(anon·authenticated 역할)로 표를 읽지 못하게 모든 표에 RLS를 켠다.
+ * 정책은 만들지 않으므로 그 역할들은 아무것도 못 읽는다. 이 앱은 표를 만든 역할로 서버에서만 접속하고,
+ * 표 주인은 RLS를 거치지 않으므로 앱 동작은 그대로다. 한 표에서 실패해도 시작을 막지 않는다.
+ */
+async function enableRowLevelSecurity(connection: Conn) {
+  const tables = (await connection
+    .prepare(`SELECT tablename FROM pg_tables WHERE schemaname = current_schema()`)
+    .all()) as { tablename: string }[];
+  for (const { tablename } of tables) {
+    if (!/^[a-z_]+$/.test(tablename)) continue;
+    // 구조 변경은 한 트랜잭션 안에서 돈다. 실패한 명령이 트랜잭션 전체를 망치지 않게 세이브포인트로 감싼다.
+    await connection.exec('SAVEPOINT enable_rls');
+    try {
+      await connection.exec(`ALTER TABLE ${tablename} ENABLE ROW LEVEL SECURITY`);
+      await connection.exec('RELEASE SAVEPOINT enable_rls');
+    } catch (error) {
+      await connection.exec('ROLLBACK TO SAVEPOINT enable_rls');
+      console.warn(`RLS를 켜지 못했습니다: ${tablename}`, error);
+    }
+  }
 }
 
 async function addColumn(connection: Conn, table: string, column: string, definition: string) {
