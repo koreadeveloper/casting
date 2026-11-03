@@ -170,3 +170,20 @@ test('기간 검색은 하루도 안 되는 배우만 제외한다', () => {
     false,
   );
 });
+
+test('회원 탈퇴 본인 확인: 비밀번호 계정과 소셜 로그인 계정', async () => {
+  const { deletionConfirmed, hasPassword } = await import('../src/lib/password.ts');
+  const withPassword = { email: 'a@b.com', passwordHash: hashPassword('letters123') };
+  assert.equal(deletionConfirmed({ password: 'letters123' }, withPassword), true);
+  assert.equal(deletionConfirmed({ password: 'wrong1234' }, withPassword), false);
+  // 비밀번호 계정은 이메일만으로 탈퇴되지 않는다.
+  assert.equal(deletionConfirmed({ email: 'a@b.com' }, withPassword), false);
+
+  const social = { email: 'Me@Gmail.com', passwordHash: '' };
+  assert.equal(hasPassword(social.passwordHash), false);
+  assert.equal(deletionConfirmed({ email: ' me@gmail.com ' }, social), true);
+  assert.equal(deletionConfirmed({ email: 'other@gmail.com' }, social), false);
+  assert.equal(deletionConfirmed({ email: '' }, social), false);
+  // 소셜 계정에 아무 비밀번호나 넣어도 통과하지 않는다.
+  assert.equal(deletionConfirmed({ password: 'anything1' }, social), false);
+});
