@@ -5,7 +5,6 @@ import {
   judgeDocument,
   maskBusinessNumber,
   namesMatch,
-  schoolEmailDomain,
 } from '../src/lib/verification-rules.ts';
 
 const account = { name: '전나영', orgName: '봄날필름' };
@@ -85,11 +84,4 @@ test('사업자등록증: 대표자가 달라도 상호가 소속과 같으면 �
     !judgeDocument('business', { ...biz, business_number: '1248100999' }, account, '2026-10-29')
       .approved,
   );
-});
-
-test('학교 이메일은 .ac.kr만', () => {
-  assert.equal(schoolEmailDomain('me@karts.ac.kr'), 'karts.ac.kr');
-  assert.equal(schoolEmailDomain('me@mail.hanyang.ac.kr'), 'mail.hanyang.ac.kr');
-  assert.equal(schoolEmailDomain('me@gmail.com'), null);
-  assert.equal(schoolEmailDomain('me@ac.kr.evil.com'), null);
 });

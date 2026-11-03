@@ -125,12 +125,6 @@ export function judgeDocument(
   };
 }
 
-/** 학교 이메일: 대학 도메인(.ac.kr)만 받는다. */
-export function schoolEmailDomain(email: string) {
-  const match = /^[^\s@]+@([a-z0-9-]+(?:\.[a-z0-9-]+)*\.ac\.kr)$/i.exec(email.trim());
-  return match ? match[1].toLowerCase() : null;
-}
-
 export function addDays(date: Date, days: number) {
   return new Date(date.getTime() + days * 86400000);
 }

@@ -1,32 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { sendMail } from '@/lib/mail';
+import { mailAvailable, sendMail } from '@/lib/mail';
 import { overLimit, TOO_MANY } from '@/lib/rate-limit';
 import { requiredText } from '@/lib/validation';
-import { aiConfigured } from '@/lib/verification-ai';
-import { schoolEmailDomain } from '@/lib/verification-rules';
-import { createSchoolEmailCode, EMAIL_CODE_MINUTES } from '@/lib/verifications';
+import { emailDomain, sameSchoolName } from '@/lib/school-domains';
+import {
+  createSchoolEmailCode,
+  EMAIL_CODE_MINUTES,
+  findSchoolForDomain,
+} from '@/lib/verifications';
 
-/** 학교 이메일(.ac.kr)로 6자리 확인 코드를 보낸다. 본문: { schoolName, email } */
+/**
+ * 학교 이메일로 6자리 확인 코드를 보낸다. 본문: { schoolName, email }
+ * 메일 도메인이 학교 목록(DB)에 있고, 적은 학교 이름이 그 학교와 같을 때만 보낸다.
+ */
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user || user.role !== 'producer')
     return NextResponse.json({ error: '제작자로 로그인해 주세요.' }, { status: 401 });
+  if (!mailAvailable())
+    return NextResponse.json(
+      { error: '학교 메일 인증은 준비 중이에요. 재학증명서로 인증해 주세요.' },
+      { status: 503 },
+    );
   const body = await request.json().catch(() => ({}));
   const schoolName = requiredText(body.schoolName, 60);
   const email = requiredText(body.email, 120).toLowerCase();
-  const domain = schoolEmailDomain(email);
+  const domain = emailDomain(email);
   if (!schoolName) return NextResponse.json({ error: '학교 이름을 적어 주세요.' }, { status: 400 });
-  if (!domain)
+  if (!domain) return NextResponse.json({ error: '이메일 주소를 확인해 주세요.' }, { status: 400 });
+  const school = await findSchoolForDomain(domain);
+  if (!school)
     return NextResponse.json(
-      { error: '학교에서 받은 이메일(…@학교.ac.kr)만 쓸 수 있어요.' },
+      {
+        error:
+          '아직 등록되지 않은 학교 메일이에요. 재학증명서로 인증하거나, 학교 메일 주소를 확인해 주세요.',
+      },
       { status: 400 },
     );
-  if (!aiConfigured())
-    return NextResponse.json({ error: '자동 확인이 아직 설정되지 않았어요.' }, { status: 503 });
+  if (!sameSchoolName(schoolName, school))
+    return NextResponse.json(
+      { error: `메일 주소는 ${school.schoolName} 것이에요. 학교 이름을 다시 확인해 주세요.` },
+      { status: 400 },
+    );
   if (await overLimit(`verify-mail:${user.id}`, 5, 3600))
     return NextResponse.json({ error: TOO_MANY }, { status: 429 });
-  const { id, code } = await createSchoolEmailCode(user.id, schoolName, email, domain);
+  const { id, code } = await createSchoolEmailCode(user.id, school.schoolName, email, domain);
   try {
     await sendMail({
       to: email,

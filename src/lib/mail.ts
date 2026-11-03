@@ -6,6 +6,11 @@ export function mailConfigured() {
   return Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM);
 }
 
+/** 메일을 실제로 보낼 수 있는지. 로컬 개발에서는 서버 로그로 대신하므로 열어 둔다. */
+export function mailAvailable() {
+  return mailConfigured() || process.env.NODE_ENV !== 'production';
+}
+
 export async function sendMail(mail: Mail) {
   if (!mailConfigured()) {
     if (process.env.NODE_ENV === 'production') throw new Error('메일 발송이 설정되지 않았습니다.');

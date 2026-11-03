@@ -240,3 +240,65 @@ export function draftFromText(text: string): ProfileDraft {
 export function draftSize(draft: ProfileDraft): number {
   return Object.keys(draft).length;
 }
+
+/** AI가 돌려준 JSON에서 쓸 수 있는 값만 골라 초안으로 만든다. 타입·범위·허용 목록을 벗어난 값은 버린다. */
+export function draftFromFacts(raw: unknown): ProfileDraft {
+  if (!raw || typeof raw !== 'object') return {};
+  const facts = raw as Record<string, unknown>;
+  const sources =
+    facts.sources && typeof facts.sources === 'object'
+      ? (facts.sources as Record<string, unknown>)
+      : {};
+  const text = (value: unknown, max: number) =>
+    typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '';
+  const number = (value: unknown, min: number, max: number) => {
+    const n = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(n) && n >= min && n <= max ? Math.round(n) : null;
+  };
+  const source = (key: string) => text(sources[key], 120) || 'AI가 서류에서 읽음';
+  const draft: ProfileDraft = {};
+
+  const name = text(facts.name, 30);
+  if (name) draft.name = { value: name, source: source('name') };
+  if (facts.gender === 'female' || facts.gender === 'male' || facts.gender === 'other')
+    draft.gender = { value: facts.gender, source: source('gender') };
+  const birthYear = number(facts.birth_year, MIN_BIRTH_YEAR, THIS_YEAR);
+  if (birthYear) draft.birthYear = { value: birthYear, source: source('birth_year') };
+  const height = number(facts.height, 120, 220);
+  if (height) draft.height = { value: height, source: source('height') };
+  const weight = number(facts.weight, 30, 200);
+  if (weight) draft.weight = { value: weight, source: source('weight') };
+  const region = REGIONS.find((item) => text(facts.region, 40).includes(item));
+  if (region) draft.region = { value: region, source: source('region') };
+  const agency = text(facts.agency, 40);
+  if (agency) draft.agency = { value: agency, source: source('agency') };
+  const intro = text(facts.intro, 1000);
+  if (intro) draft.intro = { value: intro, source: source('intro') };
+
+  const pick = (value: unknown, allowed: string[], max: number) =>
+    Array.isArray(value)
+      ? [...new Set(value.filter((item): item is string => typeof item === 'string'))]
+          .filter((item) => allowed.includes(item))
+          .slice(0, max)
+      : [];
+  const tags = pick(facts.tags, IMAGE_TAGS, MAX_TAGS);
+  if (tags.length) draft.tags = { value: tags, source: source('tags') };
+  const skills = pick(facts.skills, SKILLS, MAX_SKILLS);
+  if (skills.length) draft.skills = { value: skills, source: source('skills') };
+
+  if (Array.isArray(facts.filmography)) {
+    const items: FilmoItem[] = [];
+    for (const entry of facts.filmography) {
+      if (!entry || typeof entry !== 'object') continue;
+      const row = entry as Record<string, unknown>;
+      const year = text(row.year, 4);
+      const title = text(row.title, 60);
+      if (!/^(19|20)\d{2}$/.test(year) || !title) continue;
+      items.push({ year, title, role: text(row.role, 30) });
+      if (items.length >= 12) break;
+    }
+    if (items.length)
+      draft.filmography = { value: items, source: `${items.length}개 작품을 서류에서 읽음` };
+  }
+  return draft;
+}

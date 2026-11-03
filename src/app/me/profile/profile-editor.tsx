@@ -309,17 +309,18 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
           </aside>
           <div className="editor-body">
             {/*
-              프로필 PDF로 입력칸을 먼저 채워 주는 자리.
-              규칙 기반으로 읽어서 같은 PDF면 늘 같은 결과가 나오고, 어느 줄에서 읽었는지 함께 보여 준다.
+              프로필 PDF·사진으로 입력칸을 먼저 채워 주는 자리.
+              AI가 읽고(AI를 못 쓰면 글자가 든 PDF는 규칙으로 읽는다), 어느 부분에서 읽었는지 함께 보여 준다.
               읽은 값을 바로 저장하지 않고 배우가 고른 항목만 채운다.
             */}
             <section className="editor-card draft-card">
               <h2>
-                프로필 PDF로 먼저 채우기 <small>선택</small>
+                프로필 PDF·사진으로 먼저 채우기 <small>선택</small>
               </h2>
               <p className="muted small">
-                경력기술서·프로필 PDF를 올리면 이름·나이·키·지역·특기·필모그래피를 읽어 입력칸
-                초안을 만들어요. 읽은 값은 바로 저장되지 않고, 확인한 항목만 채웁니다.
+                경력기술서·프로필 PDF나 사진을 올리면 AI가 이름·나이·키·지역·특기·필모그래피를 읽어
+                입력칸 초안을 만들어요. 읽은 값은 바로 저장되지 않고, 확인한 항목만 채웁니다. 올린
+                파일은 읽는 동안에만 쓰이고 저장되지 않아요.
               </p>
               <div className="split-actions" style={{ marginTop: 12 }}>
                 <button
@@ -327,7 +328,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                   disabled={draftBusy}
                   onClick={() => draftInput.current?.click()}
                 >
-                  {draftBusy ? '읽는 중…' : 'PDF 올려서 초안 만들기'}
+                  {draftBusy ? '읽는 중…' : 'PDF·사진 올려서 초안 만들기'}
                 </button>
                 <button
                   className="button button-soft"
@@ -340,7 +341,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
               <input
                 ref={draftInput}
                 type="file"
-                accept="application/pdf,.pdf"
+                accept="application/pdf,.pdf,image/jpeg,image/png,image/webp"
                 hidden
                 onChange={(event) => {
                   const file = event.target.files?.[0];
@@ -372,7 +373,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                     붙여넣은 내용으로 초안 만들기
                   </button>
                   <p className="muted small">
-                    스캔한 PDF는 글자가 아니라 사진이라 읽을 수 없어요. 그럴 때 이 칸을 쓰세요.
+                    파일을 읽지 못할 때는 이 칸에 내용을 붙여넣어 주세요.
                   </p>
                 </div>
               )}
