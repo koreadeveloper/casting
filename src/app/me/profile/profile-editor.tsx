@@ -29,6 +29,7 @@ import {
 } from '@/lib/profile';
 import { embedUrl } from '@/lib/video';
 import { latestBirthDate, manAge } from '@/lib/age';
+import { confirmLogout } from '@/lib/logout';
 
 const SECTIONS = [
   ['basic', '기본 정보'],
@@ -1024,6 +1025,14 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
               <p className="small-note">
                 탈퇴하면 프로필과 지원 기록이 모두 삭제되고 되돌릴 수 없어요.
               </p>
+              <button
+                type="button"
+                className="button button-outline full"
+                style={{ marginBottom: 10 }}
+                onClick={() => void confirmLogout()}
+              >
+                로그아웃
+              </button>
               <Link href="/account/delete" className="account-danger">
                 회원 탈퇴
               </Link>

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { BrandLogo } from './brand';
 import NavCollapse from './nav-collapse';
+import { confirmLogout } from '@/lib/logout';
 
 const stroke = {
   width: 21,
@@ -64,12 +65,8 @@ export default function ActorNav({
         </span>
         <span className="nav-label">미리보기</span>
       </Link>
-      <button
-        onClick={async () => {
-          await fetch('/api/auth', { method: 'DELETE' });
-          location.href = '/';
-        }}
-      >
+      {/* 휴대폰 하단바에서는 실수로 누르기 쉬워 빼고(프로필 관리 아래 '계정'에 있음), 넓은 화면 사이드바에만 둔다. */}
+      <button className="desk-only" onClick={() => void confirmLogout()}>
         <span className="nav-ic">
           <svg {...stroke}>
             <path
