@@ -1,23 +1,32 @@
 // 사진·PDF 업로드 저장소.
-// Vercel에 Blob이 연결돼 있으면(BLOB_STORE_ID) 비공개 Blob 스토어에, 아니면 로컬 data/uploads/에 둔다.
+// SUPABASE_URL과 SUPABASE_SECRET_KEY가 있으면 Supabase Storage의 비공개 버킷에, 아니면 로컬 data/uploads/에 둔다.
 // 어느 쪽이든 읽기는 /api/uploads/[name] 라우트를 거치므로 URL 형태는 같다.
+// 시크릿 키는 서버에서만 쓴다. 브라우저에 내보내지 않는다.
 
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { del, get, put } from '@vercel/blob';
 import { dataDirectory } from './data-directory';
 
-function useBlob() {
-  return Boolean(process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN);
+function supabase() {
+  const url = process.env.SUPABASE_URL?.replace(/\/+$/, '');
+  const key = process.env.SUPABASE_SECRET_KEY;
+  if (!url || !key) return null;
+  return {
+    base: `${url}/storage/v1`,
+    bucket: process.env.SUPABASE_STORAGE_BUCKET || 'uploads',
+    headers: { apikey: key },
+  };
 }
 
 export async function saveUpload(name: string, bytes: Uint8Array, contentType: string) {
-  if (useBlob()) {
-    await put(`uploads/${name}`, Buffer.from(bytes), {
-      access: 'private',
-      contentType,
-      addRandomSuffix: false,
+  const remote = supabase();
+  if (remote) {
+    const response = await fetch(`${remote.base}/object/${remote.bucket}/${name}`, {
+      method: 'POST',
+      headers: { ...remote.headers, 'Content-Type': contentType, 'x-upsert': 'true' },
+      body: Buffer.from(bytes),
     });
+    if (!response.ok) throw new Error(`Supabase Storage 업로드 실패 (${response.status})`);
     return;
   }
   const dir = join(dataDirectory(), 'uploads');
@@ -26,9 +35,12 @@ export async function saveUpload(name: string, bytes: Uint8Array, contentType: s
 }
 
 export async function readUpload(name: string): Promise<BodyInit | null> {
-  if (useBlob()) {
-    const result = await get(`uploads/${name}`, { access: 'private' });
-    return result && result.statusCode === 200 ? result.stream : null;
+  const remote = supabase();
+  if (remote) {
+    const response = await fetch(`${remote.base}/object/${remote.bucket}/${name}`, {
+      headers: remote.headers,
+    });
+    return response.ok ? response.body : null;
   }
   try {
     return new Uint8Array(await readFile(join(dataDirectory(), 'uploads', name)));
@@ -50,8 +62,15 @@ export async function deleteUploads(urls: string[]) {
     .filter((name): name is string => Boolean(name));
   if (!names.length) return;
   try {
-    if (useBlob()) await del(names.map((name) => `uploads/${name}`));
-    else
+    const remote = supabase();
+    if (remote) {
+      const response = await fetch(`${remote.base}/object/${remote.bucket}`, {
+        method: 'DELETE',
+        headers: { ...remote.headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefixes: names }),
+      });
+      if (!response.ok) throw new Error(`Supabase Storage 삭제 실패 (${response.status})`);
+    } else
       await Promise.all(
         names.map((name) => rm(join(dataDirectory(), 'uploads', name), { force: true })),
       );

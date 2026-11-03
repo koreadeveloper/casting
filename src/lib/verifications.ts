@@ -2,6 +2,7 @@
 
 import { createHash, randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 import { db } from './db';
+import { findSchoolByDomain, type SchoolDomainRow } from './school-domains';
 import {
   SCHOOL_VALID_DAYS,
   addDays,
@@ -202,4 +203,16 @@ export async function finishSchoolEmail(
       approved ? addDays(now, SCHOOL_VALID_DAYS).toISOString() : null,
       id,
     );
+}
+
+/** 메일 도메인이 목록에 있는 학교인지 찾는다. 없으면 null. */
+export async function findSchoolForDomain(domain: string) {
+  const rows = (
+    (await db().prepare('SELECT domain, school_name, aliases FROM school_domains').all()) as Row[]
+  ).map((row): SchoolDomainRow => ({
+    domain: str(row.domain),
+    schoolName: str(row.school_name),
+    aliases: str(row.aliases) ? str(row.aliases).split('|') : [],
+  }));
+  return findSchoolByDomain(domain, rows);
 }

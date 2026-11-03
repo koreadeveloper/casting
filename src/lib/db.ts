@@ -8,6 +8,7 @@ import { resultDueDate } from './result-deadline';
 import { matchesRoleFilters, sortRoleListings, type RoleFilters } from './role-search';
 import { MESSAGE_PREVIEW_SQL } from './chat-files';
 import { attendanceMessage, type AttendanceCheck, type AttendanceStatus } from './attendance';
+import { schoolDomainRows } from './school-domains';
 import { conn as rawConnection, withAdvisoryLock, type Conn, type Statement } from './sql';
 
 // 스키마 생성과 샘플 데이터는 프로세스당 한 번만, 다른 인스턴스와 겹치지 않게 실행한다.
@@ -270,6 +271,11 @@ async function initialize(database: Conn) {
       created_at TEXT NOT NULL, decided_at TEXT, expires_at TEXT
     );
     CREATE INDEX IF NOT EXISTS verifications_user ON verifications(user_id, kind, created_at);
+    -- 학교 메일 인증용 '메일 도메인 → 대학교 이름' 목록. 내용은 아래에서 school-domains.ts 값으로 채운다.
+    -- aliases는 줄임말(서울대, 한예종 등)을 '|'로 이은 것.
+    CREATE TABLE IF NOT EXISTS school_domains (
+      domain TEXT PRIMARY KEY, school_name TEXT NOT NULL, aliases TEXT NOT NULL DEFAULT ''
+    );
     -- 문의하기(/contact). kind: general | bug | privacy | report. 1년이 지난 문의는 새 문의가 들어올 때 지운다.
     -- 이 표가 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 만든다.
     CREATE TABLE IF NOT EXISTS inquiries (
@@ -278,6 +284,17 @@ async function initialize(database: Conn) {
     );
   `);
   }
+  // 목록을 고쳤을 때 다음 시작에 반영된다. 한 번에 넣고, 이미 있는 도메인은 이름·줄임말만 갱신한다.
+  const quote = (text: string) => `'${text.replace(/'/g, "''")}'`;
+  await database.exec(
+    `INSERT INTO school_domains (domain, school_name, aliases) VALUES ${schoolDomainRows()
+      .map(
+        (row) =>
+          `(${quote(row.domain)}, ${quote(row.schoolName)}, ${quote(row.aliases.join('|'))})`,
+      )
+      .join(',')}
+     ON CONFLICT (domain) DO UPDATE SET school_name = EXCLUDED.school_name, aliases = EXCLUDED.aliases`,
+  );
   if (
     (process.env.NODE_ENV !== 'production' || process.env.DEMO_BUILD === 'true') &&
     process.env.SEED_DEMO !== 'false'

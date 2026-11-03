@@ -5,20 +5,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
+import { aiConfigured, anthropic } from './ai-client';
 import type { DocumentFacts, VerificationKind } from './verification-rules';
 
-const MODEL = 'claude-opus-5-5';
+// 서류 읽기 모델. 환경변수 VERIFY_AI_MODEL로 바꿀 수 있다.
+const MODEL = process.env.VERIFY_AI_MODEL || 'claude-sonnet-5-5';
 
-/** ANTHROPIC_API_KEY가 없으면 자동 인증을 열지 않는다(화면에서 '준비 중'으로 안내). */
-export function aiConfigured() {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
-}
-
-let client: Anthropic | undefined;
-function anthropic() {
-  client ??= new Anthropic();
-  return client;
-}
+export { aiConfigured };
 
 const FactsSchema = z.object({
   document_type: z.enum(['enrollment_certificate', 'business_registration', 'other']),
@@ -101,43 +94,6 @@ export async function readVerificationDocument(
     if (error instanceof Anthropic.APIError)
       console.error('인증 서류 AI 확인 실패', error.status, error.message);
     else console.error('인증 서류 AI 확인 실패', error);
-    throw new VerificationUnavailable('자동 확인이 잠시 안 돼요. 조금 뒤에 다시 시도해 주세요.');
-  }
-}
-
-const DomainSchema = z.object({
-  matches: z.boolean(),
-  official_name: z.string(),
-});
-
-/**
- * 학교 이메일 인증: 사용자가 적은 학교 이름이 메일 도메인의 학교와 같은지 확인한다.
- * (예: snu.ac.kr인데 '한국예술종합학교'라고 적었으면 거절)
- */
-export async function checkSchoolDomain(schoolName: string, domain: string) {
-  if (!aiConfigured()) throw new VerificationUnavailable('자동 확인이 아직 설정되지 않았어요.');
-  try {
-    const response = await anthropic().beta.messages.parse({
-      model: MODEL,
-      max_tokens: 2000,
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      output_config: { effort: 'low', format: betaZodOutputFormat(DomainSchema) },
-      system:
-        '한국 대학의 이메일 도메인과 학교 이름이 같은 학교인지 판단한다. 확실히 알 때만 matches를 true로 한다. official_name에는 그 도메인 학교의 정식 이름을 적고, 모르면 빈 문자열.',
-      messages: [
-        {
-          role: 'user',
-          content: `이메일 도메인: ${domain}\n사용자가 적은 학교 이름: ${schoolName}`,
-        },
-      ],
-    });
-    if (response.stop_reason === 'refusal' || !response.parsed_output)
-      throw new VerificationUnavailable('학교를 자동으로 확인하지 못했어요.');
-    return response.parsed_output;
-  } catch (error) {
-    if (error instanceof VerificationUnavailable) throw error;
-    console.error('학교 도메인 AI 확인 실패', error);
     throw new VerificationUnavailable('자동 확인이 잠시 안 돼요. 조금 뒤에 다시 시도해 주세요.');
   }
 }

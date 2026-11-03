@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { draftFromText, draftSize } from '../src/lib/profile-draft.ts';
+import { draftFromFacts, draftFromText, draftSize } from '../src/lib/profile-draft.ts';
 
 const RESUME = `
 배우 프로필
@@ -83,4 +83,48 @@ test('읽을 내용이 없으면 빈 초안이다', () => {
 
 test('같은 글자를 넣으면 늘 같은 초안이 나온다', () => {
   assert.deepEqual(draftFromText(RESUME), draftFromText(RESUME));
+});
+
+test('AI 결과에서 허용된 값만 초안이 된다', () => {
+  const draft = draftFromFacts({
+    name: '  김도윤 ',
+    gender: 'male',
+    birth_year: 1999,
+    height: 178,
+    weight: 68,
+    region: '서울특별시 마포구',
+    agency: '',
+    intro: '',
+    tags: ['시크한', '없는키워드'],
+    skills: ['노래', '없는특기'],
+    filmography: [
+      { year: '2024', title: '밤의 끝', role: '주연' },
+      { year: '작년', title: '연도 오류', role: '' },
+      { year: '2023', title: '', role: '조연' },
+    ],
+    sources: { name: '이름: 김도윤' },
+  });
+  assert.equal(draft.name?.value, '김도윤');
+  assert.equal(draft.name?.source, '이름: 김도윤');
+  assert.equal(draft.gender?.value, 'male');
+  assert.equal(draft.birthYear?.value, 1999);
+  assert.equal(draft.height?.value, 178);
+  assert.equal(draft.region?.value, '서울');
+  assert.equal(draft.agency, undefined);
+  assert.deepEqual(draft.tags?.value, ['시크한']);
+  assert.deepEqual(draft.skills?.value, ['노래']);
+  assert.deepEqual(draft.filmography?.value, [{ year: '2024', title: '밤의 끝', role: '주연' }]);
+});
+
+test('AI 결과가 이상하면 범위를 벗어난 값은 버린다', () => {
+  assert.deepEqual(draftFromFacts(null), {});
+  assert.deepEqual(draftFromFacts('text'), {});
+  const draft = draftFromFacts({
+    height: 17,
+    weight: 900,
+    birth_year: 1800,
+    gender: 'robot',
+    tags: 'x',
+  });
+  assert.equal(draftSize(draft), 0);
 });

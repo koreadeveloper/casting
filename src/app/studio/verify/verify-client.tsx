@@ -149,7 +149,7 @@ function SchoolEmail({
   return (
     <div className="verify-method">
       <strong>학교 이메일로 인증</strong>
-      <p>학교에서 받은 이메일(…@학교.ac.kr)로 6자리 코드를 보내 드려요.</p>
+      <p>학교에서 받은 이메일로 6자리 코드를 보내 드려요. 등록된 대학 메일만 쓸 수 있어요.</p>
       {requestId ? (
         <>
           <p className="verify-sent">{sentTo}로 코드를 보냈어요. 10분 안에 입력해 주세요.</p>
@@ -239,12 +239,14 @@ export default function VerifyClient({
   accountName,
   orgName,
   ready,
+  mailReady,
   school,
   business,
 }: {
   accountName: string;
   orgName: string;
   ready: boolean;
+  mailReady: boolean;
   school: Slot;
   business: Slot;
 }) {
@@ -278,8 +280,8 @@ export default function VerifyClient({
 
         {!ready && (
           <p className="verify-warn">
-            자동 확인(AI)이 아직 설정되지 않아 지금은 신청할 수 없어요. 운영 설정을 마치면 바로
-            열려요.
+            서류 자동 확인(AI)이 아직 설정되지 않아 서류로는 신청할 수 없어요. 학교 메일 인증은 지금
+            쓸 수 있어요.
           </p>
         )}
 
@@ -309,7 +311,12 @@ export default function VerifyClient({
           <p className="small-note">
             대학 영화과·연극과 등 학교 팀용이에요. 1년마다 다시 인증해요.
           </p>
-          <SchoolEmail disabled={!ready} onVerdict={show} />
+          {!mailReady && (
+            <p className="small-note">
+              학교 메일 인증은 준비 중이에요. 재학증명서로 인증해 주세요.
+            </p>
+          )}
+          <SchoolEmail disabled={!mailReady} onVerdict={show} />
           <DocumentUpload
             kind="school"
             label="재학증명서로 인증"
