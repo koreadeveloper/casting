@@ -47,20 +47,6 @@ export default async function SignupChoice() {
           </Link>
         </div>
         <DemoEntry />
-        <div className="divider-text">
-          <span>또는 간편하게 시작하기</span>
-        </div>
-        <div className="social-row">
-          <button disabled title="준비 중">
-            Google로 시작하기
-          </button>
-          <button disabled title="준비 중">
-            Apple로 시작하기
-          </button>
-        </div>
-        <p className="small-note center">
-          Google·Apple 로그인은 준비 중입니다. 위에서 역할을 고르면 이메일로 가입할 수 있어요.
-        </p>
       </section>
     </main>
   );

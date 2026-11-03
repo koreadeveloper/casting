@@ -6,9 +6,14 @@ import { LEGAL, TERMS_PATH } from '@/lib/legal';
 export const metadata: Metadata = { title: `개인정보처리방침 · ${LEGAL.service}` };
 
 // 실제로 저장·전송하는 정보와 맞아야 한다. 저장 항목(lib/db.ts)이나 외부 서비스가 바뀌면 여기도 고친다.
-export default function PrivacyPage() {
+export default async function PrivacyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ embed?: string }>;
+}) {
+  const embed = (await searchParams).embed === '1';
   return (
-    <LegalPage title="개인정보처리방침" current="privacy">
+    <LegalPage title="개인정보처리방침" current="privacy" embed={embed}>
       <p>
         {LEGAL.service}(이하 ‘서비스’)를 운영하는 {LEGAL.operator}(이하 ‘운영자’)는 「개인정보
         보호법」에 따라 이용자의 개인정보를 보호하고 관련 고충을 원활하게 처리하기 위해 다음과 같이
@@ -17,7 +22,7 @@ export default function PrivacyPage() {
 
       <h2>1. 개인정보를 처리하는 목적</h2>
       <ul>
-        <li>회원 가입과 관리: 가입 의사 확인, 회원 식별, 로그인 유지, 비밀번호 재설정</li>
+        <li>회원 가입과 관리: 가입 의사 확인, 회원 식별, 로그인 유지</li>
         <li>
           캐스팅 진행: 공고 게시, 지원서 접수와 제작진 전달, 제작진의 검토·연락, 오디션·촬영 일정
           조율, 지원 현황 안내
@@ -136,7 +141,7 @@ export default function PrivacyPage() {
             'Resend (resend.com)',
             '미국',
             '이메일 주소, 메일 내용',
-            '비밀번호 재설정·학교 이메일 인증 메일 발송',
+            '문의 알림·학교 이메일 인증 메일 발송',
           ],
           [
             'Anthropic PBC (anthropic.com)',

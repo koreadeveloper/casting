@@ -6056,3 +6056,106 @@ img {
 .auth-form .agree-detail {
   margin: -8px 0 0 27px;
 }
+
+/* 구글·카카오 로그인 버튼 */
+.social-buttons {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 10px;
+}
+.social-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.social-button.google {
+  background: #fff;
+  color: #1f1f1f;
+  border-color: #dadce0;
+}
+.social-button.kakao {
+  background: #fee500;
+  color: #191919;
+}
+.social-button:hover {
+  filter: brightness(0.97);
+}
+.social-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 800;
+}
+.social-button.google .social-mark {
+  background: #4285f4;
+  color: #fff;
+}
+.social-button.kakao .social-mark {
+  background: #191919;
+  color: #fee500;
+}
+.role-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* 가입 화면의 약관 보기 모달 */
+button.agree-view {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.agree-box .check span label {
+  display: inline;
+  cursor: pointer;
+}
+.legal-modal {
+  width: min(720px, calc(100vw - 24px));
+  height: min(80vh, 760px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px #0b0d1233;
+}
+.legal-modal[open] {
+  display: flex;
+  flex-direction: column;
+}
+.legal-modal::backdrop {
+  background: #0b0d1273;
+}
+.legal-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.legal-modal iframe {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #fff;
+}
+.legal-page.embed {
+  min-height: 0;
+  padding: 0;
+}

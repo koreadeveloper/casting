@@ -281,6 +281,14 @@ async function initialize(database: Conn) {
       id TEXT PRIMARY KEY, kind TEXT NOT NULL, email TEXT NOT NULL,
       body TEXT NOT NULL, link TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL
     );
+    -- 구글·카카오 로그인 연결. subject는 제공자 안에서 바뀌지 않는 사용자 번호다.
+    -- 소셜로만 가입한 계정은 users.password_hash가 빈 문자열이라 비밀번호로는 로그인되지 않는다.
+    CREATE TABLE IF NOT EXISTS oauth_accounts (
+      provider TEXT NOT NULL, subject TEXT NOT NULL, user_id TEXT NOT NULL REFERENCES users(id),
+      email TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL,
+      PRIMARY KEY (provider, subject)
+    );
+    CREATE INDEX IF NOT EXISTS oauth_accounts_user ON oauth_accounts(user_id);
   `);
     // 배우 생년월일 'YYYY-MM-DD' (만 나이 계산용). 비어 있으면 예전처럼 birth_year만 쓴다.
     // 이 칸이 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 추가한다.

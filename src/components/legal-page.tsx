@@ -7,27 +7,32 @@ import { LEGAL, PRIVACY_PATH, TERMS_PATH } from '@/lib/legal';
 export default function LegalPage({
   title,
   current,
+  embed = false,
   children,
 }: {
   title: string;
   current: 'terms' | 'privacy';
+  /** 가입 화면의 모달(iframe) 안에 넣을 때: 머리말과 뒤로 가기를 숨긴다. */
+  embed?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <main className="auth-page legal-page">
-      <header className="auth-top">
-        <Brand />
-        <nav className="legal-nav" aria-label="약관 문서">
-          <Link href={TERMS_PATH} aria-current={current === 'terms' ? 'page' : undefined}>
-            이용약관
-          </Link>
-          <Link href={PRIVACY_PATH} aria-current={current === 'privacy' ? 'page' : undefined}>
-            개인정보처리방침
-          </Link>
-        </nav>
-      </header>
+    <main className={`auth-page legal-page${embed ? ' embed' : ''}`}>
+      {!embed && (
+        <header className="auth-top">
+          <Brand />
+          <nav className="legal-nav" aria-label="약관 문서">
+            <Link href={TERMS_PATH} aria-current={current === 'terms' ? 'page' : undefined}>
+              이용약관
+            </Link>
+            <Link href={PRIVACY_PATH} aria-current={current === 'privacy' ? 'page' : undefined}>
+              개인정보처리방침
+            </Link>
+          </nav>
+        </header>
+      )}
       <article className="legal-doc">
-        <BackButton fallback="/" label="뒤로" />
+        {!embed && <BackButton fallback="/" label="뒤로" />}
         <h1>{title}</h1>
         <p className="legal-meta">시행일 {LEGAL.effective}</p>
         {children}

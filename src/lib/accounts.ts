@@ -276,9 +276,36 @@ export async function getUserWithHash(email: string) {
   return row ? { user: userFromRow(row), passwordHash: String(row.password_hash) } : null;
 }
 
+export async function getUserByEmail(email: string) {
+  const row = await db().prepare('SELECT * FROM users WHERE email=?').get(email.toLowerCase());
+  return row ? userFromRow(row as Row) : null;
+}
+
+/** 이 소셜 계정으로 이미 가입한 사용자. 없으면 null. */
+export async function findOAuthUser(provider: string, subject: string) {
+  const row = (await db()
+    .prepare('SELECT user_id FROM oauth_accounts WHERE provider=? AND subject=?')
+    .get(provider, subject)) as { user_id: string } | undefined;
+  return row ? await getUserById(row.user_id) : null;
+}
+
+export async function linkOAuthAccount(
+  userId: string,
+  provider: string,
+  subject: string,
+  email: string,
+) {
+  await db()
+    .prepare(
+      'INSERT INTO oauth_accounts (provider,subject,user_id,email,created_at) VALUES (?,?,?,?,?) ON CONFLICT DO NOTHING',
+    )
+    .run(provider, subject, userId, email.toLowerCase(), new Date().toISOString());
+}
+
 export async function createUser(input: {
   email: string;
-  password: string;
+  /** 소셜 로그인으로 가입하면 없다(비밀번호가 없는 계정). */
+  password?: string;
   role: UserRole;
   name: string;
   phone: string;
@@ -295,7 +322,7 @@ export async function createUser(input: {
     .run(
       id,
       input.email.toLowerCase(),
-      hashPassword(input.password),
+      input.password ? hashPassword(input.password) : '',
       input.role,
       input.name,
       input.phone,
@@ -856,6 +883,7 @@ export async function deleteAccount(userId: string) {
     await run('DELETE FROM roles WHERE owner_id=?', 1);
     await run('DELETE FROM projects WHERE owner_id=?', 1);
     await run('DELETE FROM password_resets WHERE user_id=?', 1);
+    await run('DELETE FROM oauth_accounts WHERE user_id=?', 1);
     await run('DELETE FROM actor_profiles WHERE user_id=?', 1);
     await run('DELETE FROM users WHERE id=?', 1);
   });

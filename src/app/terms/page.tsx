@@ -5,9 +5,14 @@ import { LEGAL, PRIVACY_PATH } from '@/lib/legal';
 
 export const metadata: Metadata = { title: `이용약관 · ${LEGAL.service}` };
 
-export default function TermsPage() {
+export default async function TermsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ embed?: string }>;
+}) {
+  const embed = (await searchParams).embed === '1';
   return (
-    <LegalPage title="이용약관" current="terms">
+    <LegalPage title="이용약관" current="terms" embed={embed}>
       <h2>제1조 (목적)</h2>
       <p>
         이 약관은 {LEGAL.operator}(이하 ‘운영자’)가 제공하는 {LEGAL.service}(이하 ‘서비스’)를
