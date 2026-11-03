@@ -1,9 +1,15 @@
+import { headers } from 'next/headers';
+import { detectInAppBrowser } from '@/lib/in-app-browser';
 import { PROVIDERS, providerEnabled, type Provider } from '@/lib/oauth';
+import { InAppBrowserNotice, SocialLink } from './in-app-browser';
 
 const LABEL: Record<Provider, string> = { google: 'Google로 계속하기', kakao: '카카오로 계속하기' };
 
-/** 키가 설정된 제공자의 로그인 버튼만 보여 준다. 하나도 없으면 아무것도 그리지 않는다. */
-export function SocialButtons({
+/**
+ * 키가 설정된 제공자의 로그인 버튼만 보여 준다. 하나도 없으면 아무것도 그리지 않는다.
+ * 구글은 카카오톡·인스타그램 같은 앱 안의 브라우저에서 로그인을 막으므로, 그런 브라우저면 안내를 붙인다.
+ */
+export async function SocialButtons({
   next,
   only,
 }: {
@@ -15,20 +21,26 @@ export function SocialButtons({
     (provider) => providerEnabled(provider) && (!only || only.includes(provider)),
   );
   if (!enabled.length) return null;
+  const inApp = enabled.includes('google')
+    ? detectInAppBrowser((await headers()).get('user-agent'))
+    : null;
   const query = next ? `?next=${encodeURIComponent(next)}` : '';
   return (
     <div className="social-buttons">
+      {inApp && <InAppBrowserNotice kind={inApp} />}
       {enabled.map((provider) => (
-        <a
+        <SocialLink
           key={provider}
           className={`social-button ${provider}`}
           href={`/api/auth/${provider}/start${query}`}
+          // 카카오 로그인은 카카오톡 안에서도 되므로 구글만 바깥 브라우저로 보낸다.
+          inApp={provider === 'google' ? inApp : null}
         >
           <span className="social-mark" aria-hidden="true">
             {provider === 'google' ? 'G' : 'K'}
           </span>
           {LABEL[provider]}
-        </a>
+        </SocialLink>
       ))}
     </div>
   );

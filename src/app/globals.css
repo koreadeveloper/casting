@@ -1722,7 +1722,8 @@ img {
 input[type='date'] {
   min-width: 0;
   max-width: 100%;
-}@supports (-webkit-touch-callout: none) {
+}
+@supports (-webkit-touch-callout: none) {
   input[type='date'] {
     -webkit-appearance: none;
     appearance: none;
@@ -6126,6 +6127,56 @@ input[type='date'] {
 .social-button.kakao .social-mark {
   background: #191919;
   color: #fee500;
+}
+/* 카카오톡·인스타그램 등 앱 안의 브라우저 안내 (구글이 이런 브라우저의 로그인을 막는다) */
+.inapp-notice {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--lavender);
+  border-left: 4px solid var(--lime-deep);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.55;
+  text-align: left;
+}
+.inapp-notice strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+.inapp-notice p {
+  margin: 0;
+  color: #4a5262;
+}
+.inapp-notice .button {
+  margin-top: 4px;
+}
+
+/* 404·오류 화면 (.status-card는 지원 현황 화면이 쓰는 이름이라 피한다) */
+.fallback-card {
+  text-align: center;
+}
+.fallback-art {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.fallback-code {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--faint);
+  margin: 0 0 6px;
+}
+.fallback-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 22px;
+}
+.fallback-card .small-note a {
+  color: inherit;
+  text-decoration: underline;
 }
 .role-switch {
   display: grid;
