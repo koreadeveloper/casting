@@ -20,6 +20,7 @@ import {
   specialScenesLabel,
   splitLocation,
 } from '@/lib/project-meta';
+import { includesChildAge } from '@/lib/child-policy';
 import type { ProjectUsage } from '@/lib/accounts';
 import { RESULT_WARNING_DAYS, resultDueDate } from '@/lib/result-deadline';
 import { daysBetween, formatDates, formatPeriod, normalizeDates } from '@/lib/schedule';
@@ -813,6 +814,16 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                                 placeholder="29"
                               />
                             </span>
+                            {includesChildAge(
+                              Number(role.ageMin) || 0,
+                              Number(role.ageMax) || 0,
+                            ) && (
+                              <small className="child-hint">
+                                만 14세 미만은 파일럿 기간에 지원서를 받을 수 없어요. 지원 화면에
+                                &lsquo;보호자가 제작진에게 직접 문의&rsquo; 안내가 나가니, 공고
+                                설명에 연락 방법을 적어 주세요.
+                              </small>
+                            )}
                           </label>
                           <label>
                             모집 인원
