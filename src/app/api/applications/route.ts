@@ -71,6 +71,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '필수 항목과 영상 링크를 확인해 주세요.' }, { status: 400 });
   }
   const actorId = await getActorId();
+  // 제작진 제공 동의는 모두에게, 수집·이용 동의는 가입 때 동의하지 않은 비회원에게 받는다.
+  if (body.agreeProvide !== true || (!actorId && body.agreePrivacy !== true))
+    return NextResponse.json({ error: '필수 동의 항목을 확인해 주세요.' }, { status: 400 });
   try {
     const application = await createApplication(
       role.id,
@@ -98,7 +101,8 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ receiptToken: application.receiptToken }, { status: 201 });
   } catch (error) {
-    if (String(error).includes('UNIQUE constraint'))
+    // 같은 배역에 같은 이메일로 다시 낸 경우(UNIQUE(role_id, email)). 23505는 Postgres의 중복 오류 번호.
+    if ((error as { code?: string })?.code === '23505')
       return NextResponse.json(
         { error: '이 이메일로 이미 지원했습니다. 기존 접수 링크를 확인해 주세요.' },
         { status: 409 },

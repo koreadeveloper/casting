@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Brand } from '@/components/brand';
 import LandingGuide, { type ViewRole } from '@/components/landing/landing-guide';
 import { getSession, homeFor } from '@/lib/auth';
+import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +76,11 @@ export default async function Landing({
       <footer className="lp-footer">
         <Brand />
         <span>좋은 이야기는, 좋은 사람으로부터 · 캐스팅의 새로운 기준</span>
+        <nav className="lp-legal" aria-label="약관">
+          <Link href={TERMS_PATH}>이용약관</Link>
+          <Link href={PRIVACY_PATH}>개인정보처리방침</Link>
+          <Link href="/contact">문의하기</Link>
+        </nav>
       </footer>
     </main>
   );

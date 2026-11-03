@@ -787,6 +787,16 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                 제안을 수락하고 지원한 배역의 제작자에게만 전달됩니다.
               </p>
             </section>
+
+            <section id="account" className="editor-card">
+              <h2>계정</h2>
+              <p className="small-note">
+                탈퇴하면 프로필과 지원 기록이 모두 삭제되고 되돌릴 수 없어요.
+              </p>
+              <Link href="/account/delete" className="account-danger">
+                회원 탈퇴
+              </Link>
+            </section>
           </div>
         </div>
       </div>
