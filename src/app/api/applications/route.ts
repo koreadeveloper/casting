@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { clientIp, overLimit, TOO_MANY } from '@/lib/rate-limit';
 import { getProposal, setProposalStatus } from '@/lib/accounts';
 import { getActorId, getProducerId } from '@/lib/auth';
+import { CHILD_APPLY_MESSAGE, isChildRole, isUnderApplyAge } from '@/lib/child-policy';
 import {
   createApplication,
   findActorApplicationToken,
@@ -78,6 +79,9 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+  // 파일럿에서는 만 14세 미만 지원서를 받지 않는다(법정대리인 동의 절차가 없어서). lib/child-policy.ts
+  if (isUnderApplyAge(age) || isChildRole(role.ageMin, role.ageMax))
+    return NextResponse.json({ error: CHILD_APPLY_MESSAGE, child: true }, { status: 400 });
   const actorId = await getActorId();
   // 제작진 제공 동의는 모두에게, 수집·이용 동의는 가입 때 동의하지 않은 비회원에게 받는다.
   if (body.agreeProvide !== true || (!actorId && body.agreePrivacy !== true))

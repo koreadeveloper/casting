@@ -83,11 +83,9 @@ export default function RecommendClient() {
         ),
       )
       .catch(() => {});
-    fetch('/api/actors?favorites=1', { cache: 'no-store' })
-      .then((response) => (response.ok ? response.json() : { actors: [] }))
-      .then((data) =>
-        setSaved(new Set((data.actors || []).map((a: { userId: string }) => a.userId))),
-      )
+    fetch('/api/actors?favorites=1&limit=1', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : { favoriteIds: [] }))
+      .then((data) => setSaved(new Set<string>(data.favoriteIds || [])))
       .catch(() => {});
   }, []);
 

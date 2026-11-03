@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listFavoriteIds, listPublicProfiles } from '@/lib/accounts';
 import { getProducerId } from '@/lib/auth';
-import { profileAge, availabilityIn, dateRange, matchesFilters, type ActorFilters } from '@/lib/profile';
+import {
+  profileAge,
+  availabilityIn,
+  dateRange,
+  matchesFilters,
+  producerView,
+  type ActorFilters,
+} from '@/lib/profile';
 
 function num(value: string | null) {
   const parsed = Number(value);
@@ -52,7 +59,8 @@ export async function GET(request: NextRequest) {
       (profile) => matchesFilters(profile, filters) && profile.filmography.length >= careerMin,
     )
     .map((profile) => ({
-      ...profile,
+      // 생년월일·출연 불가 날짜 목록은 보내지 않는다. 가능 여부는 검색한 날짜에 대해서만 O/X로.
+      ...producerView(profile),
       favorite: favorites.includes(profile.userId),
       availability: range.length > 0 ? availabilityIn(profile, range) : null,
     }))
@@ -72,9 +80,9 @@ export async function GET(request: NextRequest) {
       results,
       total: actors.length,
       hasMore: offset + results.length < actors.length,
-      // Deprecated alias kept for pre-pagination clients (e.g. /studio/recommend):
-      // the full filtered list, unpaginated.
-      actors,
+      // 내 관심 배우 id(추천 화면의 '저장됨' 표시용). 예전의 페이지 없는 전체 목록(actors)은
+      // 한 번에 모든 배우 정보를 가져갈 수 있어 없앴다.
+      favoriteIds: favorites,
     },
     { headers: { 'Cache-Control': 'private, no-store' } },
   );

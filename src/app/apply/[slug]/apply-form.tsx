@@ -25,6 +25,7 @@ import TrustBadges from '@/components/trust-badges';
 import type { ProducerBadges } from '@/lib/verification-rules';
 import { PRIVACY_PATH } from '@/lib/legal';
 import { latestBirthDate, manAge } from '@/lib/age';
+import { CHILD_APPLY_MESSAGE, isChildRole, isUnderApplyAge } from '@/lib/child-policy';
 
 export type Prefill = {
   name: string;
@@ -133,6 +134,11 @@ export default function ApplyForm({
       setError(
         '연결이 끊겼습니다. 입력 내용은 화면에 남아 있습니다. 다시 연결한 뒤 제출해 주세요.',
       );
+      return;
+    }
+    // 만 14세 미만은 보호자 동의 절차가 없어 지원서를 받지 않는다(서버도 같은 규칙으로 막는다).
+    if (isUnderApplyAge(age)) {
+      setError(CHILD_APPLY_MESSAGE);
       return;
     }
     setBusy(true);
@@ -379,7 +385,15 @@ export default function ApplyForm({
               이 공고 신고하기
             </Link>
           </section>
-          {appliedToken ? (
+          {isChildRole(role.ageMin, role.ageMax) ? (
+            <div className="child-notice" role="note">
+              <strong>만 14세 미만 아역 배역이에요</strong>
+              <p>
+                지금은 만 14세 미만의 지원서를 받을 수 없어요. 보호자가 제작진(
+                {role.contactName || '공고 담당자'})에게 직접 문의해 주세요.
+              </p>
+            </div>
+          ) : appliedToken ? (
             <>
               <p className="small-note">
                 이미 지원한 배역이에요. 같은 배역에는 한 번만 지원할 수 있어요.
@@ -453,6 +467,11 @@ export default function ApplyForm({
                 />
                 {/* 생년월일은 보내지 않고, 계산한 만 나이만 지원서에 담는다 */}
                 <input type="hidden" name="age" value={age ?? ''} />
+                {isUnderApplyAge(age) && (
+                  <small className="form-error" role="alert">
+                    {CHILD_APPLY_MESSAGE}
+                  </small>
+                )}
               </label>
               <label>
                 연락처 <em>필수</em>

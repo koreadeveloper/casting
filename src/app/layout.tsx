@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { NavTracker } from '@/components/back-button';
 import './globals.css';
 import { NAV_BOOT_SCRIPT } from '@/components/nav-collapse';
+import InAppGate from '@/components/in-app-gate';
 
 export const metadata: Metadata = {
   title: '캐스팅플로우',
@@ -25,6 +26,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: NAV_BOOT_SCRIPT }} />
         <NavTracker />
         {children}
+        {/* 카카오톡·인스타그램 등 앱 안 브라우저면 바깥 브라우저로 옮긴다(구글 로그인이 막혀서) */}
+        <InAppGate />
       </body>
     </html>
   );

@@ -75,7 +75,7 @@ type ActorResult = {
   userId: string;
   name: string;
   birthYear: number | null;
-  birthDate?: string;
+  age?: number | null;
   region: string;
   tags: string[];
   photos: string[];
@@ -289,10 +289,10 @@ export default function BoardClient({ meId }: { meId: string }) {
       async () => {
         setPickerLoading(true);
         try {
-          const data = await api<{ actors: ActorResult[] }>(
-            `/api/actors?q=${encodeURIComponent(pickerQuery)}`,
+          const data = await api<{ results: ActorResult[] }>(
+            `/api/actors?limit=30&q=${encodeURIComponent(pickerQuery)}`,
           );
-          setPickerResults(data.actors.slice(0, 30));
+          setPickerResults(data.results);
         } catch {
           setPickerResults([]);
         } finally {

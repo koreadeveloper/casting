@@ -6599,3 +6599,86 @@ button.agree-view {
 .split-actions.wide-action {
   max-width: none;
 }
+
+/* 만 14세 미만 아역 배역 안내(지원 화면)와 등록 화면 안내 */
+.child-notice {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff7e8;
+  border: 1px solid #f3dfb5;
+  color: #6b4a12;
+}
+.child-notice strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+.child-notice p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.child-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #8a5a00;
+  font-weight: 600;
+}
+
+/* 앱 안 브라우저 안내: 화면 전체를 덮어 브라우저를 고르게 한다(닫기 없음) */
+.in-app-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(11, 13, 18, 0.72);
+  backdrop-filter: blur(6px);
+  overflow-y: auto;
+}
+.in-app-card {
+  width: min(400px, 100%);
+  background: #fff;
+  border-radius: 24px;
+  padding: 26px 20px 20px;
+  text-align: center;
+  box-shadow: 0 20px 60px #0b0d1240;
+}
+.in-app-icon {
+  font-size: 36px;
+}
+.in-app-card h2 {
+  margin: 8px 0 8px;
+  font-size: 20px;
+}
+.in-app-card > p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.in-app-actions {
+  display: grid;
+  gap: 8px;
+}
+.in-app-url {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--page);
+  font-size: 12px;
+  color: var(--muted);
+}
+.in-app-help {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}

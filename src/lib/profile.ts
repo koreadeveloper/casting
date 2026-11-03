@@ -1,7 +1,7 @@
 // 확장자를 적는 건 node --test가 이 파일을 그대로 읽을 수 있게 하려는 것이다 (profile-draft.ts와 같은 이유).
 import { koreaToday, manAge } from './age.ts';
 
-export type Gender ='female' | 'male' | 'other' | '';
+export type Gender = 'female' | 'male' | 'other' | '';
 
 export type Filmography = { year: string; title: string; role: string };
 
@@ -163,9 +163,11 @@ export function ageOf(birthYear: number | null, currentYear = new Date().getFull
 
 /** 화면에 보여 주는 나이. 생년월일이 있으면 만 나이, 출생연도만 있으면 연도로만 계산한다. */
 export function profileAge(
-  profile: { birthYear: number | null; birthDate?: string },
+  profile: { birthYear: number | null; birthDate?: string; age?: number | null },
   today = new Date(),
 ) {
+  // 제작진에게 보내는 프로필은 생년월일 대신 서버에서 계산한 나이(age)만 담는다(producerView).
+  if (typeof profile.age === 'number') return profile.age;
   return profile.birthDate
     ? manAge(profile.birthDate, today)
     : ageOf(profile.birthYear, Number(koreaToday(today).slice(0, 4)));
@@ -273,4 +275,20 @@ export function cleanList(value: unknown, allowed: string[] | null, max: number)
     .map((item) => item.trim())
     .filter((item) => item && (!allowed || allowed.includes(item)));
   return [...new Set(items)].slice(0, max);
+}
+
+/**
+ * 제작진(다른 사람)에게 보내는 배우 프로필. 정확한 생년월일과 출연 불가 날짜 목록은 빼고,
+ * 나이는 서버에서 계산해 넣는다. 촬영 가능 여부는 검색한 날짜에 대해서만 서버가 O/X로 알려 준다
+ * (availabilityIn). 배우에게 '제작자에게는 해당 날짜의 가능/불가만 보인다'고 안내한 약속을 지키기 위함.
+ */
+export function producerView<T extends ActorProfile>(
+  profile: T,
+  today = new Date(),
+): Omit<T, 'birthDate' | 'unavailableDates'> & {
+  birthDate: '';
+  unavailableDates: [];
+  age: number | null;
+} {
+  return { ...profile, birthDate: '', unavailableDates: [], age: profileAge(profile, today) };
 }
