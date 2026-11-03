@@ -93,12 +93,12 @@ pnpm dev
 ## 🧱 기술 스택
 
 - **Next.js 16.4** (App Router, Server Components + Route Handlers) · **React 19** · **TypeScript 5.9** · **pnpm**
-- **DB**: Neon Postgres — `pg` 클라이언트, 비동기 접근 계층은 `src/lib/sql.ts` (스키마는 `src/lib/db.ts`가 첫 접속 때 자동 생성)
+- **DB**: Supabase Postgres — `pg` 클라이언트, 비동기 접근 계층은 `src/lib/sql.ts` (스키마는 `src/lib/db.ts`가 첫 접속 때 자동 생성)
 - **인증**: 이메일 + scrypt 비밀번호 해시 + HMAC 서명 세션 쿠키 (`src/lib/auth.ts`)
 - **업로드**: 로컬 `data/uploads/` (이미지·PDF, 매직바이트 검증, 5MB)
 - **PWA**: 매니페스트·아이콘·홈 화면 설치
 
-> 💡 **배포**: 데이터는 Neon Postgres에 저장되어 서버리스(Vercel)에서도 유지됩니다. 사진·PDF 업로드는 아직 로컬 `data/uploads/`라서, 영구 저장(Vercel Blob)으로 옮기기 전까지 Vercel에서는 재시작 시 사라집니다.
+> 💡 **배포**: 데이터는 Supabase Postgres에 저장되어 서버리스(Vercel)에서도 유지됩니다. 사진·PDF 업로드는 Supabase Storage(비공개 버킷 `uploads`)에 저장됩니다. `SUPABASE_URL`·`SUPABASE_SECRET_KEY`가 없으면 로컬 `data/uploads/`에 저장되어 Vercel에서는 재시작 시 사라집니다.
 
 ---
 
@@ -173,4 +173,4 @@ pnpm format         # prettier --write
 
 ### Vercel 체험 배포
 
-Vercel Storage에서 Neon을 프로젝트에 연결하면 `DATABASE_URL`이 자동으로 들어갑니다. `DEMO_MODE=true`와 24자 이상 무작위 `SESSION_SECRET`을 설정하면 제작자·배우 체험 버튼으로 바로 입장하고, 빌드 때 `scripts/prepare-demo.ts`가 가상 계정·배역·지원자를 Neon에 채웁니다(여러 번 실행해도 중복되지 않음). 데이터는 영구 보존되므로 실제 운영 전에는 `DEMO_MODE`를 끄세요. 로컬 개발도 같은 `DATABASE_URL`을 쓰므로, 따로 쓰려면 Neon 브랜치를 만들어 그 연결 문자열을 `.env.local`에 넣으세요.
+Supabase 대시보드(Connect → Direct → Session pooler)에서 연결 문자열을 복사해 Vercel 환경변수 `DATABASE_URL`에 넣으세요. `DEMO_MODE=true`와 24자 이상 무작위 `SESSION_SECRET`을 설정하면 제작자·배우 체험 버튼으로 바로 입장하고, 빌드 때 `scripts/prepare-demo.ts`가 가상 계정·배역·지원자를 Supabase에 채웁니다(여러 번 실행해도 중복되지 않음). 데이터는 영구 보존되므로 실제 운영 전에는 `DEMO_MODE`를 끄세요. 로컬 개발도 같은 `DATABASE_URL`을 쓰므로, 따로 쓰려면 Supabase 프로젝트를 하나 더 만들어 그 연결 문자열을 `.env.local`에 넣으세요.
