@@ -7,6 +7,8 @@ import {
   respondToOffer,
   sendChatMessage,
 } from '@/lib/db';
+import { markRead } from '@/lib/inbox';
+import { actorReaderKey, threadKey } from '@/lib/inbox-rules';
 import { requiredText } from '@/lib/validation';
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -14,6 +16,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const participant = await chatParticipant(request, id);
   if (!participant) return NextResponse.json({ error: '대화를 볼 수 없습니다.' }, { status: 403 });
   const room = participantRoom(participant, request.nextUrl.searchParams.get('room') ?? '');
+  // 방을 열어 본 시각을 남겨 채팅 목록의 안 읽은 수를 줄인다.
+  await markRead(
+    participant.kind === 'producer' ? participant.userId : actorReaderKey(id),
+    threadKey(id, room),
+  );
   // 배우에게는 들어갈 수 있는 방 목록(개별방 방식에서 팀원별 방)도 함께 준다.
   const rooms =
     participant.kind === 'actor' && participant.mode === 'private' ? await listChatRooms(id) : [];

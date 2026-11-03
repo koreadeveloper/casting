@@ -6412,3 +6412,134 @@ button.agree-view {
   color: var(--ink);
   font-weight: 700;
 }
+
+/* 채팅 목록: 공고별 폴더 칩 + 방 목록 */
+.chat-inbox .page-title {
+  margin-bottom: 12px;
+}
+.inbox-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+.inbox-chips button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  border: 0;
+  border-radius: 22px;
+  padding: 9px 15px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px #0b0d120d;
+}
+.inbox-chips button.on {
+  background: var(--obsidian);
+  color: var(--lime);
+}
+.inbox-chip-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inbox-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #ff5a1f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+.inbox-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.inbox-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  text-align: left;
+  color: var(--ink);
+}
+.inbox-row:hover {
+  background: #fff;
+}
+.inbox-avatar {
+  flex: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 18px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--lavender);
+  color: var(--primary);
+  font-weight: 800;
+  font-size: 14px;
+}
+.inbox-avatar.team {
+  background: var(--obsidian);
+  font-size: 22px;
+}
+.inbox-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.inbox-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.inbox-title {
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inbox-folder {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inbox-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+.inbox-last {
+  font-size: 13px;
+  color: #6d727d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inbox-side {
+  flex: none;
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}

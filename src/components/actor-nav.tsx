@@ -18,7 +18,7 @@ export default function ActorNav({
   active,
   actorId,
 }: {
-  active: 'home' | 'profile' | 'preview';
+  active: 'home' | 'chat' | 'profile' | 'preview';
   actorId: string;
 }) {
   return (
@@ -34,6 +34,17 @@ export default function ActorNav({
           </svg>
         </span>
         <span className="nav-label">홈</span>
+      </Link>
+      <Link href="/me/chat" className={active === 'chat' ? 'active' : ''}>
+        <span className="nav-ic">
+          <svg {...stroke}>
+            <path
+              d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H10l-4 4v-4h0.5A2.5 2.5 0 0 1 4 13.5v-7Z"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+        <span className="nav-label">채팅</span>
       </Link>
       <Link href="/me/profile" className={active === 'profile' ? 'active' : ''}>
         <span className="nav-ic">

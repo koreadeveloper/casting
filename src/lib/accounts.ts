@@ -711,6 +711,7 @@ export async function deleteProject(
     await run(`DELETE FROM board_moves WHERE candidate_id IN (${candIds})`);
     await run('DELETE FROM project_candidates WHERE project_id=?');
     await run('DELETE FROM team_members WHERE project_id=?');
+    await run('DELETE FROM team_messages WHERE project_id=?');
     await run('UPDATE audition_events SET project_id=NULL WHERE project_id=?');
     await run(`UPDATE compare_results SET role_id=NULL WHERE role_id IN (${roleIds})`);
     await run(`DELETE FROM events WHERE role_id IN (${roleIds})`);
@@ -887,6 +888,8 @@ export async function deleteAccount(userId: string) {
     await run('DELETE FROM favorites WHERE producer_id=? OR actor_id=?', 2);
     await run('DELETE FROM compare_results WHERE owner_id=?', 1);
     await run(`DELETE FROM team_members WHERE user_id=? OR project_id IN (${projectIds})`, 2);
+    await run(`DELETE FROM team_messages WHERE sender_id=? OR project_id IN (${projectIds})`, 2);
+    await run('DELETE FROM chat_reads WHERE user_key=?', 1);
     await run('DELETE FROM roles WHERE owner_id=?', 1);
     await run('DELETE FROM projects WHERE owner_id=?', 1);
     await run('DELETE FROM password_resets WHERE user_id=?', 1);
