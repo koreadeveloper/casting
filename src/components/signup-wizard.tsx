@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Brand } from './brand';
+import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal';
 
 type Role = 'producer' | 'actor';
 
@@ -199,7 +200,10 @@ export default function SignupWizard({ role }: { role: Role }) {
               <label className="check">
                 <input type="checkbox" checked={form.agreeTerms} onChange={set('agreeTerms')} />
                 <span>
-                  <b>[필수]</b> 서비스 이용약관 동의
+                  <b>[필수]</b> 만 14세 이상이며, 서비스 이용약관에 동의합니다
+                  <a className="agree-view" href={TERMS_PATH} target="_blank" rel="noopener">
+                    보기
+                  </a>
                 </span>
               </label>
               <label className="check">
@@ -207,6 +211,9 @@ export default function SignupWizard({ role }: { role: Role }) {
                 <span>
                   <b>[필수]</b> 개인정보 수집·이용 동의 (이름, 이메일, 연락처
                   {role === 'actor' ? ', 프로필 사진·영상' : ', 소속'})
+                  <a className="agree-view" href={PRIVACY_PATH} target="_blank" rel="noopener">
+                    보기
+                  </a>
                 </span>
               </label>
               {role === 'actor' && (

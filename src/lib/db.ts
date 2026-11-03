@@ -62,7 +62,7 @@ async function initialize(database: Conn) {
   const migrated = await database
     .prepare(
       `SELECT 1 FROM information_schema.columns
-       WHERE table_schema = current_schema() AND table_name='school_domains' AND column_name='aliases'`,
+       WHERE table_schema = current_schema() AND table_name='inquiries' AND column_name='created_at'`,
     )
     .get();
   if (!migrated) {
@@ -262,7 +262,6 @@ async function initialize(database: Conn) {
     -- 제작진 인증 신청·결과. kind: school(학교) | business(제작사), method: email | document.
     -- status: code_sent(학교 메일 확인 코드 보냄) | approved | rejected.
     -- 서류 원본은 저장하지 않는다(기획서: 인증 서류는 확인 후 파기). 판정 결과와 이유만 남긴다.
-    -- 이 표가 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 만든다.
     CREATE TABLE IF NOT EXISTS verifications (
       id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id),
       kind TEXT NOT NULL, method TEXT NOT NULL, status TEXT NOT NULL,
@@ -273,9 +272,15 @@ async function initialize(database: Conn) {
     );
     CREATE INDEX IF NOT EXISTS verifications_user ON verifications(user_id, kind, created_at);
     -- 학교 메일 인증용 '메일 도메인 → 대학교 이름' 목록. 내용은 아래에서 school-domains.ts 값으로 채운다.
-    -- aliases는 줄임말(서울대, 한예종 등)을 '|'로 이은 것. 이 표가 구조 변경 기준이라 반드시 마지막에 만든다.
+    -- aliases는 줄임말(서울대, 한예종 등)을 '|'로 이은 것.
     CREATE TABLE IF NOT EXISTS school_domains (
       domain TEXT PRIMARY KEY, school_name TEXT NOT NULL, aliases TEXT NOT NULL DEFAULT ''
+    );
+    -- 문의하기(/contact). kind: general | bug | privacy | report. 1년이 지난 문의는 새 문의가 들어올 때 지운다.
+    -- 이 표가 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 만든다.
+    CREATE TABLE IF NOT EXISTS inquiries (
+      id TEXT PRIMARY KEY, kind TEXT NOT NULL, email TEXT NOT NULL,
+      body TEXT NOT NULL, link TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL
     );
   `);
   }

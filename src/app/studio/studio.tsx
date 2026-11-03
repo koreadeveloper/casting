@@ -1349,6 +1349,9 @@ export default function Studio({
                 {Icon.out} 로그아웃
               </button>
             </div>
+            <a href="/account/delete" className="account-danger">
+              회원 탈퇴
+            </a>
             <p className="version-note">캐스팅플로우 MVP 0.2</p>
           </>
         )}

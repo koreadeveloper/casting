@@ -5858,3 +5858,201 @@ img {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ── 이용약관·개인정보처리방침 ─────────────────────── */
+.legal-nav {
+  display: flex;
+  gap: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.legal-nav a {
+  color: var(--muted);
+}
+.legal-nav a[aria-current='page'] {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.legal-doc {
+  width: calc(100% - 32px);
+  max-width: 760px;
+  margin: 8px auto 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 24px 20px 32px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: #2b303a;
+}
+.legal-doc h1 {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  margin: 12px 0 4px;
+  color: var(--ink);
+}
+.legal-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 20px;
+}
+.legal-doc h2 {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 30px 0 8px;
+}
+.legal-doc p {
+  margin: 8px 0;
+}
+.legal-doc ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+.legal-doc li + li {
+  margin-top: 4px;
+}
+.legal-doc a:not(.button) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.legal-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+.legal-table {
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.legal-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.legal-table th,
+.legal-table td {
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+.legal-table th {
+  background: var(--page);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.legal-table tr:last-child td {
+  border-bottom: 0;
+}
+@media (max-width: 599px) {
+  .legal-table thead {
+    display: none;
+  }
+  .legal-table tr {
+    display: block;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .legal-table tr:last-child {
+    border-bottom: 0;
+  }
+  .legal-table td {
+    display: block;
+    padding: 4px 14px;
+    border-bottom: 0;
+  }
+  .legal-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .legal-table td:first-child {
+    font-weight: 700;
+    color: var(--ink);
+  }
+}
+@media (min-width: 720px) {
+  .legal-doc {
+    padding: 36px 40px 44px;
+  }
+}
+
+/* 지원서·가입 동의 문구 옆 '보기' 링크 */
+.agree-view {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+.agree-detail {
+  margin: 4px 0 0 27px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.lp-legal {
+  display: flex;
+  gap: 14px;
+}
+.lp-legal a {
+  color: var(--muted);
+}
+.lp-legal a[href='/privacy'] {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* 회원 탈퇴 */
+.delete-list {
+  margin: 14px 0 6px;
+  padding: 14px 14px 14px 32px;
+  background: #fbefef;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #6b2a2a;
+}
+.account-danger {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.menu-list + .account-danger {
+  margin: 14px 4px 0;
+}
+
+/* 문의하기 */
+.auth-form textarea {
+  width: 100%;
+  border: 1px solid #e1e6ef;
+  border-radius: 12px;
+  background: var(--page);
+  padding: 13px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--ink);
+  outline: none;
+  resize: vertical;
+}
+.auth-form textarea:focus {
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px #0b0d1218;
+}
+.auth-form .agree-detail {
+  margin: -8px 0 0 27px;
+}

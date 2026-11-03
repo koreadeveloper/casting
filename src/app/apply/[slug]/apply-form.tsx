@@ -22,6 +22,7 @@ import { pushRecent, RECENT_ROLES } from '@/lib/recent';
 import { MAX_APPLICATION_PHOTOS } from '@/lib/validation';
 import TrustBadges from '@/components/trust-badges';
 import type { ProducerBadges } from '@/lib/verification-rules';
+import { PRIVACY_PATH } from '@/lib/legal';
 
 export type Prefill = {
   name: string;
@@ -134,6 +135,8 @@ export default function ApplyForm({
           ...body,
           // 프로필에서 고른 사진이 있으면 그걸 쓰고, 없으면 직접 넣은 사진 링크를 쓴다.
           photoUrls: picked.length > 0 ? picked : [body.photoUrl].filter(Boolean),
+          agreePrivacy: body.agreePrivacy === 'on',
+          agreeProvide: body.agreeProvide === 'on',
           roleSlug: role.slug,
           proposalId,
         }),
@@ -341,6 +344,12 @@ export default function ApplyForm({
                 주세요.
               </p>
             )}
+            <Link
+              href={`/contact?type=report&link=${encodeURIComponent(`/apply/${role.slug}`)}`}
+              className="account-danger"
+            >
+              이 공고 신고하기
+            </Link>
           </section>
           <p className="small-note">지원 후 접수 상태를 확인할 수 있습니다.</p>
           <button
@@ -542,6 +551,40 @@ export default function ApplyForm({
                 <option value="unsure">문의가 필요함</option>
               </select>
             </label>
+            {/* 회원은 가입할 때 수집·이용에 동의했으므로 제작진 제공 동의만 받는다. */}
+            <div className="agree-box">
+              {!prefill && (
+                <div>
+                  <label className="check">
+                    <input type="checkbox" name="agreePrivacy" required />
+                    <span>
+                      <b>[필수]</b> 만 14세 이상이며, 지원에 필요한 개인정보 수집·이용에 동의합니다
+                      <a className="agree-view" href={PRIVACY_PATH} target="_blank" rel="noopener">
+                        보기
+                      </a>
+                    </span>
+                  </label>
+                  <p className="agree-detail">
+                    항목: 이름, 이메일, 연락처, 소개, 영상 링크, (선택) 나이·사진·특기 · 목적: 지원
+                    접수와 결과 안내 · 보유: 삭제를 요청하거나 공고를 올린 제작자가 탈퇴할 때까지
+                  </p>
+                </div>
+              )}
+              <div>
+                <label className="check">
+                  <input type="checkbox" name="agreeProvide" required />
+                  <span>
+                    <b>[필수]</b> 지원서를 이 공고의 제작진에게 제공하는 데 동의합니다
+                  </span>
+                </label>
+                <p className="agree-detail">
+                  받는 사람: ‘{role.projectTitle}’ 제작진(공고를 올린 제작자와 초대된 팀원) · 목적:
+                  캐스팅 검토와 연락 · 항목: 이 지원서의 내용 · 보유: 삭제를 요청하거나{' '}
+                  {prefill ? '탈퇴할' : '공고를 올린 제작자가 탈퇴할'} 때까지. 동의하지 않을 수
+                  있지만, 그러면 지원할 수 없어요.
+                </p>
+              </div>
+            </div>
             <p className="small-note">
               지원 내용은 해당 배역의 제작진이 검토합니다. 접수 링크는 제출 후 이 기기에서 보관해
               주세요.
