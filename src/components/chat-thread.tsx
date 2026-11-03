@@ -195,6 +195,15 @@ export default function ChatThread({
   const [file, setFile] = useState<File | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const messageList = useRef<HTMLDivElement>(null);
+  // 대화방: 배우는 개별방 방식이면 팀원별 방을 골라 들어간다(''은 기본 방). 제작진의 방은 서버가 정한다.
+  const [room, setRoom] = useState('');
+  const [rooms, setRooms] = useState<{ room: string; name: string }[]>([]);
+  const [chatMode, setChatMode] = useState<'group' | 'private'>('group');
+  const [me, setMe] = useState('');
+  // 내가 보낸 글인지. 제작진은 같은 편이 여럿일 수 있어 보낸 사람 id까지 본다(예전 글은 id가 없다).
+  const isMine = (message: ChatMessage) =>
+    message.sender === mode &&
+    (mode === 'actor' || !message.senderId || !me || message.senderId === me);
 
   function pickFile(picked: File | undefined) {
     if (fileInput.current) fileInput.current.value = '';
@@ -210,17 +219,25 @@ export default function ChatThread({
   const endpoint = `/api/chat/${applicationId}`;
   const load = useCallback(async () => {
     try {
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${endpoint}?room=${encodeURIComponent(room)}`, {
         cache: 'no-store',
         headers: receipt ? { 'X-Receipt-Token': receipt } : undefined,
       });
       if (!response.ok) return;
-      const data = (await response.json()) as { messages: ChatMessage[] };
+      const data = (await response.json()) as {
+        messages: ChatMessage[];
+        mode?: 'group' | 'private';
+        rooms?: { room: string; name: string }[];
+        me?: string;
+      };
       setMessages(data.messages);
+      setChatMode(data.mode ?? 'group');
+      setRooms(data.rooms ?? []);
+      setMe(data.me ?? '');
     } catch {
       /* 연결 안내는 전송 시 표시 */
     }
-  }, [endpoint, receipt]);
+  }, [endpoint, receipt, room]);
 
   useEffect(() => {
     void load();
@@ -266,13 +283,14 @@ export default function ChatThread({
       const form = new FormData();
       form.append('file', withFile);
       form.append('body', draft);
+      form.append('room', room);
       if (receipt) form.append('receipt', receipt);
       request = { method: 'POST', body: form };
     } else {
       request = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, receipt }),
+        body: JSON.stringify({ ...payload, receipt, room }),
       };
     }
     try {
@@ -392,6 +410,30 @@ export default function ChatThread({
         )}
         {mode === 'actor' && profileHref && <a href={profileHref}>공고 보기 ›</a>}
       </div>
+      {mode === 'actor' && chatMode === 'private' && rooms.length > 0 && (
+        <div className="chat-rooms" role="tablist" aria-label="대화방">
+          {[{ room: '', name: peerName || '제작진' }, ...rooms].map((item) => (
+            <button
+              key={item.room || 'main'}
+              role="tab"
+              aria-selected={room === item.room}
+              className={room === item.room ? 'on' : ''}
+              onClick={() => {
+                setRoom(item.room);
+                setMessages([]);
+              }}
+            >
+              {item.name}
+            </button>
+          ))}
+        </div>
+      )}
+      {mode === 'producer' && chatMode === 'private' && (
+        <p className="chat-room-note">개별방이에요. 이 대화는 나와 배우만 볼 수 있어요.</p>
+      )}
+      {mode === 'producer' && chatMode === 'group' && (
+        <p className="chat-room-note">단톡방이에요. 프로젝트 팀원 모두가 이 대화를 함께 봐요.</p>
+      )}
       {confirmed && (
         <div className="confirmed-schedule">
           <span>확정된 오디션 일정</span>
@@ -420,7 +462,11 @@ export default function ChatThread({
             <Fragment key={message.id}>
               {divider && <div className="date-pill">{divider}</div>}
               {message.kind === 'text' ? (
-                <div className={`bubble-row ${message.sender === mode ? 'mine' : 'theirs'}`}>
+                <div className={`bubble-row ${isMine(message) ? 'mine' : 'theirs'}`}>
+                  {/* 단톡방에서는 누가 보냈는지 이름을 붙인다 */}
+                  {!isMine(message) && message.sender === 'producer' && message.senderName && (
+                    <span className="bubble-name">{message.senderName}</span>
+                  )}
                   <div className={`bubble${message.attachment ? ' has-file' : ''}`}>
                     {message.attachment && (
                       <ChatAttachmentView

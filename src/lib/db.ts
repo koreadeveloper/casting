@@ -7,6 +7,7 @@ import { matchesRoleFilters, sortRoleListings, type RoleFilters } from './role-s
 import { MESSAGE_PREVIEW_SQL } from './chat-files';
 import { attendanceMessage, type AttendanceCheck, type AttendanceStatus } from './attendance';
 import { schoolDomainRows } from './school-domains';
+import { chatMode, type ChatMode } from './chat-rooms';
 import { conn as rawConnection, withAdvisoryLock, type Conn, type Statement } from './sql';
 
 // 스키마 생성은 프로세스당 한 번만, 다른 인스턴스와 겹치지 않게 실행한다.
@@ -60,7 +61,7 @@ async function initialize(database: Conn) {
   const migrated = await database
     .prepare(
       `SELECT 1 FROM information_schema.columns
-       WHERE table_schema = current_schema() AND table_name='actor_profiles' AND column_name='birth_date'`,
+       WHERE table_schema = current_schema() AND table_name='chat_messages' AND column_name='room'`,
     )
     .get();
   if (!migrated) {
@@ -289,8 +290,13 @@ async function initialize(database: Conn) {
     CREATE INDEX IF NOT EXISTS oauth_accounts_user ON oauth_accounts(user_id);
   `);
     // 배우 생년월일 'YYYY-MM-DD' (만 나이 계산용). 비어 있으면 예전처럼 birth_year만 쓴다.
-    // 이 칸이 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 추가한다.
     await addColumn(database, 'actor_profiles', 'birth_date', text);
+    // 배우 대화방 방식(lib/chat-rooms.ts): '' 또는 'group' = 단톡방, 'private' = 팀원별 개별방
+    await addColumn(database, 'projects', 'chat_mode', text);
+    // 보낸 제작진(사용자 id, 배우가 보낸 글은 '')과 방(''은 기본 방, 개별방은 그 팀원의 id)
+    await addColumn(database, 'chat_messages', 'sender_id', text);
+    // 이 칸이 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 추가한다.
+    await addColumn(database, 'chat_messages', 'room', text);
   }
   // 목록을 고쳤을 때 다음 시작에 반영된다. 한 번에 넣고, 이미 있는 도메인은 이름·줄임말만 갱신한다.
   const quote = (text: string) => `'${text.replace(/'/g, "''")}'`;
@@ -422,11 +428,11 @@ function appFromRow(row: Record<string, unknown>): Application {
 }
 
 const CHAT_SUMMARY = `
-  (SELECT ${MESSAGE_PREVIEW_SQL('m')} FROM chat_messages m WHERE m.application_id=applications.id ORDER BY m.created_at DESC LIMIT 1) last_body,
-  (SELECT m.created_at FROM chat_messages m WHERE m.application_id=applications.id ORDER BY m.created_at DESC LIMIT 1) last_at,
-  (SELECT m.sender FROM chat_messages m WHERE m.application_id=applications.id ORDER BY m.created_at DESC LIMIT 1) last_sender,
-  (SELECT COUNT(*) FROM chat_messages m WHERE m.application_id=applications.id AND m.sender='actor'
-    AND m.created_at > COALESCE((SELECT MAX(p.created_at) FROM chat_messages p WHERE p.application_id=applications.id AND p.sender='producer'),'')) unread,
+  (SELECT ${MESSAGE_PREVIEW_SQL('m')} FROM chat_messages m WHERE m.application_id=applications.id AND m.room='' ORDER BY m.created_at DESC LIMIT 1) last_body,
+  (SELECT m.created_at FROM chat_messages m WHERE m.application_id=applications.id AND m.room='' ORDER BY m.created_at DESC LIMIT 1) last_at,
+  (SELECT m.sender FROM chat_messages m WHERE m.application_id=applications.id AND m.room='' ORDER BY m.created_at DESC LIMIT 1) last_sender,
+  (SELECT COUNT(*) FROM chat_messages m WHERE m.application_id=applications.id AND m.room='' AND m.sender='actor'
+    AND m.created_at > COALESCE((SELECT MAX(p.created_at) FROM chat_messages p WHERE p.application_id=applications.id AND p.room='' AND p.sender='producer'),'')) unread,
   (SELECT m.status FROM chat_messages m WHERE m.application_id=applications.id AND m.kind='offer' ORDER BY m.created_at DESC LIMIT 1) offer_status,
   (SELECT m.selected_slot FROM chat_messages m WHERE m.application_id=applications.id AND m.kind='offer' AND m.status='confirmed' ORDER BY m.created_at DESC LIMIT 1) confirmed_slot`;
 
@@ -894,6 +900,9 @@ function messageFromRow(row: Record<string, unknown>): ChatMessage {
     selectedSlot: String(row.selected_slot),
     status: row.status as ChatMessage['status'],
     createdAt: String(row.created_at),
+    room: String(row.room ?? ''),
+    senderId: String(row.sender_id ?? ''),
+    senderName: String(row.sender_name ?? ''),
     attachment: row.file_key
       ? {
           key: String(row.file_key),
@@ -905,12 +914,64 @@ function messageFromRow(row: Record<string, unknown>): ChatMessage {
   };
 }
 
-/** 이 지원서의 대화에 실제로 올라온 파일인지 확인하고 정보를 돌려준다. */
+/** 이 지원서의 대화에 실제로 올라온 파일인지 확인하고 정보와 그 파일이 있는 방을 돌려준다. */
 export async function findChatAttachment(applicationId: string, key: string) {
   const row = await db()
     .prepare('SELECT * FROM chat_messages WHERE application_id=? AND file_key=? LIMIT 1')
     .get(applicationId, key);
-  return row ? messageFromRow(row as Record<string, unknown>).attachment : null;
+  if (!row) return null;
+  const message = messageFromRow(row as Record<string, unknown>);
+  return message.attachment ? { ...message.attachment, room: message.room } : null;
+}
+
+/**
+ * 대화방을 정하는 데 필요한 정보: 프로젝트(없으면 예전 배역), 프로젝트 주인, 대화방 방식.
+ * 예전 배역(project_id 없음)은 배역 주인 한 사람과의 단톡방으로 본다.
+ */
+export async function getChatContext(applicationId: string) {
+  const row = (await db()
+    .prepare(
+      `SELECT r.project_id pid, r.owner_id role_owner, p.owner_id project_owner, p.chat_mode
+       FROM applications a JOIN roles r ON r.id=a.role_id
+       LEFT JOIN projects p ON p.id=r.project_id WHERE a.id=?`,
+    )
+    .get(applicationId)) as
+    | {
+        pid: string | null;
+        role_owner: string | null;
+        project_owner: string | null;
+        chat_mode: string | null;
+      }
+    | undefined;
+  if (!row) return null;
+  return {
+    projectId: row.project_owner ? String(row.pid) : '',
+    ownerId: String(row.project_owner || row.role_owner || ''),
+    mode: chatMode(row.project_owner ? row.chat_mode : ''),
+  };
+}
+
+/** 개별방 방식에서 팀원이 말을 걸어 생긴 방들(기본 방 제외)과 그 팀원 이름 */
+export async function listChatRooms(applicationId: string) {
+  return (
+    (await db()
+      .prepare(
+        `SELECT DISTINCT m.room, u.name FROM chat_messages m LEFT JOIN users u ON u.id=m.room
+         WHERE m.application_id=? AND m.room<>'' ORDER BY u.name`,
+      )
+      .all(applicationId)) as { room: string; name: string | null }[]
+  ).map((row) => ({ room: row.room, name: row.name || '제작진' }));
+}
+
+/** 프로젝트의 배우 대화방 방식을 바꾼다(주인만 부른다). */
+export async function setProjectChatMode(projectId: string, mode: ChatMode) {
+  await db().prepare('UPDATE projects SET chat_mode=? WHERE id=?').run(mode, projectId);
+}
+
+export async function getProjectChatMode(projectId: string) {
+  const row = (await db().prepare('SELECT chat_mode FROM projects WHERE id=?').get(projectId)) as
+    { chat_mode: string | null } | undefined;
+  return chatMode(row?.chat_mode);
 }
 
 export async function getLatestOffer(applicationId: string) {
@@ -922,16 +983,25 @@ export async function getLatestOffer(applicationId: string) {
   return row ? messageFromRow(row as Record<string, unknown>) : null;
 }
 
-export async function listChatMessages(applicationId: string) {
+/** 대화 메시지. room을 주면 그 방만, 안 주면 모든 방(배우 화면의 마지막 메시지 미리보기 등). */
+export async function listChatMessages(applicationId: string, room?: string) {
+  const byRoom = room !== undefined;
   return (
     await db()
-      .prepare('SELECT * FROM chat_messages WHERE application_id=? ORDER BY created_at ASC')
-      .all(applicationId)
+      .prepare(
+        `SELECT m.*, u.name sender_name FROM chat_messages m LEFT JOIN users u ON u.id=m.sender_id
+         WHERE m.application_id=?${byRoom ? ' AND m.room=?' : ''} ORDER BY m.created_at ASC`,
+      )
+      .all(...(byRoom ? [applicationId, room] : [applicationId]))
   ).map((row) => messageFromRow(row as Record<string, unknown>));
 }
 
 export async function getChatMessage(id: string) {
-  const row = await db().prepare('SELECT * FROM chat_messages WHERE id=?').get(id);
+  const row = await db()
+    .prepare(
+      'SELECT m.*, u.name sender_name FROM chat_messages m LEFT JOIN users u ON u.id=m.sender_id WHERE m.id=?',
+    )
+    .get(id);
   return row ? messageFromRow(row as Record<string, unknown>) : null;
 }
 
@@ -939,6 +1009,9 @@ export async function sendChatMessage(
   applicationId: string,
   input: Pick<ChatMessage, 'sender' | 'kind' | 'body' | 'slots' | 'place' | 'preparation'> & {
     attachment?: ChatMessage['attachment'];
+    /** 보낸 제작진 id(배우면 비움)와 방(''은 기본 방) */
+    senderId?: string;
+    room?: string;
   },
 ) {
   const application = await getApplication(applicationId);
@@ -948,8 +1021,8 @@ export async function sendChatMessage(
   await db()
     .prepare(
       `INSERT INTO chat_messages (id,application_id,sender,kind,body,slots,place,preparation,created_at,
-      file_key,file_name,file_size,file_ext)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      file_key,file_name,file_size,file_ext,sender_id,room)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
     .run(
       id,
@@ -965,6 +1038,8 @@ export async function sendChatMessage(
       file?.name ?? '',
       file?.size ?? 0,
       file?.ext ?? '',
+      input.senderId ?? '',
+      input.room ?? '',
     );
   if (input.sender === 'producer')
     await db().prepare('UPDATE applications SET chat_open=1 WHERE id=?').run(applicationId);

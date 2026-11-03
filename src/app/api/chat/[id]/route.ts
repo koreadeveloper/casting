@@ -1,34 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProducerId } from '@/lib/auth';
+import { canSeeRoom, chatParticipant, participantRoom } from '@/lib/chat-access';
 import {
-  applicationOwnedBy,
-  getApplication,
   getChatMessage,
   listChatMessages,
+  listChatRooms,
   respondToOffer,
   sendChatMessage,
 } from '@/lib/db';
 import { requiredText } from '@/lib/validation';
 
-async function authorize(request: NextRequest, applicationId: string, receipt?: string) {
-  const application = await getApplication(applicationId);
-  const token = receipt || request.headers.get('x-receipt-token') || '';
-  if (token)
-    return application?.chatOpen && token.length >= 40 && token === application.receiptToken
-      ? ('actor' as const)
-      : null;
-  const producerId = await getProducerId();
-  if (producerId && (await applicationOwnedBy(applicationId, producerId)))
-    return 'producer' as const;
-  return null;
-}
-
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
-  const actor = await authorize(request, id);
-  if (!actor) return NextResponse.json({ error: '대화를 볼 수 없습니다.' }, { status: 403 });
+  const participant = await chatParticipant(request, id);
+  if (!participant) return NextResponse.json({ error: '대화를 볼 수 없습니다.' }, { status: 403 });
+  const room = participantRoom(participant, request.nextUrl.searchParams.get('room') ?? '');
+  // 배우에게는 들어갈 수 있는 방 목록(개별방 방식에서 팀원별 방)도 함께 준다.
+  const rooms =
+    participant.kind === 'actor' && participant.mode === 'private' ? await listChatRooms(id) : [];
   return NextResponse.json(
-    { messages: await listChatMessages(id) },
+    {
+      messages: await listChatMessages(id, room),
+      room,
+      mode: participant.mode,
+      rooms,
+      me: participant.kind === 'producer' ? participant.userId : '',
+    },
     { headers: { 'Cache-Control': 'private, no-store' } },
   );
 }
@@ -36,8 +32,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const body = await request.json().catch(() => ({}));
-  const sender = await authorize(request, id, requiredText(body.receipt, 100));
-  if (!sender) return NextResponse.json({ error: '대화를 보낼 수 없습니다.' }, { status: 403 });
+  const participant = await chatParticipant(request, id, requiredText(body.receipt, 100));
+  if (!participant)
+    return NextResponse.json({ error: '대화를 보낼 수 없습니다.' }, { status: 403 });
+  const sender = participant.kind;
   const kind = body.kind === 'offer' ? 'offer' : 'text';
   if (kind === 'offer' && sender !== 'producer')
     return NextResponse.json({ error: '제작자만 일정을 제안할 수 있습니다.' }, { status: 403 });
@@ -65,6 +63,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     slots,
     place,
     preparation,
+    senderId: participant.kind === 'producer' ? participant.userId : '',
+    room: participantRoom(participant, body.room),
   });
   return message
     ? NextResponse.json({ message }, { status: 201 })
@@ -74,10 +74,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const body = await request.json().catch(() => ({}));
-  const sender = await authorize(request, id, requiredText(body.receipt, 100));
-  if (!sender) return NextResponse.json({ error: '대화를 변경할 수 없습니다.' }, { status: 403 });
+  const participant = await chatParticipant(request, id, requiredText(body.receipt, 100));
+  if (!participant)
+    return NextResponse.json({ error: '대화를 변경할 수 없습니다.' }, { status: 403 });
+  const sender = participant.kind;
   const message = await getChatMessage(requiredText(body.messageId, 100));
-  if (!message || message.applicationId !== id)
+  if (!message || message.applicationId !== id || !canSeeRoom(participant, message.room))
     return NextResponse.json({ error: '제안을 찾을 수 없습니다.' }, { status: 404 });
   const action = body.action;
   if (
