@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getProducerIntro, getProfile, getProject, getUserById } from '@/lib/accounts';
 import { getActorId } from '@/lib/auth';
-import { getRole } from '@/lib/db';
+import { findActorApplicationToken, getRole } from '@/lib/db';
 import { profileAge } from '@/lib/profile';
 import { getProducerBadges } from '@/lib/verifications';
 import ApplyForm, { type Prefill } from './apply-form';
@@ -52,6 +52,7 @@ export default async function ApplyPage({
       role={role}
       project={role.projectId ? await getProject(role.projectId) : null}
       prefill={prefill}
+      appliedToken={actorId ? await findActorApplicationToken(actorId, role.id) : ''}
       producer={role.ownerId ? await getProducerIntro(role.ownerId) : null}
       trust={role.ownerId ? (await getProducerBadges([role.ownerId])).get(role.ownerId) : undefined}
       proposalId={actorId && proposal && /^[\w-]{8,60}$/.test(proposal) ? proposal : ''}

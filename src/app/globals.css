@@ -6342,3 +6342,16 @@ button.agree-view {
   background: #f1f3f8;
   color: var(--ink);
 }
+
+/* 자료실: 외부 자료 링크 넣기 */
+.doc-link-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+@media (min-width: 720px) {
+  .doc-link-add {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) auto;
+  }
+}

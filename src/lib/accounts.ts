@@ -25,9 +25,16 @@ export const MAX_DOCUMENTS = 5;
 const PDF_UPLOAD_PATTERN = /^\/api\/uploads\/[a-f0-9-]{36}\.pdf$/;
 
 /** Only PDFs uploaded through /api/uploads may be stored as profile documents. */
+/** 자료실 항목: 올린 PDF(/api/uploads/…pdf) 또는 외부 자료 링크(https). 그 밖의 값은 버린다. */
 export function safeDocumentRef(value: unknown) {
   const text = typeof value === 'string' ? value.trim().slice(0, 1000) : '';
-  return PDF_UPLOAD_PATTERN.test(text) ? text : '';
+  if (PDF_UPLOAD_PATTERN.test(text)) return text;
+  try {
+    const url = new URL(text);
+    return url.protocol === 'https:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
 }
 
 export type User = {
