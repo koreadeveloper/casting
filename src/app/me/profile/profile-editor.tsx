@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRef, useState } from 'react';
 import ActorNav from '@/components/actor-nav';
 import type { ActorProfileFull, ProfileDocument } from '@/lib/accounts';
+import { readApiJson, shrinkImage } from '@/lib/image-resize';
 import type { ProfileDraft } from '@/lib/profile-draft';
 import {
   IMAGE_TAG_GROUPS,
@@ -155,9 +156,9 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
       const urls: string[] = [];
       for (const file of Array.from(files).slice(0, 8 - profile.photos.length)) {
         const form = new FormData();
-        form.append('file', file);
+        form.append('file', await shrinkImage(file));
         const response = await fetch('/api/uploads', { method: 'POST', body: form });
-        const data = await response.json();
+        const data = await readApiJson<{ url: string; error?: string }>(response);
         if (!response.ok) throw new Error(data.error || '사진을 올리지 못했습니다.');
         urls.push(data.url);
       }
@@ -183,9 +184,9 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
     setError('');
     try {
       const form = new FormData();
-      form.append('file', file);
+      form.append('file', await shrinkImage(file));
       const response = await fetch('/api/uploads', { method: 'POST', body: form });
-      const data = await response.json();
+      const data = await readApiJson<{ url: string; error?: string }>(response);
       if (!response.ok) throw new Error(data.error || '자료를 올리지 못했습니다.');
       const document: ProfileDocument = { name: file.name, url: data.url };
       setProfile((current) => ({
@@ -217,7 +218,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
             }
           : { method: 'POST', body },
       );
-      const data = await response.json();
+      const data = await readApiJson<any>(response);
       if (!response.ok) throw new Error(data.error || '초안을 만들지 못했습니다.');
       setDraft(data.draft as ProfileDraft);
       setDraftNote(data.note || '');
@@ -352,9 +353,11 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (!file) return;
-                  const form = new FormData();
-                  form.append('file', file);
-                  void makeDraft(form);
+                  void shrinkImage(file).then((shrunk) => {
+                    const form = new FormData();
+                    form.append('file', shrunk);
+                    return makeDraft(form);
+                  });
                 }}
               />
               {pasteOpen && (
@@ -568,7 +571,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                   >
                     <span>＋</span>
                     {uploading ? '올리는 중…' : '사진 추가'}
-                    <small>JPG·PNG·WEBP, 5MB 이하</small>
+                    <small>JPG·PNG·WEBP (큰 사진은 자동으로 줄여요)</small>
                   </button>
                 )}
               </div>

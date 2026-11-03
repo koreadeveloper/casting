@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { saveUpload } from '@/lib/storage';
 
-const MAX_BYTES = 5 * 1024 * 1024;
+// 서버리스 요청 크기 제한(4.5MB)보다 작게 둔다. 사진은 브라우저에서 줄여서 올린다.
+const MAX_BYTES = 4 * 1024 * 1024;
 
 function detectImage(bytes: Uint8Array) {
   if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'jpg';
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
   if (!(file instanceof File))
     return NextResponse.json({ error: '파일을 선택해 주세요.' }, { status: 400 });
   if (file.size > MAX_BYTES)
-    return NextResponse.json({ error: '파일은 5MB 이하만 올릴 수 있습니다.' }, { status: 413 });
+    return NextResponse.json({ error: '파일은 4MB 이하만 올릴 수 있습니다.' }, { status: 413 });
   const bytes = new Uint8Array(await file.arrayBuffer());
   const ext = detectImage(bytes);
   if (!ext)
