@@ -405,11 +405,6 @@ export default function ApplyForm({
                 />
                 {/* 생년월일은 보내지 않고, 계산한 만 나이만 지원서에 담는다 */}
                 <input type="hidden" name="age" value={age ?? ''} />
-                <small className="muted">
-                  {age !== null
-                    ? `만 ${age}세${birthDate ? '' : ' (프로필 기준)'}`
-                    : '선택 · 입력하면 만 나이가 자동으로 들어가요'}
-                </small>
               </label>
               <label>
                 연락처 <em>필수</em>
@@ -423,6 +418,12 @@ export default function ApplyForm({
                 />
               </label>
             </div>
+            {/* 칸 안에 두면 그 칸만 길어져 옆 '연락처' 칸이 밀리므로 두 칸 아래 한 줄로 둔다 */}
+            <p className="muted field-hint">
+              {age !== null
+                ? `만 ${age}세${birthDate ? '' : ' (프로필 기준)'}`
+                : '생년월일은 선택이에요 · 넣으면 만 나이가 자동으로 들어가요'}
+            </p>
             <label>
               이메일 <em>필수</em>
               <input

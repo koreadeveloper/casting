@@ -460,15 +460,16 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                         }));
                       }}
                     />
-                    <small className="muted">
-                      {profile.birthDate && manAge(profile.birthDate) !== null
-                        ? `만 ${manAge(profile.birthDate)}세`
-                        : profile.birthYear
-                          ? `${profile.birthYear}년생 · 생년월일을 넣으면 만 나이로 정확히 보여요`
-                          : '입력하면 만 나이가 자동으로 계산돼요'}
-                    </small>
                   </label>
                 </div>
+                {/* 칸 안에 두면 그 칸만 길어져 옆 '성별' 칸이 밀리므로 두 칸 아래 한 줄로 둔다 */}
+                <p className="muted field-hint">
+                  {profile.birthDate && manAge(profile.birthDate) !== null
+                    ? `만 ${manAge(profile.birthDate)}세`
+                    : profile.birthYear
+                      ? `${profile.birthYear}년생 · 생년월일을 넣으면 만 나이로 정확히 보여요`
+                      : '생년월일을 넣으면 만 나이가 자동으로 계산돼요'}
+                </p>
                 <div className="form-three">
                   <label>
                     키 (cm)
