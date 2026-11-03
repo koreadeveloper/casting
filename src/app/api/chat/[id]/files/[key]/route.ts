@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { chatParticipant } from '@/lib/chat-access';
+import { canSeeRoom, chatParticipant } from '@/lib/chat-access';
 import {
   CHAT_FILE_KEY,
   chatFileContentType,
@@ -16,10 +16,12 @@ export async function GET(
 ) {
   const { id, key } = await context.params;
   if (!CHAT_FILE_KEY.test(key)) return new NextResponse('Not found', { status: 404 });
-  if (!(await chatParticipant(request, id)))
-    return new NextResponse('Unauthorized', { status: 401 });
+  const participant = await chatParticipant(request, id);
+  if (!participant) return new NextResponse('Unauthorized', { status: 401 });
   const attachment = await findChatAttachment(id, key);
-  if (!attachment) return new NextResponse('Not found', { status: 404 });
+  // 다른 사람의 개별방 파일은 없는 것처럼 다룬다.
+  if (!attachment || !canSeeRoom(participant, attachment.room))
+    return new NextResponse('Not found', { status: 404 });
   const body = await readUpload(key).catch(() => null);
   if (!body) return new NextResponse('Not found', { status: 404 });
   const ext = attachment.ext as ChatFileExt;

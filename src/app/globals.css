@@ -6355,3 +6355,60 @@ button.agree-view {
     grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) auto;
   }
 }
+
+/* 대화방: 단톡방 보낸 사람 이름, 배우의 팀원별 방 고르기, 방 안내 */
+.bubble-row.theirs {
+  flex-wrap: wrap;
+}
+.bubble-name {
+  flex-basis: 100%;
+  margin: 0 0 3px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.chat-rooms {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px 0 2px;
+}
+.chat-rooms button {
+  flex: none;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.chat-rooms button.on {
+  background: var(--obsidian);
+  border-color: var(--obsidian);
+  color: var(--lime);
+}
+.chat-room-note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* 팀 보드: 배우 대화방 방식 */
+.chat-mode-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.chat-mode-pick select {
+  width: auto;
+  font-size: 12px;
+  padding: 6px 10px;
+}
+.chat-mode-pick strong {
+  color: var(--ink);
+  font-weight: 700;
+}

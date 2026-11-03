@@ -118,6 +118,11 @@ export type ChatMessage = {
   selectedSlot: string;
   status: 'sent' | 'selected' | 'confirmed' | 'declined' | 'change_requested';
   createdAt: string;
+  /** 대화방(''은 기본 방, 개별방이면 그 팀원의 id). lib/chat-rooms.ts 참고 */
+  room: string;
+  /** 보낸 제작진의 사용자 id와 이름(배우가 보냈거나 예전 메시지면 빈 값) */
+  senderId: string;
+  senderName: string;
   /** 함께 보낸 파일. 없으면 null. 파일은 /api/chat/[지원서]/files/[key]로 연다. */
   attachment: ChatAttachment | null;
 };

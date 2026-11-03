@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { chatParticipant } from '@/lib/chat-access';
+import { chatParticipant, participantRoom } from '@/lib/chat-access';
 import {
   CHAT_FILE_MAX_BYTES,
   chatFileContentType,
@@ -16,8 +16,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   const { id } = await context.params;
   const form = await request.formData().catch(() => null);
   if (!form) return NextResponse.json({ error: '파일을 다시 선택해 주세요.' }, { status: 400 });
-  const sender = await chatParticipant(request, id, requiredText(form.get('receipt'), 100));
-  if (!sender) return NextResponse.json({ error: '대화를 보낼 수 없습니다.' }, { status: 403 });
+  const participant = await chatParticipant(request, id, requiredText(form.get('receipt'), 100));
+  if (!participant)
+    return NextResponse.json({ error: '대화를 보낼 수 없습니다.' }, { status: 403 });
   const file = form.get('file');
   if (!(file instanceof File) || file.size === 0)
     return NextResponse.json({ error: '파일을 선택해 주세요.' }, { status: 400 });
@@ -33,7 +34,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   const key = `${randomUUID()}.${ext}`;
   await saveUpload(key, bytes, chatFileContentType(ext));
   const message = await sendChatMessage(id, {
-    sender,
+    sender: participant.kind,
+    senderId: participant.kind === 'producer' ? participant.userId : '',
+    room: participantRoom(participant, form.get('room')),
     kind: 'text',
     body: requiredText(form.get('body'), 1500),
     slots: [],
