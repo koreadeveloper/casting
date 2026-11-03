@@ -12,7 +12,6 @@ export default async function Landing({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await getSession();
-  const demo = process.env.DEMO_MODE === 'true';
   const home = session ? homeFor(session.role) : '';
   // ?as=actor|producer: 첫 화면에서 고른 '소개를 볼 역할'. 계정 역할·가입과는 관계없다.
   const as = (await searchParams).as;
@@ -35,10 +34,10 @@ export default async function Landing({
           ) : (
             <>
               <Link className="text-button" href="/login">
-                {demo ? '바로 체험하기' : '로그인'}
+                로그인
               </Link>
               <Link className="button button-primary sm" href="/signup">
-                {demo ? '역할 선택하기' : '시작하기'}
+                시작하기
               </Link>
             </>
           )}

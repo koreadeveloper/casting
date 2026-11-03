@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { BrandIcon } from '@/components/brand';
-import { DemoEntry } from '@/components/demo-entry';
 import {
   ActorHomeScreen,
   ApplicantsScreen,
@@ -226,7 +225,6 @@ export default function LandingGuide({
               <p className={s.heroNote}>
                 이미 계정이 있나요? <Link href="/login">로그인</Link>
               </p>
-              <DemoEntry />
             </>
           )}
         </div>

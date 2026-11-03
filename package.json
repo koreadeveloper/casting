@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
-    "build": "tsx scripts/prepare-demo.ts && next build",
+    "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.mjs",

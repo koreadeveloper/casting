@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Brand, BrandIcon } from '@/components/brand';
-import { DemoEntry } from '@/components/demo-entry';
 import { getSession, homeFor } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -46,7 +45,6 @@ export default async function SignupChoice() {
             <span className="button button-primary full sm">선택하기 →</span>
           </Link>
         </div>
-        <DemoEntry />
       </section>
     </main>
   );

@@ -4178,36 +4178,6 @@ input[type='date'] {
   }
 }
 
-.demo-entry {
-  margin-top: 16px;
-  padding: 14px 16px;
-  border: 1px dashed var(--lavender-strong);
-  border-radius: 16px;
-  background: var(--lavender);
-  display: grid;
-  gap: 10px;
-  text-align: center;
-}
-.demo-entry .demo-caption {
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--primary-deep);
-}
-.demo-entry .demo-row {
-  display: flex;
-  gap: 10px;
-}
-.demo-entry .demo-row .button {
-  flex: 1;
-  justify-content: center;
-  background: #fff;
-}
-@media (max-width: 560px) {
-  .demo-entry .demo-row {
-    flex-direction: column;
-  }
-}
-
 /* 알림 벨 + 드롭다운 */
 .notif-wrap {
   position: relative;
