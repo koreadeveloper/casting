@@ -1,4 +1,4 @@
-// Postgres(Neon) 접근 계층.
+// Postgres(Supabase) 접근 계층.
 //
 // 예전 node:sqlite 코드의 `prepare(sql).get/all/run(...)` 모양을 그대로 비동기로 옮겨,
 // 쿼리 본문(`?` 자리표시자, INSERT OR IGNORE)은 거의 손대지 않고 쓸 수 있게 한다.
@@ -121,7 +121,7 @@ export async function transaction<T>(work: () => Promise<T>): Promise<T> {
 
 /**
  * 동시에 뜨는 서버리스 인스턴스끼리 스키마 변경이 겹치지 않도록 잠금을 잡고 실행한다.
- * Neon의 풀러(pgbouncer)는 세션 잠금을 지원하지 않으므로 트랜잭션 잠금을 쓴다.
+ * Supabase 풀러(Supavisor)는 세션 잠금을 지원하지 않으므로 트랜잭션 잠금을 쓴다.
  */
 export async function withAdvisoryLock<T>(key: number, work: () => Promise<T>): Promise<T> {
   return transaction(async () => {
