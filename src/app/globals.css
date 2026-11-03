@@ -6159,7 +6159,8 @@ input[type='date'] {
 .agree-view {
   margin-left: 6px;
   font-size: 12px;
-  color: var(--muted);
+  font-weight: 700;
+  color: var(--primary);
   text-decoration: underline;
   text-underline-offset: 3px;
   white-space: nowrap;
@@ -6547,4 +6548,49 @@ button.agree-view {
   gap: 6px;
   font-size: 11px;
   color: var(--muted);
+}
+
+/* 출연 불가 일정: 기간으로 넣기 */
+.date-range-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.date-range-add label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.date-range-add label i {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--faint, #9ea5b2);
+}
+.date-range-add input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--page);
+  padding: 11px 12px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.date-range-add > span {
+  padding-bottom: 12px;
+  color: var(--muted);
+}
+.date-range-add > button {
+  grid-column: 1 / -1;
+}
+
+.signup-legal a {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }

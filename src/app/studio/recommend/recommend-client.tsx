@@ -123,6 +123,23 @@ export default function RecommendClient() {
     if (value) void apply({ roleId: value });
   }
 
+  /** 직접 입력한 조건을 모두 비우고, 추천 결과도 처음 상태로 돌린다. */
+  function resetManual() {
+    setDesc('');
+    setGender('');
+    setAgeMin('');
+    setAgeMax('');
+    setRegion('');
+    setShootDate('');
+    setPickedTags([]);
+    setPickedSkills([]);
+    setRoleId('');
+    setResults([]);
+    setApplied(null);
+    setRequested(false);
+    setError('');
+  }
+
   function submitManual() {
     setRoleId('');
     const found = [...new Set(desc.split(/[\s,·/]+/).filter((word) => word.length >= 2))].slice(
@@ -312,9 +329,19 @@ export default function RecommendClient() {
               </div>
             ))}
           </fieldset>
-          <button className="button button-primary full" onClick={submitManual} disabled={loading}>
-            {loading ? '분석 중…' : '추천 받기'}
-          </button>
+          <div className="split-actions">
+            <button
+              type="button"
+              className="button button-soft"
+              onClick={resetManual}
+              disabled={loading}
+            >
+              조건 초기화
+            </button>
+            <button className="button button-primary" onClick={submitManual} disabled={loading}>
+              {loading ? '분석 중…' : '추천 받기'}
+            </button>
+          </div>
         </section>
 
         {summary.length > 0 && (

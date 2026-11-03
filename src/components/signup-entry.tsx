@@ -5,6 +5,7 @@ import { SocialButtons } from './social-buttons';
 import SignupForm from './signup-form';
 import { isProvider, openPayload, PROVIDER_LABEL, providerEnabled } from '@/lib/oauth';
 import { PENDING_COOKIE, socialSecret } from '@/lib/social-login';
+import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal';
 
 type Pending = { provider: string; email: string; name: string };
 
@@ -46,6 +47,17 @@ export default async function SignupEntry({ role }: { role: 'producer' | 'actor'
         <p className="small-note center">
           다음 화면에서 이름·연락처 등 몇 가지만 더 입력하면 가입이 끝나요.{' '}
           <Link href="/signup">역할 다시 고르기</Link>
+        </p>
+        {/* 가입 전에 약관 전문을 미리 볼 수 있게 한다(동의는 다음 화면에서 받는다). */}
+        <p className="small-note center signup-legal">
+          가입 전에 확인해 주세요:{' '}
+          <Link href={TERMS_PATH} target="_blank" rel="noopener">
+            이용약관
+          </Link>{' '}
+          ·{' '}
+          <Link href={PRIVACY_PATH} target="_blank" rel="noopener">
+            개인정보처리방침
+          </Link>
         </p>
       </section>
     </main>

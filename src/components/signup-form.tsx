@@ -88,7 +88,7 @@ export default function SignupForm({
 
   const viewLink = (key: keyof typeof DOCS) => (
     <button type="button" className="agree-view" onClick={() => setDoc(key)}>
-      보기
+      전문 보기 ›
     </button>
   );
 
