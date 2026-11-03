@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="public/brand/mark.png" width="96" alt="캐스팅플로우 로고 — 눈 달린 클래퍼보드">
+<br>
 <img src="public/brand/wordmark.png" width="260" alt="캐스팅플로우">
 
 # 캐스팅플로우
@@ -17,7 +19,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres·Storage-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
-[![Tests](https://img.shields.io/badge/tests-112_passing-brightgreen)](#-검증-명령)
+[![Tests](https://img.shields.io/badge/tests-115_passing-brightgreen)](#-검증-명령)
 [![PWA](https://img.shields.io/badge/PWA-installable-c6f432)](src/app/manifest.ts)
 
 <br>
@@ -75,9 +77,9 @@ pnpm install && cp .env.example .env.local && pnpm dev
 | 촬영 참석 재확인 | `/status/[token]` | 출연 확정 후 촬영 D-3부터 참석 여부를 다시 확인 (노쇼 방지) |
 | 결과 안내 지연 | `/status/[token]` | 결과 기준일이 지나도 소식이 없으면 자동 불합격이 아니라 '결과 안내 지연'으로 표시 |
 
-**공개 화면**: 랜딩(`/`)의 역할별 이용 방법·실제 화면 미리보기, 로그인 전 제작진용 배우 프로필 둘러보기(`/actors`)
+**공개 화면**: 랜딩(`/`)의 역할별 이용 방법·실제 화면 미리보기, 로그인 전 제작진용 배우 프로필 둘러보기(`/actors`), 이용약관(`/terms`)·개인정보처리방침(`/privacy`), 문의하기(`/contact`: 일반·오류·개인정보·신고)
 
-**계정·보안**: 이메일 가입(만 14세 이상·약관 동의), 비밀번호 재설정(`/reset`, 1회용 메일 링크), 회원 탈퇴 시 관련 개인정보·파일 삭제, 로그인·가입·지원 요청 횟수 제한, PDF 자료는 로그인 사용자만 열람
+**계정·보안**: 이메일 가입(만 14세 이상·약관 동의), 비밀번호 재설정(`/reset`, 1회용 메일 링크), 회원 탈퇴(`/account/delete`) 시 관련 개인정보·파일 삭제, 지원 시 개인정보 수집·이용 동의, 로그인·가입·지원 요청 횟수 제한, PDF 자료는 로그인 사용자만 열람
 
 ---
 
@@ -146,6 +148,7 @@ src/
     apply/[slug]/        # 공개 지원 (무가입)
     status/[token]/      # 지원 현황·오디션 응답·참석 재확인
     login/ signup/ reset/
+    terms/ privacy/ contact/ account/delete/   # 약관·처리방침·문의·탈퇴 (운영 정보는 lib/legal.ts)
     api/                 # roles, applications, actors, board, calendar, chat, compare, verify,
                          # attendance, recommendations, proposals, favorites, auth, me, uploads ...
   components/            # 내비게이션, 대화, 랜딩(landing/), 인증 배지 등
@@ -156,7 +159,7 @@ src/
     ai-client.ts profile-ai.ts verification-ai.ts       # AI 호출 (서버 전용)
     fit.ts match.ts compare.ts calendar-grid.ts schedule.ts attendance.ts
     result-deadline.ts role-search.ts verification-rules.ts ...   # 순수 함수(리프 모듈)
-tests/                   # node:test 단위 테스트 (112개)
+tests/                   # node:test 단위 테스트 (115개)
 docs/                    # 기술 설계, API 계약, 협업 규칙, 스크린샷
 ```
 
