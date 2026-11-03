@@ -28,7 +28,7 @@ import {
   type PickGroup,
 } from '@/lib/profile';
 import { embedUrl } from '@/lib/video';
-import { koreaToday, manAge } from '@/lib/age';
+import { latestBirthDate, manAge } from '@/lib/age';
 
 const SECTIONS = [
   ['basic', '기본 정보'],
@@ -506,7 +506,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                               <input
                                 type="date"
                                 min="1930-01-01"
-                                max={koreaToday()}
+                                max={latestBirthDate()}
                                 value={edits[key] ?? ''}
                                 onChange={(event) => setEdit(event.target.value)}
                                 aria-label={`${label} 초안`}
@@ -604,7 +604,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                     <input
                       type="date"
                       min="1930-01-01"
-                      max={koreaToday()}
+                      max={latestBirthDate()}
                       value={profile.birthDate ?? ''}
                       onChange={(event) => {
                         const birthDate = event.target.value;

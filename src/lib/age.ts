@@ -33,3 +33,14 @@ export function manAge(birthDate: string, now = new Date()): number | null {
   // 지원서 서버 검사와 같은 범위(1~120세)
   return age >= 1 && age <= 120 ? age : null;
 }
+
+/**
+ * 고를 수 있는 가장 늦은 생년월일(한국 날짜 기준 만 1세가 되는 날). 달력의 max로 쓴다.
+ * manAge가 만 1세 미만을 받지 않으므로, 달력도 그보다 늦은 날짜는 못 고르게 맞춘다.
+ */
+export function latestBirthDate(now = new Date()): string {
+  const [year, month, day] = koreaToday(now).split('-');
+  // 2월 29일에는 1년 전 같은 날이 없으므로 2월 28일로 둔다.
+  const lastDay = month === '02' && day === '29' ? '28' : day;
+  return `${Number(year) - 1}-${month}-${lastDay}`;
+}
