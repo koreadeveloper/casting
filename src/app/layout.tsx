@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { NavTracker } from '@/components/back-button';
 import './globals.css';
+import { NAV_BOOT_SCRIPT } from '@/components/nav-collapse';
 
 export const metadata: Metadata = {
   title: '캐스팅플로우',
@@ -19,8 +20,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: NAV_BOOT_SCRIPT }} />
         <NavTracker />
         {children}
       </body>
