@@ -70,9 +70,6 @@ export default function LoginForm({
           <button className="button button-primary full" disabled={busy}>
             {busy ? '로그인 중…' : '로그인'}
           </button>
-          <Link className="forgot-link" href="/reset">
-            비밀번호를 잊으셨나요?
-          </Link>
         </form>
         {social && (
           <>

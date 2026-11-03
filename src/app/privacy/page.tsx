@@ -22,7 +22,7 @@ export default async function PrivacyPage({
 
       <h2>1. 개인정보를 처리하는 목적</h2>
       <ul>
-        <li>회원 가입과 관리: 가입 의사 확인, 회원 식별, 로그인 유지, 비밀번호 재설정</li>
+        <li>회원 가입과 관리: 가입 의사 확인, 회원 식별, 로그인 유지</li>
         <li>
           캐스팅 진행: 공고 게시, 지원서 접수와 제작진 전달, 제작진의 검토·연락, 오디션·촬영 일정
           조율, 지원 현황 안내
@@ -141,7 +141,7 @@ export default async function PrivacyPage({
             'Resend (resend.com)',
             '미국',
             '이메일 주소, 메일 내용',
-            '비밀번호 재설정·학교 이메일 인증 메일 발송',
+            '문의 알림·학교 이메일 인증 메일 발송',
           ],
           [
             'Anthropic PBC (anthropic.com)',
