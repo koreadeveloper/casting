@@ -1,4 +1,7 @@
-export type Gender = 'female' | 'male' | 'other' | '';
+// 확장자를 적는 건 node --test가 이 파일을 그대로 읽을 수 있게 하려는 것이다 (profile-draft.ts와 같은 이유).
+import { manAge } from './age.ts';
+
+export type Gender ='female' | 'male' | 'other' | '';
 
 export type Filmography = { year: string; title: string; role: string };
 
@@ -7,6 +10,8 @@ export type ActorProfile = {
   name: string;
   gender: Gender;
   birthYear: number | null;
+  /** 생년월일 'YYYY-MM-DD'. 예전 프로필은 비어 있고 birthYear만 있다. 있으면 birthYear도 이 연도로 맞춘다. */
+  birthDate: string;
   height: number | null;
   weight: number | null;
   region: string;
@@ -156,6 +161,16 @@ export function ageOf(birthYear: number | null, currentYear = new Date().getFull
   return birthYear ? currentYear - birthYear : null;
 }
 
+/** 화면에 보여 주는 나이. 생년월일이 있으면 만 나이, 출생연도만 있으면 연도로만 계산한다. */
+export function profileAge(
+  profile: { birthYear: number | null; birthDate?: string },
+  today = new Date(),
+) {
+  return profile.birthDate
+    ? manAge(profile.birthDate, today)
+    : ageOf(profile.birthYear, today.getFullYear());
+}
+
 export function profileCompletion(profile: ActorProfile) {
   const checks = [
     Boolean(profile.name),
@@ -224,7 +239,10 @@ export function matchesFilters(
 ) {
   if (filters.ids && !filters.ids.includes(profile.userId)) return false;
   if (filters.gender && profile.gender !== filters.gender) return false;
-  const age = ageOf(profile.birthYear, currentYear);
+  const age =
+    currentYear === new Date().getFullYear()
+      ? profileAge(profile)
+      : ageOf(profile.birthYear, currentYear);
   if (filters.ageMin && (age === null || age < filters.ageMin)) return false;
   if (filters.ageMax && (age === null || age > filters.ageMax)) return false;
   if (filters.heightMin && (!profile.height || profile.height < filters.heightMin)) return false;

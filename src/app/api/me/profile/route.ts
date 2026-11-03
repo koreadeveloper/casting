@@ -18,6 +18,7 @@ import {
   type Gender,
 } from '@/lib/profile';
 import { requiredText, safeImageRef, safeUrl } from '@/lib/validation';
+import { manAge } from '@/lib/age';
 
 function intIn(value: unknown, min: number, max: number) {
   const parsed = Number(value);
@@ -59,12 +60,23 @@ export async function PUT(request: NextRequest) {
     }))
     .filter((doc: ProfileDocument) => doc.url)
     .slice(0, MAX_DOCUMENTS);
+  // 생년월일이 맞게 들어오면 출생연도도 그 연도로 맞춘다. 없으면 예전처럼 출생연도만 저장한다.
+  const birthDate =
+    typeof body.birthDate === 'string' &&
+    body.birthDate >= '1930-01-01' &&
+    manAge(body.birthDate) !== null
+      ? body.birthDate
+      : '';
+  const birthYear = birthDate
+    ? Number(birthDate.slice(0, 4))
+    : intIn(body.birthYear, 1930, new Date().getFullYear());
   const name = requiredText(body.name, 60);
   if (!name) return NextResponse.json({ error: '이름을 입력해 주세요.' }, { status: 400 });
   const profile = await updateProfile(actorId, {
     name,
     gender,
-    birthYear: intIn(body.birthYear, 1930, new Date().getFullYear()),
+    birthYear,
+    birthDate,
     height: intIn(body.height, 100, 230),
     weight: intIn(body.weight, 25, 200),
     region: REGIONS.includes(region) ? region : '',

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { getProfile, getUserById, getUserWithHash } from './accounts';
 import { db, getApplication, reviewApplication } from './db';
-import { ageOf } from './profile';
+import { profileAge } from './profile';
 import type { ReviewStatus } from './types';
 
 export type BoardColumnKey = 'review' | 'passed' | 'final' | 'hold';
@@ -487,7 +487,7 @@ async function candidateCard(
     candidateId: row.id,
     actorId: row.actor_id,
     name: profile?.name || actor?.name || '',
-    age: profile ? ageOf(profile.birthYear) : null,
+    age: profile ? profileAge(profile) : null,
     photo: profile?.photos[0] || '',
     intro: intro.length > INTRO_LIMIT ? `${intro.slice(0, INTRO_LIMIT)}…` : intro,
     meta: [profile?.region || '', ...(profile?.tags || []).slice(0, 3)].filter(Boolean).join(' · '),

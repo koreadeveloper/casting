@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import BackButton from '@/components/back-button';
 import ProducerNav from '@/components/producer-nav';
 import type { ActorProfileFull } from '@/lib/accounts';
-import { ageOf, genderLabel } from '@/lib/profile';
+import { profileAge, genderLabel } from '@/lib/profile';
 import { pushRecent, RECENT_ACTORS } from '@/lib/recent';
 import { useBackClose } from '@/lib/use-back-close';
 import { embedUrl } from '@/lib/video';
@@ -39,7 +39,7 @@ export default function ActorDetail({
   const [error, setError] = useState('');
   // 배역 제안 시트는 휴대폰 뒤로가기로 닫힌다.
   useBackClose(proposeOpen, () => setProposeOpen(false));
-  const age = ageOf(profile.birthYear);
+  const age = profileAge(profile);
 
   // 제작자가 본 배우만 '최근 본 배우'에 남긴다 (배우가 자기 프로필을 미리볼 때는 제외).
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function ActorDetail({
     pushRecent(RECENT_ACTORS, {
       id: profile.userId,
       name: profile.name,
-      sub: [ageOf(profile.birthYear) ? `${ageOf(profile.birthYear)}세` : '', profile.region]
+      sub: [profileAge(profile) ? `${profileAge(profile)}세` : '', profile.region]
         .filter(Boolean)
         .join(' · '),
       photo: profile.photos[0] || '',

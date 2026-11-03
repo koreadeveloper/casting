@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import BackButton from '@/components/back-button';
 import PhotoLightbox from '@/components/photo-lightbox';
 import ProducerNav from '@/components/producer-nav';
-import { ageOf } from '@/lib/profile';
+import { profileAge } from '@/lib/profile';
 import { useBackClose } from '@/lib/use-back-close';
 import styles from './board.module.css';
 
@@ -73,6 +73,7 @@ type ActorResult = {
   userId: string;
   name: string;
   birthYear: number | null;
+  birthDate?: string;
   region: string;
   tags: string[];
   photos: string[];
@@ -938,7 +939,7 @@ export default function BoardClient({ meId }: { meId: string }) {
               {!pickerLoading &&
                 pickerResults.map((actor) => {
                   const added = addedActorIds.has(actor.userId);
-                  const age = ageOf(actor.birthYear);
+                  const age = profileAge(actor);
                   return (
                     <div key={actor.userId} className={styles.pickerRow}>
                       <span className={styles.cardPhoto}>

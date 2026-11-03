@@ -16,6 +16,7 @@ import {
   type PickGroup,
 } from '@/lib/profile';
 import { embedUrl } from '@/lib/video';
+import { manAge } from '@/lib/age';
 
 const SECTIONS = [
   ['basic', '기본 정보'],
@@ -238,7 +239,12 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
       const next = { ...current };
       if (picked.name && draft.name) next.name = draft.name.value;
       if (picked.gender && draft.gender) next.gender = draft.gender.value;
-      if (picked.birthYear && draft.birthYear) next.birthYear = draft.birthYear.value;
+      if (picked.birthYear && draft.birthYear) {
+        next.birthYear = draft.birthYear.value;
+        // 초안은 연도만 알려 주므로, 연도가 다른 생년월일은 비워서 둘이 어긋나지 않게 한다.
+        if (next.birthDate && !next.birthDate.startsWith(String(next.birthYear)))
+          next.birthDate = '';
+      }
       if (picked.height && draft.height) next.height = draft.height.value;
       if (picked.weight && draft.weight) next.weight = draft.weight.value;
       if (picked.region && draft.region) next.region = draft.region.value;
@@ -438,14 +444,29 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                     </select>
                   </label>
                   <label>
-                    출생연도
+                    생년월일
                     <input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="2000"
-                      value={profile.birthYear ?? ''}
-                      onChange={(event) => update('birthYear', numberOrNull(event.target.value))}
+                      type="date"
+                      min="1930-01-01"
+                      max={new Date().toISOString().slice(0, 10)}
+                      value={profile.birthDate ?? ''}
+                      onChange={(event) => {
+                        const birthDate = event.target.value;
+                        // 생년월일을 지우면 예전 출생연도는 그대로 둔다.
+                        setProfile((current) => ({
+                          ...current,
+                          birthDate,
+                          birthYear: birthDate ? Number(birthDate.slice(0, 4)) : current.birthYear,
+                        }));
+                      }}
                     />
+                    <small className="muted">
+                      {profile.birthDate && manAge(profile.birthDate) !== null
+                        ? `만 ${manAge(profile.birthDate)}세`
+                        : profile.birthYear
+                          ? `${profile.birthYear}년생 · 생년월일을 넣으면 만 나이로 정확히 보여요`
+                          : '입력하면 만 나이가 자동으로 계산돼요'}
+                    </small>
                   </label>
                 </div>
                 <div className="form-three">

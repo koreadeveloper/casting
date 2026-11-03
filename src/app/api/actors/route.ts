@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listFavoriteIds, listPublicProfiles } from '@/lib/accounts';
 import { getProducerId } from '@/lib/auth';
-import { ageOf, availabilityIn, dateRange, matchesFilters, type ActorFilters } from '@/lib/profile';
+import { profileAge, availabilityIn, dateRange, matchesFilters, type ActorFilters } from '@/lib/profile';
 
 function num(value: string | null) {
   const parsed = Number(value);
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         (sort === 'name'
           ? a.name.localeCompare(b.name, 'ko')
           : sort === 'age'
-            ? (ageOf(a.birthYear) ?? 99) - (ageOf(b.birthYear) ?? 99)
+            ? (profileAge(a) ?? 99) - (profileAge(b) ?? 99)
             : b.updatedAt.localeCompare(a.updatedAt)),
     );
   const results = actors.slice(offset, offset + limit);

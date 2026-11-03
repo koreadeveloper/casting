@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { getProducerIntro, getProfile, getProject, getUserById } from '@/lib/accounts';
 import { getActorId } from '@/lib/auth';
 import { getRole } from '@/lib/db';
-import { ageOf } from '@/lib/profile';
+import { profileAge } from '@/lib/profile';
 import { getProducerBadges } from '@/lib/verifications';
 import ApplyForm, { type Prefill } from './apply-form';
 
@@ -29,7 +29,7 @@ export default async function ApplyPage({
         name: profile.name,
         email: user.email,
         phone: user.phone,
-        age: ageOf(profile.birthYear),
+        age: profileAge(profile),
         introduction: [
           profile.intro,
           ...profile.filmography.map((f) => `${f.year} ${f.title} ${f.role}`),

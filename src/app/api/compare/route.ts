@@ -3,7 +3,7 @@ import { getProfile, listFavoriteIds, listPublicProfiles } from '@/lib/accounts'
 import { getProducerId } from '@/lib/auth';
 import { MIN_CANDIDATES } from '@/lib/compare';
 import { listApplications, roleOwnedBy } from '@/lib/db';
-import { ageOf, type ActorProfile } from '@/lib/profile';
+import { profileAge, type ActorProfile } from '@/lib/profile';
 import { reviewLabels, type Application } from '@/lib/types';
 
 type Candidate = {
@@ -42,7 +42,7 @@ function fromProfile(profile: ActorProfile): Candidate {
   return {
     id: profile.userId,
     name: profile.name,
-    age: ageOf(profile.birthYear),
+    age: profileAge(profile),
     photo: profile.photos[0] ?? '',
     intro: profile.intro,
     meta: [profile.region, ...profile.tags.slice(0, 3)].filter(Boolean).join(' · '),
