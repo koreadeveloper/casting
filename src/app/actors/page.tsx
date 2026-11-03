@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { BrandLogo } from '@/components/brand';
 import { listPublicProfiles } from '@/lib/accounts';
 import { getSession } from '@/lib/auth';
-import { ageOf, genderLabel } from '@/lib/profile';
+import { profileAge, genderLabel } from '@/lib/profile';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,8 +17,8 @@ const GENDERS: [string, string][] = [
   ['male', '남성'],
 ];
 
-function ageBand(birthYear: number | null) {
-  const age = ageOf(birthYear);
+function ageBand(actor: { birthYear: number | null; birthDate?: string }) {
+  const age = profileAge(actor);
   if (age === null) return '';
   return age >= 50 ? '50대 이상' : `${Math.floor(age / 10) * 10}대`;
 }
@@ -113,7 +113,7 @@ export default async function ActorPreview({
                 <Link href={`/actors/${actor.userId}`} className="tile-info">
                   <strong>{actor.name}</strong>
                   <span>
-                    {[ageBand(actor.birthYear), genderLabel[actor.gender]]
+                    {[ageBand(actor), genderLabel[actor.gender]]
                       .filter(Boolean)
                       .join(' · ')}
                   </span>

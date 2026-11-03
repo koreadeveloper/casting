@@ -9,7 +9,7 @@ import { RECENT_ACTORS } from '@/lib/recent';
 import { useBackClose } from '@/lib/use-back-close';
 import type { ActorProfileFull } from '@/lib/accounts';
 import {
-  ageOf,
+  profileAge,
   genderLabel,
   IMAGE_TAG_GROUPS,
   MAX_RANGE_DAYS,
@@ -429,7 +429,7 @@ export default function ActorSearch() {
                         <strong>{actor.name}</strong>
                         <span>
                           {[
-                            ageOf(actor.birthYear) !== null ? `${ageOf(actor.birthYear)}세` : '',
+                            profileAge(actor) !== null ? `${profileAge(actor)}세` : '',
                             actor.height ? `${actor.height}cm` : '',
                             actor.region,
                           ]

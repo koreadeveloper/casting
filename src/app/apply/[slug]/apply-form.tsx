@@ -23,6 +23,7 @@ import { MAX_APPLICATION_PHOTOS } from '@/lib/validation';
 import TrustBadges from '@/components/trust-badges';
 import type { ProducerBadges } from '@/lib/verification-rules';
 import { PRIVACY_PATH } from '@/lib/legal';
+import { manAge } from '@/lib/age';
 
 export type Prefill = {
   name: string;
@@ -71,6 +72,9 @@ export default function ApplyForm({
   const [online, setOnline] = useState(true);
   // 프로필 사진 중 이 공고에 낼 사진. 첫 번째가 대표 사진이 된다.
   const [picked, setPicked] = useState<string[]>(prefill?.photos.slice(0, 1) ?? []);
+  // 생년월일을 고르면 만 나이를 자동으로 넣는다. 안 고르면 프로필의 나이를 그대로 쓴다.
+  const [birthDate, setBirthDate] = useState('');
+  const age = birthDate ? manAge(birthDate) : (prefill?.age ?? null);
   const closed = role.isClosed || role.deadline < new Date().toISOString().slice(0, 10);
 
   /** 고르면 뒤에 붙고, 이미 고른 사진을 누르면 빠진다. 남은 첫 장이 대표 사진이 된다. */
@@ -391,16 +395,21 @@ export default function ApplyForm({
             </label>
             <div className="form-two">
               <label>
-                나이
+                생년월일
                 <input
-                  name="age"
-                  type="number"
-                  min="1"
-                  max="120"
-                  inputMode="numeric"
-                  defaultValue={prefill?.age ?? undefined}
-                  placeholder="선택"
+                  type="date"
+                  min="1900-01-01"
+                  max={new Date().toISOString().slice(0, 10)}
+                  value={birthDate}
+                  onChange={(event) => setBirthDate(event.target.value)}
                 />
+                {/* 생년월일은 보내지 않고, 계산한 만 나이만 지원서에 담는다 */}
+                <input type="hidden" name="age" value={age ?? ''} />
+                <small className="muted">
+                  {age !== null
+                    ? `만 ${age}세${birthDate ? '' : ' (프로필 기준)'}`
+                    : '선택 · 입력하면 만 나이가 자동으로 들어가요'}
+                </small>
               </label>
               <label>
                 연락처 <em>필수</em>

@@ -191,6 +191,7 @@ function profileFromRow(row: Row): ActorProfileFull {
     name: String(row.name),
     gender: String(row.gender) as Gender,
     birthYear: row.birth_year === null ? null : Number(row.birth_year),
+    birthDate: String(row.birth_date ?? ''),
     height: row.height === null ? null : Number(row.height),
     weight: row.weight === null ? null : Number(row.weight),
     region: String(row.region),
@@ -361,12 +362,13 @@ export async function updateProfile(
     .slice(0, MAX_DOCUMENTS);
   await db()
     .prepare(
-      `UPDATE actor_profiles SET gender=?,birth_year=?,height=?,weight=?,region=?,intro=?,tags=?,skills=?,
+      `UPDATE actor_profiles SET gender=?,birth_year=?,birth_date=?,height=?,weight=?,region=?,intro=?,tags=?,skills=?,
       photos=?,video_url=?,filmography=?,unavailable_dates=?,is_public=?,agency=?,documents=?,updated_at=? WHERE user_id=?`,
     )
     .run(
       input.gender,
       input.birthYear,
+      input.birthDate ?? '',
       input.height,
       input.weight,
       input.region,
