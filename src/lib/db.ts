@@ -721,6 +721,14 @@ export async function roleOwnedBy(roleId: string, ownerId: string) {
   );
 }
 
+/** 이 배우가 이 배역에 이미 낸 지원서의 접수 토큰. 없으면 ''. (같은 배역 중복 지원 막기) */
+export async function findActorApplicationToken(actorId: string, roleId: string) {
+  const row = (await db()
+    .prepare('SELECT receipt_token FROM applications WHERE actor_id=? AND role_id=? LIMIT 1')
+    .get(actorId, roleId)) as { receipt_token: string } | undefined;
+  return row?.receipt_token ?? '';
+}
+
 export async function applicationOwnedBy(applicationId: string, ownerId: string) {
   return Boolean(
     await db()

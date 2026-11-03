@@ -4,6 +4,7 @@ import { getProposal, setProposalStatus } from '@/lib/accounts';
 import { getActorId, getProducerId } from '@/lib/auth';
 import {
   createApplication,
+  findActorApplicationToken,
   getRole,
   listApplications,
   listRecentApplications,
@@ -62,18 +63,37 @@ export async function POST(request: NextRequest) {
     !validEmail(email) ||
     !phone ||
     !introduction ||
-    !videoUrl ||
+    // 영상 링크는 선택. 다만 무언가 적었는데 링크 모양이 아니면 알려 준다.
+    (requiredText(body.videoUrl, 1000) !== '' && !videoUrl) ||
     !['yes', 'no', 'unsure'].includes(available) ||
     !['yes', 'no', 'unsure'].includes(travel) ||
     !['yes', 'no', 'unsure'].includes(payAccepted) ||
     (age !== null && (!Number.isInteger(age) || age < 1 || age > 120))
   ) {
-    return NextResponse.json({ error: '필수 항목과 영상 링크를 확인해 주세요.' }, { status: 400 });
+    return NextResponse.json(
+      {
+        error:
+          '필수 항목을 확인해 주세요. 영상 링크를 넣었다면 https://로 시작하는 주소인지 확인해 주세요.',
+      },
+      { status: 400 },
+    );
   }
   const actorId = await getActorId();
   // 제작진 제공 동의는 모두에게, 수집·이용 동의는 가입 때 동의하지 않은 비회원에게 받는다.
   if (body.agreeProvide !== true || (!actorId && body.agreePrivacy !== true))
     return NextResponse.json({ error: '필수 동의 항목을 확인해 주세요.' }, { status: 400 });
+  // 같은 배우가 같은 배역에 두 번 지원하지 못하게 한다(이메일을 바꿔도). 기존 접수 링크를 돌려준다.
+  if (actorId) {
+    const existing = await findActorApplicationToken(actorId, role.id);
+    if (existing)
+      return NextResponse.json(
+        {
+          error: '이미 이 배역에 지원했어요. 기존 지원 현황으로 이동합니다.',
+          receiptToken: existing,
+        },
+        { status: 409 },
+      );
+  }
   try {
     const application = await createApplication(
       role.id,

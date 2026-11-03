@@ -110,6 +110,9 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [newDate, setNewDate] = useState('');
+  // 자료실에 넣을 외부 링크(구글 드라이브·노션 등)
+  const [linkName, setLinkName] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
   // PDF로 만든 프로필 초안. 배우가 고른 항목만 입력칸에 채운다.
   const [draftBusy, setDraftBusy] = useState(false);
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
@@ -201,6 +204,36 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
       setDocUploading(false);
       if (docInput.current) docInput.current.value = '';
     }
+  }
+
+  /** 자료실에 외부 링크를 더한다. https 주소만 받는다(서버도 같은 규칙으로 거른다). */
+  function addDocumentLink() {
+    let url = '';
+    try {
+      const parsed = new URL(linkUrl.trim());
+      if (parsed.protocol === 'https:') url = parsed.toString();
+    } catch {
+      url = '';
+    }
+    if (!url) {
+      setError('https://로 시작하는 자료 링크를 넣어 주세요.');
+      return;
+    }
+    if (profile.documents.some((doc) => doc.url === url)) {
+      setError('이미 넣은 링크예요.');
+      return;
+    }
+    setError('');
+    update(
+      'documents',
+      [...profile.documents, { name: linkName.trim().slice(0, 120) || '자료 링크', url }].slice(
+        0,
+        MAX_DOCUMENTS,
+      ),
+    );
+    setLinkName('');
+    setLinkUrl('');
+    setNotice('링크를 넣었습니다. 저장을 눌러 프로필에 반영하세요.');
   }
 
   /** PDF를 읽어 초안을 만든다. 저장은 하지 않고 화면에서 확인하게 한다. */
@@ -855,11 +888,12 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
               <h2>
                 자료실{' '}
                 <small>
-                  PDF 최대 {MAX_DOCUMENTS}개 · {profile.documents.length}개 등록
+                  PDF·링크 최대 {MAX_DOCUMENTS}개 · {profile.documents.length}개 등록
                 </small>
               </h2>
               <p className="muted" style={{ marginBottom: 12 }}>
-                경력기장, 포트폴리오 등 PDF 자료를 올리면 제작자가 프로필에서 열어볼 수 있습니다.
+                경력기술서·포트폴리오 PDF를 올리거나, 구글 드라이브·노션 같은 자료 링크를 넣으면
+                제작자가 프로필에서 열어볼 수 있습니다.
               </p>
               {profile.documents.length > 0 && (
                 <ul className="filmo" style={{ marginBottom: 12 }}>
@@ -892,6 +926,32 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                 >
                   {docUploading ? '올리는 중…' : '＋ PDF 자료 추가'}
                 </button>
+              )}
+              {profile.documents.length < MAX_DOCUMENTS && (
+                <div className="doc-link-add">
+                  <input
+                    value={linkName}
+                    onChange={(event) => setLinkName(event.target.value)}
+                    placeholder="자료 이름 (예: 포트폴리오)"
+                    aria-label="자료 링크 이름"
+                    maxLength={120}
+                  />
+                  <input
+                    type="url"
+                    inputMode="url"
+                    value={linkUrl}
+                    onChange={(event) => setLinkUrl(event.target.value)}
+                    placeholder="https://"
+                    aria-label="자료 링크 주소"
+                  />
+                  <button
+                    className="button button-outline"
+                    disabled={!linkUrl.trim()}
+                    onClick={addDocumentLink}
+                  >
+                    ＋ 링크 추가
+                  </button>
+                </div>
               )}
               <input
                 ref={docInput}

@@ -56,6 +56,7 @@ export default function ApplyForm({
   role,
   project,
   prefill,
+  appliedToken = '',
   producer,
   trust,
   proposalId,
@@ -63,6 +64,8 @@ export default function ApplyForm({
   role: Role;
   project: Project | null;
   prefill: Prefill | null;
+  /** 로그인한 배우가 이미 이 배역에 낸 지원서의 접수 링크. 있으면 다시 지원하지 못하게 한다. */
+  appliedToken?: string;
   producer: ProducerIntro | null;
   /** 제작진 인증 배지(학교·제작사). 없으면 '이전 작품 이력이 확인되지 않았어요' */
   trust?: ProducerBadges;
@@ -149,6 +152,11 @@ export default function ApplyForm({
         }),
       });
       const data = await response.json();
+      // 이미 지원한 배역이면 새로 접수하지 않고 기존 지원 현황으로 보낸다.
+      if (response.status === 409 && data.receiptToken) {
+        location.href = `/status/${data.receiptToken}`;
+        return;
+      }
       if (!response.ok) throw new Error(data.error || '접수하지 못했습니다.');
       saveReceipt({
         token: data.receiptToken,
@@ -371,14 +379,30 @@ export default function ApplyForm({
               이 공고 신고하기
             </Link>
           </section>
-          <p className="small-note">지원 후 접수 상태를 확인할 수 있습니다.</p>
-          <button
-            className="button button-primary full sticky-action"
-            onClick={begin}
-            disabled={closed}
-          >
-            {closed ? '지원이 마감되었습니다' : '이 배역에 지원하기'}
-          </button>
+          {appliedToken ? (
+            <>
+              <p className="small-note">
+                이미 지원한 배역이에요. 같은 배역에는 한 번만 지원할 수 있어요.
+              </p>
+              <Link
+                className="button button-primary full sticky-action"
+                href={`/status/${appliedToken}`}
+              >
+                내 지원 현황 보기
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="small-note">지원 후 접수 상태를 확인할 수 있습니다.</p>
+              <button
+                className="button button-primary full sticky-action"
+                onClick={begin}
+                disabled={closed}
+              >
+                {closed ? '지원이 마감되었습니다' : '이 배역에 지원하기'}
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div className="apply-content">
@@ -520,16 +544,15 @@ export default function ApplyForm({
               </label>
             )}
             <label>
-              연기 영상 링크 <em>필수</em>
+              연기 영상 링크 <i>선택</i>
               <input
                 name="videoUrl"
                 type="url"
                 inputMode="url"
-                required
                 defaultValue={prefill?.videoUrl}
                 placeholder="https://..."
               />
-              <small>유튜브, 비메오 또는 공유 가능한 영상 링크</small>
+              <small>유튜브, 비메오 또는 공유 가능한 영상 링크. 없으면 비워 두셔도 돼요.</small>
             </label>
             <label>
               필수 역량 또는 특기
@@ -593,7 +616,7 @@ export default function ApplyForm({
                     </span>
                   </label>
                   <p className="agree-detail">
-                    항목: 이름, 이메일, 연락처, 소개, 영상 링크, (선택) 나이·사진·특기 · 목적: 지원
+                    항목: 이름, 이메일, 연락처, 소개, (선택) 영상 링크·나이·사진·특기 · 목적: 지원
                     접수와 결과 안내 · 보유: 삭제를 요청하거나 공고를 올린 제작자가 탈퇴할 때까지
                   </p>
                 </div>
