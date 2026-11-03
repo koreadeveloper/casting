@@ -33,6 +33,15 @@ export type InboxRoom = {
 
 export type InboxFolder = { key: string; title: string; unread: number; lastAt: string };
 
+/**
+ * 폴더(칩)에 보일 이름: 작품명에 '<등골>', '〈커피와 담배〉'처럼 괄호로 감싼 작품 이름이 있으면 그것만.
+ * '[테스트] 세종대학교 WS2 <등골>' → '등골'. 괄호가 없으면 작품명 그대로.
+ */
+export function folderLabel(title: string) {
+  const match = /[<〈《「『](.+?)[>〉》」』]/.exec(title);
+  return match?.[1].trim() || title.trim();
+}
+
 /** 내가 읽은 시각 뒤에 남이 보낸 메시지 수 */
 export function unreadCount(messages: { at: string; mine: boolean }[], readAt: string) {
   return messages.filter((message) => !message.mine && message.at > readAt).length;

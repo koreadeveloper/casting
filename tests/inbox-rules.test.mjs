@@ -61,3 +61,12 @@ test('방 이름은 지원서와 방으로 만든다', () => {
   assert.equal(threadKey('app1', ''), 'app:app1:');
   assert.equal(threadKey('app1', 'user-1'), 'app:app1:user-1');
 });
+
+test('폴더 이름은 괄호 안의 작품 이름', async () => {
+  const { folderLabel } = await import('../src/lib/inbox-rules.ts');
+  assert.equal(folderLabel('[테스트] 세종대학교 WS2 <등골>'), '등골');
+  assert.equal(folderLabel('졸업작품 〈커피와 담배〉'), '커피와 담배');
+  assert.equal(folderLabel('단편영화 《봄날》'), '봄날');
+  assert.equal(folderLabel('여름의 끝'), '여름의 끝');
+  assert.equal(folderLabel('빈 괄호 <>'), '빈 괄호 <>');
+});

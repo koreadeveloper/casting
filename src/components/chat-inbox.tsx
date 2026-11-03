@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import ChatThread from '@/components/chat-thread';
 import TeamThread from '@/components/team-thread';
-import { filterRooms, type InboxFolder, type InboxRoom } from '@/lib/inbox-rules';
+import { filterRooms, folderLabel, type InboxFolder, type InboxRoom } from '@/lib/inbox-rules';
 import { useBackClose } from '@/lib/use-back-close';
 
 type Inbox = { folders: InboxFolder[]; rooms: InboxRoom[] };
@@ -92,7 +92,8 @@ export default function ChatInbox({ viewer }: { viewer: 'producer' | 'actor' }) 
             onClick={() => setFilter(folder.key)}
             title={folder.title}
           >
-            <span aria-hidden>📁</span> <span className="inbox-chip-title">{folder.title}</span>
+            <span aria-hidden>📁</span>{' '}
+            <span className="inbox-chip-title">{folderLabel(folder.title)}</span>
             {folder.unread > 0 && <b className="inbox-count">{folder.unread}</b>}
           </button>
         ))}
@@ -130,7 +131,7 @@ export default function ChatInbox({ viewer }: { viewer: 'producer' | 'actor' }) 
               <span className="inbox-main">
                 {/* 전체·안읽음에서는 어느 공고의 방인지 위에 작게 보여 준다 */}
                 {(filter === 'all' || filter === 'unread') && (
-                  <small className="inbox-folder">📁 {room.folderTitle}</small>
+                  <small className="inbox-folder">📁 {folderLabel(room.folderTitle)}</small>
                 )}
                 <strong className="inbox-title">{room.title}</strong>
                 <span className="inbox-sub">{room.subtitle}</span>
