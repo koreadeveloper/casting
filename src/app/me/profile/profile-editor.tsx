@@ -7,6 +7,16 @@ import type { ActorProfileFull, ProfileDocument } from '@/lib/accounts';
 import { readApiJson, shrinkImage } from '@/lib/image-resize';
 import type { ProfileDraft } from '@/lib/profile-draft';
 import {
+  defaultPick,
+  EDITABLE_DRAFT_KEYS,
+  editText,
+  fieldText,
+  newFilmography,
+  parseEdit,
+  sameAsCurrent,
+  type DraftKey,
+} from '@/lib/draft-merge';
+import {
   IMAGE_TAG_GROUPS,
   MAX_SKILLS,
   MAX_TAGS,
@@ -51,26 +61,8 @@ const DRAFT_FIELDS: [keyof ProfileDraft, string][] = [
   ['filmography', '필모그래피'],
 ];
 
-const GENDER_TEXT: Record<string, string> = { female: '여성', male: '남성', other: '기타' };
-
-/** 초안 값을 한 줄로 보여 준다. */
-function draftValueText(draft: ProfileDraft, key: keyof ProfileDraft): string {
-  const field = draft[key];
-  if (!field) return '';
-  const { value } = field;
-  if (key === 'gender') return GENDER_TEXT[String(value)] ?? String(value);
-  if (key === 'height') return `${value}cm`;
-  if (key === 'weight') return `${value}kg`;
-  if (key === 'birthYear') return `${value}년`;
-  if (Array.isArray(value))
-    return value
-      .map((item) =>
-        typeof item === 'string'
-          ? item
-          : `${item.year} ${item.title}${item.role ? ` (${item.role})` : ''}`,
-      )
-      .join(', ');
-  return String(value).length > 80 ? `${String(value).slice(0, 80)}…` : String(value);
+function shortText(text: string) {
+  return text.length > 80 ? `${text.slice(0, 80)}…` : text;
 }
 
 /** 키워드·특기를 묶음별로 보여 준다. 목록이 길어서 한 줄로 늘어놓으면 찾기 어렵다. */
@@ -121,6 +113,8 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
   const [draftNote, setDraftNote] = useState('');
   const [picked, setPicked] = useState<Record<string, boolean>>({});
+  // 배우가 고친 초안 값(고칠 수 있는 항목만). 채우기를 누르면 이 값이 입력칸에 들어간다.
+  const [edits, setEdits] = useState<Record<string, string>>({});
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
@@ -151,7 +145,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
   const birthAgeText =
     birthAge !== null ? `만 ${birthAge}세` : profile.birthYear ? `${profile.birthYear}년생` : '';
 
-  const numberOrNull =(value: string) => (value === '' ? null : Number(value));
+  const numberOrNull = (value: string) => (value === '' ? null : Number(value));
 
   async function upload(files: FileList | null) {
     if (!files?.length) return;
@@ -227,7 +221,19 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
       if (!response.ok) throw new Error(data.error || '초안을 만들지 못했습니다.');
       setDraft(data.draft as ProfileDraft);
       setDraftNote(data.note || '');
-      setPicked(Object.fromEntries(Object.keys(data.draft).map((key) => [key, true])));
+      const read = data.draft as ProfileDraft;
+      const keys = Object.keys(read) as DraftKey[];
+      // 비어 있는 칸만 기본으로 고른다. 이미 넣어 둔 값은 배우가 직접 골라야 바뀐다.
+      setPicked(
+        Object.fromEntries(keys.map((key) => [key, defaultPick(profile, key, read[key]!.value)])),
+      );
+      setEdits(
+        Object.fromEntries(
+          keys
+            .filter((key) => EDITABLE_DRAFT_KEYS.includes(key))
+            .map((key) => [key, editText(key, read[key]!.value)]),
+        ),
+      );
       if (data.filled === 0 && !data.note)
         setDraftNote('읽을 수 있는 항목을 찾지 못했어요. 아래에 내용을 붙여넣어 보세요.');
     } catch (reason) {
@@ -239,27 +245,50 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
   }
 
   /** 고른 항목만 입력칸에 채운다. 실제 저장은 아래 '저장' 버튼을 눌러야 된다. */
+  /** 초안 값(배우가 고친 값 우선)을 프로필 값으로. 맞지 않는 값이면 undefined. */
+  function draftValue(key: DraftKey): unknown {
+    if (!draft?.[key]) return undefined;
+    if (EDITABLE_DRAFT_KEYS.includes(key)) return parseEdit(key, edits[key] ?? '');
+    return draft[key]!.value;
+  }
+
+  /** 고른 항목만 입력칸에 채운다. 실제 저장은 아래 '저장' 버튼을 눌러야 된다. */
   function applyDraft() {
     if (!draft) return;
     setProfile((current) => {
       const next = { ...current };
-      if (picked.name && draft.name) next.name = draft.name.value;
-      if (picked.gender && draft.gender) next.gender = draft.gender.value;
-      if (picked.birthYear && draft.birthYear) {
-        next.birthYear = draft.birthYear.value;
+      const take = (key: DraftKey) => (picked[key] ? draftValue(key) : undefined);
+      const name = take('name') as string | undefined;
+      if (name) next.name = name;
+      const gender = take('gender') as Gender | undefined;
+      if (gender) next.gender = gender;
+      const birthYear = take('birthYear') as number | undefined;
+      if (birthYear) {
+        next.birthYear = birthYear;
         // 초안은 연도만 알려 주므로, 연도가 다른 생년월일은 비워서 둘이 어긋나지 않게 한다.
-        if (next.birthDate && !next.birthDate.startsWith(String(next.birthYear)))
-          next.birthDate = '';
+        if (next.birthDate && !next.birthDate.startsWith(String(birthYear))) next.birthDate = '';
       }
-      if (picked.height && draft.height) next.height = draft.height.value;
-      if (picked.weight && draft.weight) next.weight = draft.weight.value;
-      if (picked.region && draft.region) next.region = draft.region.value;
-      if (picked.agency && draft.agency) next.agency = draft.agency.value;
-      if (picked.intro && draft.intro) next.intro = draft.intro.value;
-      if (picked.tags && draft.tags) next.tags = draft.tags.value.slice(0, MAX_TAGS);
-      if (picked.skills && draft.skills) next.skills = draft.skills.value.slice(0, MAX_SKILLS);
-      if (picked.filmography && draft.filmography)
-        next.filmography = [...current.filmography, ...draft.filmography.value].slice(0, 12);
+      const height = take('height') as number | undefined;
+      if (height) next.height = height;
+      const weight = take('weight') as number | undefined;
+      if (weight) next.weight = weight;
+      const region = take('region') as string | undefined;
+      if (region) next.region = region;
+      const agency = take('agency') as string | undefined;
+      if (agency !== undefined && agency !== '') next.agency = agency;
+      const intro = take('intro') as string | undefined;
+      if (intro) next.intro = intro;
+      const tags = take('tags') as string[] | undefined;
+      if (tags) next.tags = tags.slice(0, MAX_TAGS);
+      const skills = take('skills') as string[] | undefined;
+      if (skills) next.skills = skills.slice(0, MAX_SKILLS);
+      const filmography = take('filmography') as ActorProfile['filmography'] | undefined;
+      if (filmography)
+        // 이미 있는 작품은 빼고 새 작품만 덧붙인다.
+        next.filmography = [
+          ...current.filmography,
+          ...newFilmography(current.filmography, filmography),
+        ].slice(0, 12);
       return next;
     });
     setDraft(null);
@@ -395,21 +424,118 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
               {draft && Object.keys(draft).length > 0 && (
                 <div className="draft-result">
                   <strong>{Object.keys(draft).length}개 항목을 읽었어요</strong>
-                  <p className="muted small">채울 항목을 확인해 주세요.</p>
-                  {DRAFT_FIELDS.filter(([key]) => draft[key]).map(([key, label]) => (
-                    <label key={key} className="draft-row">
-                      <input
-                        type="checkbox"
-                        checked={picked[key] ?? true}
-                        onChange={(event) =>
-                          setPicked((current) => ({ ...current, [key]: event.target.checked }))
-                        }
-                      />
-                      <span className="draft-label">{label}</span>
-                      <span className="draft-value">{draftValueText(draft, key)}</span>
-                      <small className="draft-source">{draft[key]!.source}</small>
-                    </label>
-                  ))}
+                  <p className="muted small">
+                    지금 값과 비교해 채울 항목을 골라 주세요. 초안 값은 바로 고칠 수 있어요. 이미
+                    넣어 둔 값은 직접 고른 경우에만 바뀌어요.
+                  </p>
+                  {DRAFT_FIELDS.filter(([key]) => draft[key]).map(([key, label]) => {
+                    const now = fieldText(key, profile[key]);
+                    const same = sameAsCurrent(profile, key, draft[key]!.value);
+                    const editable = EDITABLE_DRAFT_KEYS.includes(key);
+                    const invalid =
+                      editable && picked[key] && draftValue(key) === undefined && key !== 'agency';
+                    const setEdit = (text: string) =>
+                      setEdits((current) => ({ ...current, [key]: text }));
+                    return (
+                      <div key={key} className={`draft-row${picked[key] ? ' on' : ''}`}>
+                        <label className="draft-head">
+                          <input
+                            type="checkbox"
+                            checked={picked[key] ?? false}
+                            disabled={same}
+                            onChange={(event) =>
+                              setPicked((current) => ({ ...current, [key]: event.target.checked }))
+                            }
+                          />
+                          <span className="draft-label">{label}</span>
+                          {same && <small className="draft-tag">지금과 같음</small>}
+                          {!same && now && key !== 'filmography' && (
+                            <small className="draft-tag warn">바꾸면 지금 값을 덮어써요</small>
+                          )}
+                        </label>
+                        <div className="draft-compare">
+                          <span className="draft-now">
+                            <b>지금</b> {now ? shortText(now) : '비어 있음'}
+                          </span>
+                          <div className="draft-new">
+                            <b>{key === 'filmography' ? '추가' : '초안'}</b>
+                            {!editable ? (
+                              <span className="draft-value">
+                                {shortText(
+                                  fieldText(
+                                    key,
+                                    key === 'filmography'
+                                      ? newFilmography(
+                                          profile.filmography,
+                                          draft.filmography!.value,
+                                        )
+                                      : draft[key]!.value,
+                                  ),
+                                )}
+                              </span>
+                            ) : key === 'gender' ? (
+                              <select
+                                value={edits[key] ?? ''}
+                                onChange={(event) => setEdit(event.target.value)}
+                                aria-label={`${label} 초안`}
+                              >
+                                <option value="">선택</option>
+                                <option value="female">여성</option>
+                                <option value="male">남성</option>
+                                <option value="other">기타</option>
+                              </select>
+                            ) : key === 'region' ? (
+                              <select
+                                value={edits[key] ?? ''}
+                                onChange={(event) => setEdit(event.target.value)}
+                                aria-label={`${label} 초안`}
+                              >
+                                <option value="">선택</option>
+                                {REGIONS.map((region) => (
+                                  <option key={region}>{region}</option>
+                                ))}
+                              </select>
+                            ) : key === 'intro' ? (
+                              <textarea
+                                rows={3}
+                                value={edits[key] ?? ''}
+                                onChange={(event) => setEdit(event.target.value)}
+                                aria-label={`${label} 초안`}
+                              />
+                            ) : (
+                              <input
+                                value={edits[key] ?? ''}
+                                inputMode={
+                                  ['birthYear', 'height', 'weight'].includes(key)
+                                    ? 'numeric'
+                                    : undefined
+                                }
+                                onChange={(event) => setEdit(event.target.value)}
+                                aria-label={`${label} 초안`}
+                              />
+                            )}
+                          </div>
+                          {invalid && (
+                            <small className="form-error">
+                              {key === 'birthYear'
+                                ? '1930년부터 올해 사이 연도를 숫자로 넣어 주세요.'
+                                : key === 'height'
+                                  ? '키는 100~230 사이 숫자로 넣어 주세요.'
+                                  : key === 'weight'
+                                    ? '몸무게는 25~200 사이 숫자로 넣어 주세요.'
+                                    : '값을 확인해 주세요. 이대로면 채우지 않아요.'}
+                            </small>
+                          )}
+                          {!editable && (
+                            <small className="draft-hint">
+                              채운 뒤 아래 입력칸에서 고칠 수 있어요.
+                            </small>
+                          )}
+                          <small className="draft-source">읽은 곳: {draft[key]!.source}</small>
+                        </div>
+                      </div>
+                    );
+                  })}
                   <div className="split-actions">
                     <button className="button button-primary" onClick={applyDraft}>
                       고른 항목 채우기

@@ -3538,27 +3538,82 @@ input[type='date'] {
   background: var(--page);
 }
 .draft-row {
-  display: grid;
-  grid-template-columns: 20px 78px 1fr;
-  align-items: baseline;
-  gap: 4px 8px;
-  padding: 9px 0;
+  padding: 11px 0;
   border-bottom: 1px solid var(--line);
   font-size: 12px;
 }
 .draft-row:last-of-type {
   border-bottom: 0;
 }
+.draft-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .draft-label {
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+}
+.draft-tag {
+  font-size: 10.5px;
   color: var(--muted);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+.draft-tag.warn {
+  color: #9a3f3a;
+  border-color: #f0d4d1;
+  background: #fbf1f0;
+}
+.draft-compare {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  gap: 6px;
+  margin: 8px 0 0 28px;
+}
+.draft-compare b {
+  display: inline-block;
+  min-width: 30px;
+  margin-right: 6px;
+  color: var(--muted);
+  font-size: 11px;
   font-weight: 700;
+}
+.draft-now {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.draft-new {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+}
+.draft-new input,
+.draft-new select,
+.draft-new textarea {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  font-size: 14px;
+  padding: 8px 10px;
+}
+.draft-row:not(.on) .draft-new {
+  opacity: 0.55;
 }
 .draft-value {
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+.draft-hint,
 .draft-source {
-  grid-column: 3;
   color: var(--faint, #9ea5b2);
   font-size: 10.5px;
   overflow-wrap: anywhere;
