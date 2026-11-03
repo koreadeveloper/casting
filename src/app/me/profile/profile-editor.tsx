@@ -30,6 +30,13 @@ import {
 import { embedUrl } from '@/lib/video';
 import { latestBirthDate, manAge } from '@/lib/age';
 import { confirmLogout } from '@/lib/logout';
+import {
+  addDates,
+  expandRange,
+  groupDateRanges,
+  MAX_UNAVAILABLE_DAYS,
+  rangeLabel,
+} from '@/lib/date-ranges';
 
 const SECTIONS = [
   ['basic', '기본 정보'],
@@ -111,6 +118,8 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [newDate, setNewDate] = useState('');
+  // 기간으로 넣을 때의 끝 날짜(비우면 하루)
+  const [newDateEnd, setNewDateEnd] = useState('');
   // 자료실에 넣을 외부 링크(구글 드라이브·노션 등)
   const [linkName, setLinkName] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -966,38 +975,64 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
             <section id="schedule" className="editor-card">
               <h2>출연 불가 일정</h2>
               <p className="muted" style={{ marginBottom: 12 }}>
-                촬영이 어려운 날짜만 등록하세요. 제작자에게는 해당 날짜에 가능/불가 여부만 보입니다.
+                촬영이 어려운 날짜만 등록하세요. 하루는 시작일만, 긴 일정은 끝날짜까지 고르면 기간
+                전체가 한 번에 들어가요. 제작자에게는 해당 날짜에 가능/불가 여부만 보입니다.
               </p>
-              <div className="date-add">
-                <input
-                  type="date"
-                  value={newDate}
-                  onChange={(event) => setNewDate(event.target.value)}
-                />
+              <div className="date-range-add">
+                <label>
+                  시작일
+                  <input
+                    type="date"
+                    value={newDate}
+                    onChange={(event) => setNewDate(event.target.value)}
+                  />
+                </label>
+                <span aria-hidden>~</span>
+                <label>
+                  <span>
+                    끝날짜 <i>선택</i>
+                  </span>
+                  <input
+                    type="date"
+                    value={newDateEnd}
+                    min={newDate || undefined}
+                    onChange={(event) => setNewDateEnd(event.target.value)}
+                  />
+                </label>
                 <button
                   className="button button-outline sm"
-                  disabled={!newDate || profile.unavailableDates.includes(newDate)}
+                  disabled={!newDate}
                   onClick={() => {
-                    update('unavailableDates', [...profile.unavailableDates, newDate].sort());
+                    const days = expandRange(newDate, newDateEnd);
+                    const next = addDates(profile.unavailableDates, days);
+                    if (next.length >= MAX_UNAVAILABLE_DAYS)
+                      setError(
+                        `출연 불가 일정은 최대 ${MAX_UNAVAILABLE_DAYS}일까지 넣을 수 있어요.`,
+                      );
+                    update('unavailableDates', next);
                     setNewDate('');
+                    setNewDateEnd('');
                   }}
                 >
                   추가
                 </button>
               </div>
+              {/* 이어지는 날짜는 기간 하나로 묶어 보여 주고, 지우면 그 기간 전체가 빠진다 */}
               <div className="chip-pick">
-                {profile.unavailableDates.map((date) => (
+                {groupDateRanges(profile.unavailableDates).map((range) => (
                   <button
-                    key={date}
+                    key={range.start}
                     className="on"
-                    onClick={() =>
+                    aria-label={`${rangeLabel(range)} 지우기`}
+                    onClick={() => {
+                      const remove = new Set(expandRange(range.start, range.end));
                       update(
                         'unavailableDates',
-                        profile.unavailableDates.filter((item) => item !== date),
-                      )
-                    }
+                        profile.unavailableDates.filter((item) => !remove.has(item)),
+                      );
+                    }}
                   >
-                    {date} ×
+                    {rangeLabel(range)} ×
                   </button>
                 ))}
               </div>

@@ -19,6 +19,7 @@ import {
 } from '@/lib/profile';
 import { requiredText, safeImageRef, safeUrl } from '@/lib/validation';
 import { manAge } from '@/lib/age';
+import { MAX_UNAVAILABLE_DAYS } from '@/lib/date-ranges';
 
 function intIn(value: unknown, min: number, max: number) {
   const parsed = Number(value);
@@ -92,7 +93,8 @@ export async function PUT(request: NextRequest) {
     photos,
     videoUrl: safeUrl(body.videoUrl),
     filmography,
-    unavailableDates: cleanList(body.unavailableDates, null, 60).filter((date) =>
+    // 기간으로 넣을 수 있게 되어 한도를 1년(366일)으로 늘렸다(lib/date-ranges.ts).
+    unavailableDates: cleanList(body.unavailableDates, null, MAX_UNAVAILABLE_DAYS).filter((date) =>
       /^\d{4}-\d{2}-\d{2}$/.test(date),
     ),
     isPublic: body.isPublic !== false,
