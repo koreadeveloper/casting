@@ -10,6 +10,7 @@ import { BrandLogo } from '@/components/brand';
 import PhotoLightbox from '@/components/photo-lightbox';
 import ProducerNav from '@/components/producer-nav';
 import CoverImage from '@/components/cover-image';
+import { confirmLogout } from '@/lib/logout';
 import type { Project } from '@/lib/accounts';
 import {
   dDayLabel,
@@ -1341,14 +1342,7 @@ export default function Studio({
               <button onClick={() => role && void shareRole(role)} disabled={!role}>
                 {Icon.upload} 지원 링크 공유
               </button>
-              <button
-                onClick={async () => {
-                  await api('/api/auth', { method: 'DELETE' });
-                  location.href = '/';
-                }}
-              >
-                {Icon.out} 로그아웃
-              </button>
+              <button onClick={() => void confirmLogout()}>{Icon.out} 로그아웃</button>
             </div>
             <a href="/account/delete" className="account-danger">
               회원 탈퇴
