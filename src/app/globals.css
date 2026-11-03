@@ -1920,6 +1920,33 @@ input[type='date'] {
     0 0 0 34px #ffffff0a,
     0 0 0 70px #ffffff07;
 }
+/* 제작진이 올린 포스터가 있으면 카드 배경으로 깔고, 글자가 읽히게 아래쪽을 어둡게 덮는다. */
+.apply-cover.has-poster {
+  height: 260px;
+}
+.apply-cover-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.apply-cover.has-poster:after {
+  width: auto;
+  height: auto;
+  inset: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: linear-gradient(180deg, #0b0d1240 0%, #0b0d1200 35%, #0b0d12e6 100%);
+}
+.apply-cover.has-poster > :not(.apply-cover-poster) {
+  position: relative;
+  z-index: 1;
+}
+.apply-cover.has-poster p {
+  color: #e4e8ef;
+}
 .cover-kicker {
   font-size: 11px;
   font-weight: 800;
@@ -2435,20 +2462,78 @@ input[type='date'] {
 .info-panel strong {
   color: var(--ink);
 }
-.actor-chat {
-  height: 640px;
-  max-height: 78dvh;
-  border-top: 1px solid var(--line);
-  margin-top: 30px;
-  padding-top: 4px;
+/* 지원 현황 → 대화 화면으로 가는 카드 */
+.status-chat-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--ink);
+}
+.status-chat-link .scl-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: var(--lavender);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  flex: none;
+}
+.status-chat-link .scl-main {
+  flex: 1;
+  min-width: 0;
+}
+.status-chat-link .scl-main strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+}
+.status-chat-link .scl-main span {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.status-chat-link .scl-go {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+  flex: none;
+}
+/* 배우용 대화 화면: 화면 높이를 꽉 채우고, 대화 목록만 스크롤한다. */
+.app-shell.chat-page {
+  height: 100dvh;
+  min-height: 0;
+  padding-bottom: 0;
   display: flex;
   flex-direction: column;
 }
-.actor-chat .chat-messages {
+.chat-page .sub-header {
+  flex: none;
+}
+.chat-page-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 20px env(safe-area-inset-bottom);
+}
+/* 위 헤더에 상대 이름이 있으니 대화 컴포넌트 자체 머리말은 숨긴다. */
+.chat-page-body .chat-peer {
+  display: none;
+}
+.chat-page-body .chat-messages {
   margin-left: -20px;
   margin-right: -20px;
-  padding-left: 20px;
-  padding-right: 20px;
 }
 
 .role-link {

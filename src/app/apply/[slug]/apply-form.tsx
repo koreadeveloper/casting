@@ -13,6 +13,7 @@ import {
   NO_SPECIAL_SCENE,
   ageRangeLabel,
   specialScenesLabel,
+  isPosterUrl,
   projectCover,
 } from '@/lib/project-meta';
 import { formatDates, formatPeriod } from '@/lib/schedule';
@@ -183,11 +184,24 @@ export default function ApplyForm({
       )}
       {step === 'brief' ? (
         <div className="apply-content">
-          <div className="apply-cover">
+          <div className={isPosterUrl(role.coverUrl) ? 'apply-cover has-poster' : 'apply-cover'}>
+            {isPosterUrl(role.coverUrl) && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                className="apply-cover-poster"
+                src={role.coverUrl}
+                alt=""
+                onError={(event) => {
+                  event.currentTarget.style.display = 'none';
+                }}
+              />
+            )}
             <span className="cover-kicker">CASTING CALL</span>
-            <span className="cover-star">
-              <BrandIcon name="sparkle" size={64} />
-            </span>
+            {!isPosterUrl(role.coverUrl) && (
+              <span className="cover-star">
+                <BrandIcon name="sparkle" size={64} />
+              </span>
+            )}
             <div>
               <p>{role.projectTitle}</p>
               <h1>{role.title}</h1>

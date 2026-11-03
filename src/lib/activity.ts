@@ -297,7 +297,7 @@ export async function actorFeed(
       id: `msg-${str(row.id)}`,
       icon: '💬',
       text: `‘${str(row.role_title)}’ 제작팀 — “${clip(str(row.body))}”`,
-      href: `/status/${str(row.receipt_token)}`,
+      href: `/status/${str(row.receipt_token)}/chat`,
       at: str(row.created_at),
     });
   }

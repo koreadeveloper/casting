@@ -5,6 +5,8 @@ import ChatAttachmentView, { FileBadge } from '@/components/chat-attachment';
 import { CHAT_FILE_ACCEPT, CHAT_FILE_MAX_BYTES, formatFileSize } from '@/lib/chat-files';
 import type { ChatMessage } from '@/lib/types';
 
+const FALLBACK_COVER = '/covers/etc.svg';
+
 type Props = {
   applicationId: string;
   mode: 'producer' | 'actor';
@@ -368,7 +370,15 @@ export default function ChatThread({
         <div className="thumb">
           {projectImage && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={projectImage} alt="" />
+            <img
+              src={projectImage}
+              alt=""
+              // 포스터 파일을 못 불러오면 깨진 아이콘 대신 기본 커버를 보여 준다.
+              onError={(event) => {
+                const img = event.currentTarget;
+                if (!img.src.endsWith(FALLBACK_COVER)) img.src = FALLBACK_COVER;
+              }}
+            />
           )}
         </div>
         <div className="cc">

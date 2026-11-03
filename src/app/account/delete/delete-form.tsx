@@ -6,17 +6,24 @@ import BackButton from '@/components/back-button';
 import { Brand } from '@/components/brand';
 import { PRIVACY_PATH } from '@/lib/legal';
 
-/** 회원 탈퇴. 지워지는 내용을 보여 주고, 확인 체크와 비밀번호를 받은 뒤 DELETE /api/me를 부른다. */
+/**
+ * 회원 탈퇴. 지워지는 내용을 보여 주고, 확인 체크와 비밀번호를 받은 뒤 DELETE /api/me를 부른다.
+ * 소셜 로그인으로만 가입한 계정은 비밀번호가 없어서 대신 계정 이메일을 입력받는다.
+ */
 export default function DeleteAccountForm({
   role,
   demo,
+  email,
+  passwordless,
   back,
 }: {
   role: 'producer' | 'actor';
   demo: boolean;
+  email: string;
+  passwordless: boolean;
   back: string;
 }) {
-  const [password, setPassword] = useState('');
+  const [secret, setSecret] = useState('');
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -29,7 +36,7 @@ export default function DeleteAccountForm({
       const response = await fetch('/api/me', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify(passwordless ? { email: secret } : { password: secret }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || '탈퇴하지 못했어요. 다시 시도해 주세요.');
@@ -81,16 +88,34 @@ export default function DeleteAccountForm({
           </p>
         ) : (
           <form className="auth-form" onSubmit={submit}>
-            <label>
-              비밀번호 확인
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-                required
-              />
-            </label>
+            {passwordless ? (
+              <label>
+                이메일 주소 확인
+                <span className="small-note">
+                  구글·카카오로 가입한 계정은 비밀번호가 없어요. 본인 확인을 위해 계정 이메일{' '}
+                  <strong>{email}</strong>을 그대로 입력해 주세요.
+                </span>
+                <input
+                  type="email"
+                  value={secret}
+                  onChange={(event) => setSecret(event.target.value)}
+                  placeholder={email}
+                  autoComplete="off"
+                  required
+                />
+              </label>
+            ) : (
+              <label>
+                비밀번호 확인
+                <input
+                  type="password"
+                  value={secret}
+                  onChange={(event) => setSecret(event.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+              </label>
+            )}
             <label className="check">
               <input
                 type="checkbox"
@@ -104,7 +129,7 @@ export default function DeleteAccountForm({
                 {error}
               </p>
             )}
-            <button className="button button-danger full" disabled={busy || !agree || !password}>
+            <button className="button button-danger full" disabled={busy || !agree || !secret}>
               {busy ? '탈퇴 처리 중…' : '탈퇴하기'}
             </button>
             <Link className="button button-outline full" href={back}>

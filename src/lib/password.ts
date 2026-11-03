@@ -16,6 +16,27 @@ export function verifyPassword(password: string, stored: string) {
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
+/** 비밀번호가 있는 계정인지. 소셜 로그인으로만 가입한 계정은 저장된 값이 빈 문자열이다. */
+export function hasPassword(stored: string) {
+  return stored.startsWith('scrypt$');
+}
+
+/**
+ * 회원 탈퇴 전 본인 확인. 비밀번호가 있으면 비밀번호를, 소셜 로그인 계정이면
+ * 비밀번호가 없으니 계정 이메일을 그대로 입력받아 확인한다.
+ */
+export function deletionConfirmed(
+  input: { password?: unknown; email?: unknown },
+  account: { email: string; passwordHash: string },
+) {
+  if (hasPassword(account.passwordHash))
+    return verifyPassword(String(input.password || ''), account.passwordHash);
+  const typed = String(input.email || '')
+    .trim()
+    .toLowerCase();
+  return typed !== '' && typed === account.email.toLowerCase();
+}
+
 export function passwordProblem(password: string) {
   if (password.length < 8) return '비밀번호는 8자 이상이어야 합니다.';
   if (password.length > 128) return '비밀번호가 너무 깁니다.';
