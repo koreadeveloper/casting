@@ -8,7 +8,7 @@ export const LEGAL = {
    * 개인정보·탈퇴·신고 문의를 받을 팀 이메일. 비어 있으면 처리방침·약관에서 이메일 줄을 숨기고
    * 문의하기 화면(/contact)으로만 안내한다. 채우면 문의 알림 메일도 이 주소로 간다(메일 설정 시).
    */
-  contact: '',
+  contact: 'castingflowofficial@gmail.com',
   /** 약관과 처리방침이 효력을 갖는 날. 내용을 바꾸면 새 날짜로 고친다. */
   effective: '2026년 11월 3일',
 };
