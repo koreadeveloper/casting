@@ -755,3 +755,11 @@
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
 }
+
+/* 좁은 폰(360px 이하)은 화면 여백이 16px라 프로젝트 줄도 그만큼만 뻗는다. */
+@media (max-width: 360px) {
+  .projectRow {
+    margin: 0 -16px;
+    padding: 0 16px 4px;
+  }
+}
