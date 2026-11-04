@@ -11,6 +11,7 @@ import PhotoLightbox from '@/components/photo-lightbox';
 import ProducerNav from '@/components/producer-nav';
 import CoverImage from '@/components/cover-image';
 import { confirmLogout } from '@/lib/logout';
+import { conditionLabel, conditionTone } from '@/lib/conditions';
 import type { Project } from '@/lib/accounts';
 import {
   dDayLabel,
@@ -285,9 +286,6 @@ function studioUrl(tab: Tab, roleId: string) {
   if (tab === 'applicants' && roleId) params.set('role', roleId);
   const query = params.toString();
   return query ? `/studio?${query}` : '/studio';
-}
-function conditionLabel(value: string) {
-  return value === 'yes' ? '가능' : value === 'no' ? '불가' : '미확인';
 }
 function formattedDate(date: string) {
   return date
@@ -1160,9 +1158,13 @@ export default function Studio({
                             </div>
                             <p>{item.introduction}</p>
                             <div className="candidate-meta">
-                              <span className={item.available === 'yes' ? 'positive' : 'uncertain'}>
-                                {item.available === 'yes' ? '●' : '◷'} 촬영{' '}
-                                {conditionLabel(item.available)}
+                              <span className={conditionTone(item.available)}>
+                                {item.available === 'yes'
+                                  ? '●'
+                                  : item.available === 'no'
+                                    ? '✕'
+                                    : '◷'}{' '}
+                                촬영 {conditionLabel(item.available)}
                               </span>
                               <span>▣ {item.videoUrl ? '영상 있음' : '영상 없음'}</span>
                               {item.shortlist && <span className="positive">★ 후보</span>}
@@ -1419,17 +1421,21 @@ export default function Studio({
             <div className="detail-grid">
               <div>
                 <span>촬영 가능</span>
-                <strong className={selected.available === 'yes' ? 'positive' : 'uncertain'}>
+                <strong className={conditionTone(selected.available)}>
                   {conditionLabel(selected.available)}
                 </strong>
               </div>
               <div>
                 <span>지역 이동</span>
-                <strong>{conditionLabel(selected.travel)}</strong>
+                <strong className={conditionTone(selected.travel)}>
+                  {conditionLabel(selected.travel)}
+                </strong>
               </div>
               <div>
                 <span>출연료 수용</span>
-                <strong>{conditionLabel(selected.payAccepted)}</strong>
+                <strong className={conditionTone(selected.payAccepted)}>
+                  {conditionLabel(selected.payAccepted)}
+                </strong>
               </div>
             </div>
             <div className="detail-block">

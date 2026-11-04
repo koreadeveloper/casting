@@ -13,7 +13,7 @@ import { getProducerBadges } from '@/lib/verifications';
 import RoleSearchForm from '@/components/role-search-form';
 import { listActorApplications, searchOpenRoles } from '@/lib/db';
 import { matchRoleForActor } from '@/lib/match';
-import { profileCompletion } from '@/lib/profile';
+import { profileAge, profileCompletion } from '@/lib/profile';
 import { ROLE_FILTER_OPTIONS } from '@/lib/project-meta';
 import { isResultDelayed, kstToday } from '@/lib/result-deadline';
 import { hasRoleFilters, parseRoleFilters } from '@/lib/role-search';
@@ -197,7 +197,11 @@ export default async function ActorHome({
                   </p>
                   <div className="match-reasons">
                     {fit.reasons.slice(0, 3).map((reason) => (
-                      <span key={reason}>{reason}</span>
+                      // 맞는 조건은 색을 채우고, 촬영일 겹침처럼 안 맞는 조건은 빨간색으로
+                      <span key={reason} className={reason.includes('겹침') ? 'miss' : 'hit'}>
+                        {reason.includes('겹침') ? '! ' : '✓ '}
+                        {reason}
+                      </span>
                     ))}
                   </div>
                 </Link>
@@ -237,6 +241,7 @@ export default async function ActorHome({
                 applied={appliedRoleIds.has(role.id)}
                 orgLine={role.ownerId ? orgLines.get(role.ownerId) : undefined}
                 trust={(role.ownerId && badges.get(role.ownerId)) || null}
+                fit={profile ? roleFit(profile, role) : undefined}
               />
             ))}
           </div>
@@ -244,4 +249,20 @@ export default async function ActorHome({
       </div>
     </main>
   );
+}
+
+/** 배우 프로필과 배역 조건이 맞는지(카드의 성별·연령 칩 색 채우기용) */
+function roleFit(
+  profile: { gender: string; birthYear: number | null; birthDate?: string },
+  role: { gender: string; ageMin: number; ageMax: number },
+) {
+  const age = profileAge(profile);
+  return {
+    gender: (role.gender === 'male' || role.gender === 'female') && role.gender === profile.gender,
+    age:
+      age !== null &&
+      (role.ageMin > 0 || role.ageMax > 0) &&
+      (!role.ageMin || age >= role.ageMin) &&
+      (!role.ageMax || age <= role.ageMax),
+  };
 }

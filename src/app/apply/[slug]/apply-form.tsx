@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { koDate } from '@/lib/dates';
 import Link from 'next/link';
 import { BrandIcon, BrandLogo } from '@/components/brand';
 import type { ProducerIntro, Project } from '@/lib/accounts';
@@ -325,11 +326,11 @@ export default function ApplyForm({
             </div>
             <div>
               <span>지원 마감</span>
-              <strong>{role.deadline}</strong>
+              <strong>{koDate(role.deadline)}</strong>
             </div>
             <div>
               <span>결과 안내 예정</span>
-              <strong>{role.announcementDate}</strong>
+              <strong>{koDate(role.announcementDate)}</strong>
             </div>
           </section>
           <section className="brief-card producer-card">

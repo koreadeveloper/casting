@@ -209,7 +209,7 @@ export async function actorInbox(actorId: string) {
        FROM applications a JOIN roles r ON r.id=a.role_id
        LEFT JOIN projects p ON p.id=r.project_id
        LEFT JOIN users u ON u.id=COALESCE(p.owner_id, r.owner_id)
-       WHERE a.actor_id=? AND a.chat_open=1`,
+       WHERE a.actor_id=?`,
     )
     .all(actorId)) as Row[];
   const messages = await messagesOf(apps.map((app) => str(app.id)));
@@ -244,7 +244,7 @@ export async function actorInbox(actorId: string) {
         title: mode === 'group' ? '제작진 단톡방' : peer,
         subtitle: `${str(app.role_title)} · ${mode === 'group' ? `${peer} 외 제작진 전체` : '개별방'}`,
         photo: '',
-        last: last ? preview(last) : '제작진과 대화가 열렸어요.',
+        last: last ? preview(last) : '궁금한 점을 제작진에게 물어보세요.',
         lastAt: last ? str(last.created_at) : '',
         unread: unreadCount(
           inRoom.map((row) => ({ at: str(row.created_at), mine: str(row.sender) === 'actor' })),

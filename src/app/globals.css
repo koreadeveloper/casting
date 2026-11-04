@@ -5388,7 +5388,9 @@ input[type='date'] {
 }
 .trust-none {
   font-size: 10.5px;
-  color: var(--faint);
+  /* 인증되지 않은 제작진: 배우가 바로 알아보도록 빨간 글씨 */
+  color: #d14343;
+  font-weight: 700;
   margin: 4px 0 2px;
 }
 .producer-card .trust-badges,
@@ -6681,4 +6683,88 @@ button.agree-view {
   font-size: 12px;
   line-height: 1.6;
   color: var(--muted);
+}
+
+/* 지원 조건 답: 가능 초록 · 불가 빨강 · 조율 필요 주황 (lib/conditions.ts) */
+.cond-yes {
+  color: #1f9d6c !important;
+}
+.cond-no {
+  color: #d14343 !important;
+}
+.cond-unsure {
+  color: #e07b00 !important;
+}
+
+/* 지원 현황의 제작진 카드: 카드 전체가 대화로 가는 링크 */
+.pd-card-link {
+  color: inherit;
+  text-decoration: none;
+}
+.pd-card-link .pd-go {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex: none;
+}
+
+/* 화면 안 확인창(로그아웃 등). 브라우저 기본 확인창이 안 뜨는 환경을 위해 직접 그린다(lib/logout.ts) */
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(11, 13, 18, 0.55);
+}
+.confirm-card {
+  width: min(340px, 100%);
+  background: #fff;
+  border-radius: 20px;
+  padding: 22px 18px 16px;
+  text-align: center;
+  box-shadow: 0 20px 60px #0b0d1240;
+}
+.confirm-card p {
+  margin: 0 0 18px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* 맞춤 공고: 내 프로필과 맞는 조건은 색을 채우고, 안 맞는 조건은 빨간색 */
+.match-reasons span.hit {
+  background: #c5ff45;
+  color: #0b0d12;
+}
+.match-reasons span.miss {
+  background: #fde8e8;
+  color: #b42323;
+}
+/* 배역 카드의 조건 칩: 맞는 성별·연령은 색을 채운다 */
+.pcard-info .role-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+.pcard-info .role-tags span:not(:last-child)::after {
+  content: ' ·';
+  color: var(--faint, #9ea5b2);
+}
+.pcard-info .role-tags span.tag-fit {
+  background: #c5ff45;
+  color: #0b0d12;
+  border-radius: 999px;
+  padding: 0 7px;
+  font-weight: 800;
+}
+.pcard-info .role-tags span.tag-fit::after {
+  content: '';
 }

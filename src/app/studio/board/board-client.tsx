@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import BackButton from '@/components/back-button';
 import ChatThread from '@/components/chat-thread';
+import { conditionLabel, conditionTone } from '@/lib/conditions';
 import { CHAT_MODE_LABEL, type ChatMode } from '@/lib/chat-rooms';
 import PhotoLightbox from '@/components/photo-lightbox';
 import ProducerNav from '@/components/producer-nav';
@@ -32,12 +33,6 @@ type AppDetail = {
   payAccepted: string;
   skill: string;
   createdAt: string;
-};
-
-const CONDITION: Record<string, string> = {
-  yes: '가능',
-  no: '불가',
-  unsure: '확인 필요',
 };
 
 /** 상세 패널에서 쓸 사진들. 지원서를 받아왔으면 고른 사진 전부, 아니면 카드의 사진 한 장. */
@@ -1080,15 +1075,21 @@ export default function BoardClient({ meId }: { meId: string }) {
                 <div className="detail-grid">
                   <div>
                     <span>촬영 가능</span>
-                    <strong>{CONDITION[detail.application.available] ?? '미응답'}</strong>
+                    <strong className={conditionTone(detail.application.available)}>
+                      {conditionLabel(detail.application.available)}
+                    </strong>
                   </div>
                   <div>
                     <span>지역 이동</span>
-                    <strong>{CONDITION[detail.application.travel] ?? '미응답'}</strong>
+                    <strong className={conditionTone(detail.application.travel)}>
+                      {conditionLabel(detail.application.travel)}
+                    </strong>
                   </div>
                   <div>
                     <span>출연료 수용</span>
-                    <strong>{CONDITION[detail.application.payAccepted] ?? '미응답'}</strong>
+                    <strong className={conditionTone(detail.application.payAccepted)}>
+                      {conditionLabel(detail.application.payAccepted)}
+                    </strong>
                   </div>
                 </div>
                 <div className="detail-block">

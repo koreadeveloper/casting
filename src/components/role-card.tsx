@@ -19,8 +19,11 @@ export default function RoleCard({
   applied = false,
   orgLine,
   trust,
+  fit,
 }: {
   role: OpenRoleListing;
+  /** 로그인한 배우의 프로필과 맞는 조건. 맞는 성별·연령 칩은 색을 채워 보여 준다. */
+  fit?: { gender?: boolean; age?: boolean };
   applied?: boolean;
   /** 제작자 소속 표기(예: "○○대학교 영화과 · 연출") */
   orgLine?: string;
@@ -28,11 +31,11 @@ export default function RoleCard({
   trust?: ProducerBadges | null;
 }) {
   const tags = [
-    role.projectFormat,
-    ROLE_TYPES[role.roleType],
-    ROLE_GENDERS[role.gender],
-    ageRangeLabel(role.ageMin, role.ageMax),
-  ].filter(Boolean);
+    { text: role.projectFormat, fit: false },
+    { text: ROLE_TYPES[role.roleType], fit: false },
+    { text: ROLE_GENDERS[role.gender], fit: Boolean(fit?.gender) },
+    { text: ageRangeLabel(role.ageMin, role.ageMax), fit: Boolean(fit?.age) },
+  ].filter((tag) => tag.text);
   return (
     <Link href={`/apply/${role.slug}`} className="pcard role-link">
       <div className="pcard-top">
@@ -50,7 +53,16 @@ export default function RoleCard({
           <p className="sub">{role.title}</p>
           {orgLine && <p className="org-line">{orgLine}</p>}
           {trust !== undefined && <TrustBadges badges={trust ?? undefined} />}
-          {tags.length > 0 && <p className="role-tags">{tags.join(' · ')}</p>}
+          {tags.length > 0 && (
+            <p className="role-tags">
+              {tags.map((tag) => (
+                <span key={tag.text} className={tag.fit ? 'tag-fit' : undefined}>
+                  {tag.fit && '✓ '}
+                  {tag.text}
+                </span>
+              ))}
+            </p>
+          )}
           <p className="meta">
             촬영 {formatDates(role.shootDates, 1) || shortDate(role.shootDate)} · {role.location}
             <br />
