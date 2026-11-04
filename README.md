@@ -102,19 +102,11 @@ pnpm dev                     # http://localhost:3000
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | | 구글 로그인. 콘솔에 콜백 `…/api/auth/google/callback` 등록. 없으면 버튼이 안 보임 |
 | `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET` | | 카카오 로그인. 콜백 `…/api/auth/kakao/callback` 등록. 없으면 버튼이 안 보임 |
 | `RESEND_API_KEY`, `MAIL_FROM` | | 문의 알림·학교 메일 인증 메일 발송. 로컬에서 없으면 서버 로그에 출력 |
-| `DEMO_MODE`, `NEXT_PUBLIC_DEMO_MODE` | | `true`면 체험 모드(데모 입장 버튼·샘플 데이터). **운영에서는 비워 둡니다** |
+| `DEMO_MODE` | | `true`면 업로드를 서버 임시 폴더에 두고 `@demo.casting` 계정 로그인을 허용합니다(체험 사이트용). **운영에서는 비워 둡니다** |
 
-> ⚠️ `pnpm dev`(개발 모드)는 첫 DB 접속 때 데모 계정·샘플 데이터를 자동으로 채웁니다. **로컬은 운영과 다른 Supabase 프로젝트(또는 DB)를 쓰세요.** 시드를 끄려면 `SEED_DEMO=false`.
-
-### 데모 계정 (로컬 개발·체험 사이트, 비밀번호 전부 `demo1234`)
-
-| 역할 | 계정 | 설명 |
-|---|---|---|
-| 제작자 (오너) | `producer@demo.casting` | 샘플 프로젝트·지원자·오디션 데이터 포함 |
-| 제작자 (팀원) | `director@demo.casting` | 팀 보드 협업 데모용 |
-| 배우 | `actor01`~`actor16@demo.casting` | 프로필이 채워진 배우 16명 |
-
-체험 사이트에서는 **제작자로 체험하기 / 배우로 체험하기** 버튼으로 바로 들어갑니다. 운영 사이트에서는 데모 계정으로 로그인할 수 없습니다.
+> ⚠️ **로컬 개발은 운영과 다른 DB를 쓰세요.** PC의 `.env.local`의 `DATABASE_URL`이 운영(`casting-swipe`)과 같은 Supabase 프로젝트를 가리키면, 로컬에서 시험한 지원서·삭제가 실제 운영 데이터에 그대로 반영되고, Supabase 키가 없으면 올린 사진이 PC에만 저장되어 운영 화면에서 깨집니다. 데모 DB나 개발 전용 Supabase 프로젝트를 쓰세요(표는 첫 접속 때 자동으로 만들어집니다).
+>
+> 데모 계정·샘플 데이터를 자동으로 채우던 시드 코드와 체험 입장 버튼은 삭제되었습니다(2026-11-03). 지금은 어느 DB에도 샘플 데이터가 저절로 생기지 않습니다.
 
 ---
 
@@ -132,7 +124,7 @@ pnpm dev                     # http://localhost:3000
 | Vercel 프로젝트 | 주소 | 용도 | 데이터 |
 |---|---|---|---|
 | `casting-swipe` | casting-swipe.vercel.app | 운영 (파일럿) | 운영 DB · `DEMO_MODE` 없음 |
-| `casting-swipe-demo` | casting-swipe-demo.vercel.app | 체험·심사·홍보 | 데모 전용 DB · `DEMO_MODE=true`, 빌드 때 `scripts/prepare-demo.ts`가 샘플 데이터 채움(중복 없음) |
+| `casting-swipe-demo` | casting-swipe-demo.vercel.app | 체험·심사·홍보 | 데모 전용 DB · `DEMO_MODE=true` (샘플 데이터 자동 채우기는 삭제됨) |
 
 두 프로젝트 모두 `main` 브랜치에 push하면 자동 배포됩니다.
 
