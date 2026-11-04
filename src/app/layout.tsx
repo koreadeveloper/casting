@@ -17,6 +17,9 @@ function siteUrl() {
   return new URL(url);
 }
 
+const BLOCK_INSTALL_PROMPT = true;
+const NO_INSTALL_PROMPT = `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault()})`;
+
 export const metadata: Metadata = {
   metadataBase: siteUrl(),
   title: '캐스팅플로우',
@@ -47,6 +50,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="ko" suppressHydrationWarning>
       <body>
         <script dangerouslySetInnerHTML={{ __html: NAV_BOOT_SCRIPT }} />
+        {/* 잠시 막음: 크롬·삼성 인터넷이 링크를 열자마자 띄우는 '앱 설치' 안내. 브라우저 메뉴의
+            '홈 화면에 추가'로는 계속 설치할 수 있다. 다시 띄우려면 BLOCK_INSTALL_PROMPT를 false로. */}
+        {BLOCK_INSTALL_PROMPT && <script dangerouslySetInnerHTML={{ __html: NO_INSTALL_PROMPT }} />}
         <NavTracker />
         {children}
         {/* 카카오톡·인스타그램 등 앱 안 브라우저면 바깥 브라우저로 옮긴다(구글 로그인이 막혀서) */}
