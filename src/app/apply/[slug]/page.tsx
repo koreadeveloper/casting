@@ -1,4 +1,6 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { isPosterUrl } from '@/lib/project-meta';
 import { getProducerIntro, getProfile, getProject, getUserById } from '@/lib/accounts';
 import { getActorId } from '@/lib/auth';
 import { findActorApplicationToken, getRole } from '@/lib/db';
@@ -7,6 +9,38 @@ import { getProducerBadges } from '@/lib/verifications';
 import ApplyForm, { type Prefill } from './apply-form';
 
 export const dynamic = 'force-dynamic';
+
+/** 지원 링크를 공유했을 때 보이는 미리보기: 작품·배역·마감과 포스터(없으면 기본 이미지) */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const role = await getRole(slug);
+  if (!role) return { title: '공고를 찾을 수 없어요 · 캐스팅플로우' };
+  const title = `${role.projectTitle} · ${role.title} 배우 모집`;
+  const facts = [
+    role.isClosed ? '모집 마감' : `${role.deadline.slice(5).replace('-', '.')} 마감`,
+    role.location,
+    role.pay,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const description = `${facts} — 캐스팅플로우에서 조건을 확인하고 바로 지원하세요.`;
+  const poster = isPosterUrl(role.coverUrl) ? role.coverUrl : '';
+  return {
+    title: `${title} · 캐스팅플로우`,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: poster
+        ? [{ url: poster, alt: `${role.projectTitle} 포스터` }]
+        : [{ url: '/og.jpg', width: 1200, height: 630, alt: '캐스팅플로우' }],
+    },
+  };
+}
 
 export default async function ApplyPage({
   params,
