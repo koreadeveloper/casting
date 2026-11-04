@@ -11,7 +11,7 @@ export type ChatParticipant =
 
 /**
  * 이 지원서의 대화에 누가 들어왔는지 정한다.
- * - 배우: 로그인 없이 지원 현황 주소의 토큰으로 들어온다. 제작진이 대화를 연 뒤에만.
+ * - 배우: 로그인 없이 지원 현황 주소의 토큰으로 들어온다. 먼저 문의를 시작할 수도 있다.
  * - 제작진: 프로젝트 주인이나 팀원(팀 보드에 초대된 사람). 예전 배역(프로젝트 없음)은 배역 주인만.
  *   개별방 방식이면 팀원은 자기 방에만, 주인은 기본 방에만 들어간다(서로의 방은 볼 수 없다).
  * 사진·링크처럼 머리글을 붙일 수 없는 요청을 위해 토큰은 주소의 ?t= 로도 받는다.
@@ -30,8 +30,8 @@ export async function chatParticipant(
     '';
   if (token) {
     const application = await getApplication(applicationId);
-    if (!(application?.chatOpen && token.length >= 40 && token === application.receiptToken))
-      return null;
+    // 접수 링크(토큰)를 가진 배우는 제작진이 먼저 말을 걸지 않아도 문의를 시작할 수 있다.
+    if (!(application && token.length >= 40 && token === application.receiptToken)) return null;
     const existing = (await listChatRooms(applicationId)).map((item) => item.room);
     return { kind: 'actor', mode: context.mode, rooms: actorRooms(context.mode, existing) };
   }

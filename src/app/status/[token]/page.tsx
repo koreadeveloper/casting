@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { koDate } from '@/lib/dates';
 import {
   getApplicationByReceipt,
   getLatestOffer,
@@ -80,9 +81,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
   const nextShoot = application.publicStage === 'cast' ? nextShootDate(role.shootDates, today) : '';
   const attendance = nextShoot ? await listAttendance(application.id) : [];
   // 대화는 따로 연 화면(/status/[token]/chat)에서 하고, 여기서는 마지막 메시지만 미리 보여 준다.
-  const lastMessage = application.chatOpen
-    ? (await listChatMessages(application.id)).at(-1)
-    : undefined;
+  const lastMessage = (await listChatMessages(application.id)).at(-1);
   const chatHref = `/status/${token}/chat`;
   return (
     <main className="app-shell narrow">
@@ -111,14 +110,15 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
             )}
           </div>
         </div>
-        <div className="pd-card">
+        {/* 배우도 먼저 문의를 시작할 수 있다. 카드 전체를 누르면 대화 화면으로 간다. */}
+        <Link href={chatHref} className="pd-card pd-card-link">
           <div className="avatar">{role.contactName.slice(-2)}</div>
           <div className="pd-main">
             <strong>{role.contactName}</strong>
             <p>프로젝트 관련 문의는 언제든지 대화로 남겨주세요.</p>
           </div>
-          {application.chatOpen && <Link href={chatHref}>대화 보기 ›</Link>}
-        </div>
+          <span className="pd-go">대화하기 ›</span>
+        </Link>
         <StageProgress
           stage={actorStageOf(application)}
           message={actorStageMessage(application, delayed)}
@@ -139,15 +139,11 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
         <div className="info-panel">
           <div>
             <span>접수일</span>
-            <strong>
-              {new Date(application.createdAt).toLocaleDateString('ko-KR', {
-                timeZone: 'Asia/Seoul',
-              })}
-            </strong>
+            <strong>{koDate(application.createdAt)}</strong>
           </div>
           <div>
             <span>결과 안내 예정</span>
-            <strong>{resultDue}</strong>
+            <strong>{koDate(resultDue)}</strong>
           </div>
         </div>
         <p className="small-note">
@@ -161,7 +157,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
           이 페이지 주소를 보관하면 공개된 진행 상태를 다시 확인할 수 있습니다. 제작진의 내부 검토
           상태와 메모는 공개되지 않습니다.
         </p>
-        {application.chatOpen && (
+        {
           <Link href={chatHref} className="status-chat-link">
             <span className="scl-icon" aria-hidden>
               💬
@@ -181,7 +177,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
             </span>
             <span className="scl-go">대화 열기 ›</span>
           </Link>
-        )}
+        }
       </div>
     </main>
   );

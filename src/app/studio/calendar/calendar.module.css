@@ -82,12 +82,14 @@
 }
 .formGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0,1fr): 날짜·시간 칸의 기본 너비 때문에 열이 늘어나 화면 밖으로 잘리던 것을 막는다 */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
   margin-bottom: 12px;
 }
 .field {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 5px;
   font-size: 12px;
@@ -100,6 +102,9 @@
 .field input,
 .field select,
 .field textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 11px 12px;
@@ -133,7 +138,7 @@
 }
 .dowRow {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
   margin-bottom: 6px;
 }
@@ -149,7 +154,7 @@
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
 }
 .cell {

@@ -26,33 +26,20 @@ export default async function StatusChatPage({ params }: { params: Promise<{ tok
         <h1>{role.contactName || '제작진'}</h1>
         <span className="sh-more" />
       </header>
-      {application.chatOpen ? (
-        <section className="chat-page-body">
-          <ChatThread
-            applicationId={application.id}
-            mode="actor"
-            receipt={token}
-            peerName={role.contactName}
-            peerSub={`${role.projectTitle} · ${role.title}`}
-            projectTitle={role.projectTitle}
-            roleTitle={role.title}
-            projectImage={role.coverUrl || projectCover('')}
-            profileHref={`/apply/${role.slug}`}
-          />
-        </section>
-      ) : (
-        <div className="status-wrap">
-          <div className="empty-card">
-            <strong>아직 대화가 열리지 않았어요.</strong>
-            <p style={{ marginTop: 10, lineHeight: 1.75 }}>
-              제작진이 대화를 열면 여기에서 메시지를 주고받을 수 있어요.
-            </p>
-          </div>
-          <Link className="button button-soft full" href={back} style={{ marginTop: 14 }}>
-            지원 현황으로
-          </Link>
-        </div>
-      )}
+      {/* 배우는 제작진이 먼저 말을 걸지 않아도 문의를 시작할 수 있다 */}
+      <section className="chat-page-body">
+        <ChatThread
+          applicationId={application.id}
+          mode="actor"
+          receipt={token}
+          peerName={role.contactName}
+          peerSub={`${role.projectTitle} · ${role.title}`}
+          projectTitle={role.projectTitle}
+          roleTitle={role.title}
+          projectImage={role.coverUrl || projectCover('')}
+          profileHref={`/apply/${role.slug}`}
+        />
+      </section>
     </main>
   );
 }

@@ -467,7 +467,7 @@ export default function ChatThread({
             <br />
             {mode === 'producer'
               ? '연락을 시작하면 배우의 지원 현황에 대화가 열립니다.'
-              : '제작진의 메시지를 기다려 주세요.'}
+              : '궁금한 점을 남기면 제작진에게 전달돼요.'}
           </div>
         )}
         {messages.map((message) => {
