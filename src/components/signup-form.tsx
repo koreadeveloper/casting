@@ -132,7 +132,7 @@ export default function SignupForm({
               value={form.phone}
               onChange={set('phone')}
               autoComplete="tel"
-              placeholder="010-1234-5678"
+              placeholder="숫자만 입력 (예: 01012345678)"
             />
           </label>
           {role === 'producer' && (
