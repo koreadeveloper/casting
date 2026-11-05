@@ -6798,3 +6798,8 @@ button.agree-view {
   font-size: 12px;
   color: var(--muted);
 }
+
+/* 프로필 관리: 제목 줄(미리보기 버튼)과 완성도 카드가 붙어 보이지 않게 간격 */
+.title-row + .completion-card {
+  margin-top: 20px;
+}
