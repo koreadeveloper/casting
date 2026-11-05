@@ -439,7 +439,7 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
       <ProducerNav active="new-project" />
       <div className="screen-pad page-top">
         <Link className="back-link" href="/studio">
-          ‹ 프로젝트
+          프로젝트
         </Link>
         <div className="wizard-shell">
           <ol className="wizard-steps vertical">
