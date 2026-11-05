@@ -28,7 +28,7 @@ export default function ActorNav({
         <BrandLogo />
         <NavCollapse />
       </div>
-      <Link href="/me" className={active === 'home' ? 'active' : ''}>
+      <Link href="/me" data-label="홈" className={active === 'home' ? 'active' : ''}>
         <span className="nav-ic">
           <svg {...stroke}>
             <path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z" strokeLinejoin="round" />
@@ -36,7 +36,7 @@ export default function ActorNav({
         </span>
         <span className="nav-label">홈</span>
       </Link>
-      <Link href="/me/chat" className={active === 'chat' ? 'active' : ''}>
+      <Link href="/me/chat" data-label="채팅" className={active === 'chat' ? 'active' : ''}>
         <span className="nav-ic">
           <svg {...stroke}>
             <path
@@ -47,7 +47,11 @@ export default function ActorNav({
         </span>
         <span className="nav-label">채팅</span>
       </Link>
-      <Link href="/me/profile" className={active === 'profile' ? 'active' : ''}>
+      <Link
+        href="/me/profile"
+        data-label="프로필 관리"
+        className={active === 'profile' ? 'active' : ''}
+      >
         <span className="nav-ic">
           <svg {...stroke}>
             <circle cx="12" cy="8" r="3.6" />
@@ -56,7 +60,11 @@ export default function ActorNav({
         </span>
         <span className="nav-label">프로필 관리</span>
       </Link>
-      <Link href={`/actors/${actorId}`} className={active === 'preview' ? 'active' : ''}>
+      <Link
+        href={`/actors/${actorId}`}
+        data-label="미리보기"
+        className={active === 'preview' ? 'active' : ''}
+      >
         <span className="nav-ic">
           <svg {...stroke}>
             <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
@@ -66,7 +74,7 @@ export default function ActorNav({
         <span className="nav-label">미리보기</span>
       </Link>
       {/* 휴대폰 하단바에서는 실수로 누르기 쉬워 빼고(프로필 관리 아래 '계정'에 있음), 넓은 화면 사이드바에만 둔다. */}
-      <button className="desk-only" onClick={() => void confirmLogout()}>
+      <button className="desk-only" data-label="로그아웃" onClick={() => void confirmLogout()}>
         <span className="nav-ic">
           <svg {...stroke}>
             <path

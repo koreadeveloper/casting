@@ -4168,6 +4168,32 @@ input[type='date'] {
   .pnav > button:hover {
     background: #f6f7fa;
   }
+  /* 선택된 메뉴는 마우스를 올려도 검은 바탕을 유지한다(연한 바탕에 연두 글씨는 안 보인다) */
+  .pnav > .active:hover {
+    background: var(--obsidian);
+    color: var(--lime);
+  }
+  /* 메뉴를 접어 아이콘만 남았을 때만 이름 말풍선을 보여 준다 */
+  html[data-nav='collapsed'] .pnav > [data-label] {
+    position: relative;
+  }
+  html[data-nav='collapsed'] .pnav > [data-label]:hover::after {
+    content: attr(data-label);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--obsidian);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 6px 18px #0b0d1233;
+    pointer-events: none;
+    z-index: 30;
+  }
   .pnav .nav-ic {
     width: 32px;
   }
