@@ -139,13 +139,13 @@ export default function ProducerNav({
           <button
             key={item.key}
             className={className}
-            title={item.label}
+            data-label={item.label}
             onClick={() => onTab(item.key as StudioTab)}
           >
             {content}
           </button>
         ) : (
-          <Link key={item.key} href={item.href} className={className} title={item.label}>
+          <Link key={item.key} href={item.href} className={className} data-label={item.label}>
             {content}
           </Link>
         );
