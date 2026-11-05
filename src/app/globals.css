@@ -6803,3 +6803,29 @@ button.agree-view {
 .title-row + .completion-card {
   margin-top: 20px;
 }
+
+/* 맞춤 공고 카드: 일반 배역 카드(.pcard-info)와 같은 글씨 모양. 이 카드에는 .pcard-info가 없어
+   브라우저 기본 글씨(큰 제목·16px 본문·넓은 여백)로 보이던 것을 맞춘다. */
+.match-card h3 {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.match-card .sub {
+  font-size: 12px;
+  color: #6d727d;
+  margin: 4px 0 0;
+}
+.match-card .org-line {
+  margin-top: 8px;
+}
+.match-card .meta {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 8px 0 0;
+}
