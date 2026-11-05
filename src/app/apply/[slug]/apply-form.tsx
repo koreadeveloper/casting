@@ -422,7 +422,7 @@ export default function ApplyForm({
       ) : (
         <div className="apply-content">
           <button className="back-link" onClick={() => setStep('brief')}>
-            ← 배역 정보
+            배역 정보
           </button>
           <p className="eyebrow">
             {role.projectTitle} · {role.title}

@@ -22,7 +22,7 @@ export default async function EditProjectPage({ params }: Context) {
       <main className="app-shell">
         <div className="screen-pad page-top">
           <Link className="back-link" href="/studio">
-            ‹ 프로젝트
+            프로젝트
           </Link>
           <div className="empty-card">
             프로젝트를 수정할 권한이 없습니다.

@@ -33,7 +33,7 @@ export default function BackButton({ fallback, label }: { fallback: string; labe
         else router.push(fallback);
       }}
     >
-      ‹ {label}
+      {label}
     </button>
   );
 }
