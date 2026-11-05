@@ -482,7 +482,7 @@ export default function ApplyForm({
                   required
                   autoComplete="tel"
                   defaultValue={prefill?.phone}
-                  placeholder="010-0000-0000"
+                  placeholder="숫자만 입력 (예: 01012345678)"
                 />
               </label>
             </div>

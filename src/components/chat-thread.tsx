@@ -208,6 +208,11 @@ export default function ChatThread({
     message.sender === mode &&
     (mode === 'actor' || !message.senderId || !me || message.senderId === me);
 
+  // 파일을 대화 창에 끌어다 놓아도 첨부된다(PC). 끌고 들어오는 동안 안내를 덮어 보여 준다.
+  const [dragging, setDragging] = useState(false);
+  const dragDepth = useRef(0);
+  const hasFiles = (event: React.DragEvent) => event.dataTransfer.types.includes('Files');
+
   function pickFile(picked: File | undefined) {
     if (fileInput.current) fileInput.current.value = '';
     if (!picked) return;
@@ -353,7 +358,40 @@ export default function ChatThread({
   let lastDay = '';
 
   return (
-    <div className="chat-thread">
+    <div
+      className={`chat-thread${dragging ? ' dragging' : ''}`}
+      onDragEnter={(event) => {
+        if (!hasFiles(event)) return;
+        event.preventDefault();
+        dragDepth.current += 1;
+        setDragging(true);
+      }}
+      onDragOver={(event) => {
+        if (!hasFiles(event)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+      }}
+      onDragLeave={(event) => {
+        if (!hasFiles(event)) return;
+        dragDepth.current = Math.max(0, dragDepth.current - 1);
+        if (dragDepth.current === 0) setDragging(false);
+      }}
+      onDrop={(event) => {
+        if (!hasFiles(event)) return;
+        event.preventDefault();
+        dragDepth.current = 0;
+        setDragging(false);
+        pickFile(event.dataTransfer.files[0]);
+        if (event.dataTransfer.files.length > 1)
+          setError('파일은 한 번에 하나씩 보낼 수 있어요. 첫 번째 파일만 붙였어요.');
+      }}
+    >
+      {dragging && (
+        <div className="chat-drop" aria-hidden>
+          <strong>여기에 놓으면 첨부돼요</strong>
+          <span>사진·PDF·한글·워드·엑셀·파워포인트 (4MB까지)</span>
+        </div>
+      )}
       {mode === 'producer' ? (
         <div className="chat-peer">
           {onClose && (
