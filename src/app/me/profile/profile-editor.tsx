@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { PROFILE_INTRO_MAX } from '@/lib/validation';
 import { useRef, useState } from 'react';
 import ActorNav from '@/components/actor-nav';
 import type { ActorProfileFull, ProfileDocument } from '@/lib/accounts';
@@ -137,6 +138,8 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
   const draftInput = useRef<HTMLInputElement>(null);
   const completion = profileCompletion(profile);
   const dirty = JSON.stringify(profile) !== JSON.stringify(saved);
+  // 소개글 글자 수 제한(서버도 같은 규칙). 예전에 길게 쓴 글은 자르지 않고 줄이도록 안내한다.
+  const introOver = profile.intro.trim().length > PROFILE_INTRO_MAX;
 
   const update = <K extends keyof ActorProfile>(key: K, value: ActorProfile[K]) =>
     setProfile((current) => ({ ...current, [key]: value }));
@@ -359,7 +362,9 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
       if (!response.ok) throw new Error(data.error || '저장하지 못했습니다.');
       setProfile(data.profile);
       setSaved(data.profile);
-      setNotice('프로필을 저장했습니다.');
+      // 저장한 뒤에는 제작자에게 보이는 모습(미리보기)으로 바로 넘어간다.
+      location.href = `/actors/${data.profile.userId}?saved=1`;
+      return;
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '저장하지 못했습니다.');
     } finally {
@@ -706,11 +711,16 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                   소개글
                   <textarea
                     rows={4}
-                    maxLength={2000}
                     value={profile.intro}
                     onChange={(event) => update('intro', event.target.value)}
                     placeholder="출연작, 연기 스타일, 하고 싶은 작품을 적어 주세요. (20자 이상)"
                   />
+                  <small className={`char-count${introOver ? ' over' : ''}`}>
+                    {introOver
+                      ? `${PROFILE_INTRO_MAX}자를 넘었어요. 줄여야 저장할 수 있어요 · `
+                      : ''}
+                    {profile.intro.length} / {PROFILE_INTRO_MAX}
+                  </small>
                 </label>
               </div>
             </section>
@@ -1082,7 +1092,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
         </span>
         <button
           className="button button-primary"
-          disabled={busy || !dirty}
+          disabled={busy || !dirty || introOver}
           onClick={() => void save()}
         >
           {busy ? '저장 중…' : '저장하기'}

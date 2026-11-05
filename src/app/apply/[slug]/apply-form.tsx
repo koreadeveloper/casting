@@ -21,7 +21,7 @@ import { formatDates, formatPeriod } from '@/lib/schedule';
 import type { Role } from '@/lib/types';
 import { saveReceipt } from '@/lib/receipts';
 import { pushRecent, RECENT_ROLES } from '@/lib/recent';
-import { MAX_APPLICATION_PHOTOS } from '@/lib/validation';
+import { APPLICATION_INTRO_MAX, MAX_APPLICATION_PHOTOS } from '@/lib/validation';
 import TrustBadges from '@/components/trust-badges';
 import type { ProducerBadges } from '@/lib/verification-rules';
 import { PRIVACY_PATH } from '@/lib/legal';
@@ -82,6 +82,7 @@ export default function ApplyForm({
   const [picked, setPicked] = useState<string[]>(prefill?.photos.slice(0, 1) ?? []);
   // 생년월일을 고르면 만 나이를 자동으로 넣는다. 안 고르면 프로필의 나이를 그대로 쓴다.
   const [birthDate, setBirthDate] = useState(prefill?.birthDate ?? '');
+  const [introLength, setIntroLength] = useState(prefill?.introduction.length ?? 0);
   const age = birthDate ? manAge(birthDate) : (prefill?.age ?? null);
   const closed = role.isClosed || role.deadline < new Date().toISOString().slice(0, 10);
 
@@ -506,10 +507,14 @@ export default function ApplyForm({
                 name="introduction"
                 required
                 rows={5}
-                maxLength={2000}
+                maxLength={APPLICATION_INTRO_MAX}
                 defaultValue={prefill?.introduction}
+                onInput={(event) => setIntroLength(event.currentTarget.value.length)}
                 placeholder="출연작, 연기 경험, 이 배역에 전하고 싶은 내용을 적어 주세요"
               />
+              <small className="char-count">
+                {introLength} / {APPLICATION_INTRO_MAX}
+              </small>
             </label>
             {prefill && prefill.photos.length > 0 ? (
               <div className="apply-photos">

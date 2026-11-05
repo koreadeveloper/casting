@@ -14,6 +14,7 @@ import {
 } from '@/lib/db';
 import {
   MAX_APPLICATION_PHOTOS,
+  APPLICATION_INTRO_MAX,
   requiredText,
   safeImageRef,
   safeUrl,
@@ -44,7 +45,15 @@ export async function POST(request: NextRequest) {
   const name = requiredText(body.name, 80);
   const email = requiredText(body.email, 254).toLowerCase();
   const phone = requiredText(body.phone, 50);
-  const introduction = requiredText(body.introduction, 2000);
+  if (
+    typeof body.introduction === 'string' &&
+    body.introduction.trim().length > APPLICATION_INTRO_MAX
+  )
+    return NextResponse.json(
+      { error: `소개는 ${APPLICATION_INTRO_MAX}자까지 쓸 수 있어요. 조금 줄여 주세요.` },
+      { status: 400 },
+    );
+  const introduction = requiredText(body.introduction, APPLICATION_INTRO_MAX);
   // 배우가 고른 사진들. 첫 장이 이 공고의 대표 사진이 된다.
   // 사진 선택 UI가 없는 경로(비로그인 지원)는 photoUrl 하나만 보낸다.
   const sentPhotos: unknown[] = Array.isArray(body.photoUrls) ? body.photoUrls : [body.photoUrl];

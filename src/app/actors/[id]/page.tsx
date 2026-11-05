@@ -7,8 +7,15 @@ import ActorDetail from './actor-detail';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ActorPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ActorPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ saved?: string }>;
+}) {
   const { id } = await params;
+  const { saved } = await searchParams;
   const session = await getSession();
   if (!session) redirect(`/login?next=/actors/${id}`);
   const isSelf = session.role === 'actor' && session.userId === id;
@@ -22,6 +29,7 @@ export default async function ActorPage({ params }: { params: Promise<{ id: stri
       // 제작진에게는 생년월일·출연 불가 날짜를 넘기지 않는다(본인이 보는 미리보기는 그대로).
       profile={producer ? producerView(profile) : profile}
       viewer={producer ? 'producer' : 'self'}
+      justSaved={!producer && saved === '1'}
       favorite={producer && (await listFavoriteIds(session.userId)).includes(id)}
       roles={
         producer
