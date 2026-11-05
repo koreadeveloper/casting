@@ -14,7 +14,11 @@ function supabase() {
   return {
     base: `${url}/storage/v1`,
     bucket: process.env.SUPABASE_STORAGE_BUCKET || 'uploads',
-    headers: { apikey: key },
+    // 새 형식 키(sb_secret_…)는 apikey 머리글만, 예전 service_role 키(JWT, eyJ…)는 Authorization도 있어야 한다.
+    // sb_secret_ 키를 Authorization에 넣으면 거절되므로 키 모양에 따라 나눈다.
+    headers: key.startsWith('eyJ')
+      ? { apikey: key, Authorization: `Bearer ${key}` }
+      : { apikey: key },
   };
 }
 
