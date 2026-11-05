@@ -17,7 +17,7 @@ import {
   type Filmography,
   type Gender,
 } from '@/lib/profile';
-import { requiredText, safeImageRef, safeUrl } from '@/lib/validation';
+import { PROFILE_INTRO_MAX, requiredText, safeImageRef, safeUrl } from '@/lib/validation';
 import { manAge } from '@/lib/age';
 import { MAX_UNAVAILABLE_DAYS } from '@/lib/date-ranges';
 
@@ -77,6 +77,12 @@ export async function PUT(request: NextRequest) {
   const birthYear = birthDate
     ? Number(birthDate.slice(0, 4))
     : intIn(body.birthYear, 1930, new Date().getFullYear());
+  // 소개글은 말없이 자르지 않고, 넘치면 줄여 달라고 알린다(예전에 길게 쓴 글을 잃지 않게).
+  if (typeof body.intro === 'string' && body.intro.trim().length > PROFILE_INTRO_MAX)
+    return NextResponse.json(
+      { error: `소개글은 ${PROFILE_INTRO_MAX}자까지 쓸 수 있어요. 조금 줄여 주세요.` },
+      { status: 400 },
+    );
   const name = requiredText(body.name, 60);
   if (!name) return NextResponse.json({ error: '이름을 입력해 주세요.' }, { status: 400 });
   const profile = await updateProfile(actorId, {
@@ -87,7 +93,7 @@ export async function PUT(request: NextRequest) {
     height: intIn(body.height, 100, 230),
     weight: intIn(body.weight, 25, 200),
     region: REGIONS.includes(region) ? region : '',
-    intro: requiredText(body.intro, 2000),
+    intro: requiredText(body.intro, PROFILE_INTRO_MAX),
     tags: cleanList(body.tags, IMAGE_TAGS, MAX_TAGS),
     skills: cleanList(body.skills, SKILLS, MAX_SKILLS),
     photos,

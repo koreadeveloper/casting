@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { APPLICATION_INTRO_MAX } from '@/lib/validation';
 import { notFound } from 'next/navigation';
 import { isPosterUrl } from '@/lib/project-meta';
 import { getProducerIntro, getProfile, getProject, getUserById } from '@/lib/accounts';
@@ -71,7 +72,9 @@ export default async function ApplyPage({
           ...profile.filmography.map((f) => `${f.year} ${f.title} ${f.role}`),
         ]
           .filter(Boolean)
-          .join('\n'),
+          .join('\n')
+          // 지원서 소개는 1000자까지라, 프로필에서 채울 때도 그 안으로 맞춘다.
+          .slice(0, APPLICATION_INTRO_MAX),
         photoUrl: profile.photos[0] || '',
         // 프로필에 올려 둔 사진 전부. 공고마다 대표 사진을 바꿔 낼 수 있게 그대로 넘긴다.
         photos: profile.photos,

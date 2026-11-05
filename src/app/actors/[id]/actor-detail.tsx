@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import BackButton from '@/components/back-button';
 import ProducerNav from '@/components/producer-nav';
+import ActorNav from '@/components/actor-nav';
 import type { ActorProfileFull } from '@/lib/accounts';
 import { profileAge, genderLabel } from '@/lib/profile';
 import { pushRecent, RECENT_ACTORS } from '@/lib/recent';
@@ -18,12 +19,15 @@ export default function ActorDetail({
   favorite: initialFavorite,
   roles,
   proposedRoleIds,
+  justSaved = false,
 }: {
   profile: ActorProfileFull;
   viewer: 'producer' | 'self';
   favorite: boolean;
   roles: { id: string; label: string }[];
   proposedRoleIds: string[];
+  /** 프로필 관리에서 저장하고 바로 넘어왔는지(안내 문구용) */
+  justSaved?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>('intro');
   const [photo, setPhoto] = useState(profile.photos[0] || '');
@@ -105,6 +109,8 @@ export default function ActorDetail({
   return (
     <main className="app-shell wide">
       {viewer === 'producer' && <ProducerNav active="actors" />}
+      {/* 배우 본인이 미리보기로 볼 때도 하단(넓은 화면은 왼쪽) 메뉴를 그대로 둔다 */}
+      {viewer === 'self' && <ActorNav active="preview" actorId={profile.userId} />}
       <div className="screen-pad page-top">
         {/* 배우 검색·추천·팀 보드 등 어디서 왔든 그 화면으로 돌아간다. */}
         <BackButton
@@ -112,7 +118,11 @@ export default function ActorDetail({
           label={viewer === 'producer' ? '뒤로' : '프로필 관리'}
         />
         {viewer === 'self' && (
-          <div className="notice-bar">제작자에게 보이는 내 프로필 미리보기입니다.</div>
+          <div className="notice-bar">
+            {justSaved
+              ? '프로필을 저장했어요. 제작자에게는 이렇게 보여요.'
+              : '제작자에게 보이는 내 프로필 미리보기입니다.'}
+          </div>
         )}
         <div className="detail-layout">
           <div className="detail-media">
