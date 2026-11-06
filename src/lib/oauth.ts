@@ -162,22 +162,23 @@ export function normalizeProfile(provider: Provider, raw: Raw): SocialProfile | 
 export type LinkDecision =
   /** 이미 이 소셜 계정으로 가입함 → 바로 로그인 */
   | { kind: 'login'; userId: string }
-  /** 같은 이메일로 이미 가입한 계정이 있음 → 자동으로 합치지 않고 이메일 로그인을 안내 */
-  | { kind: 'email-taken' }
+  /** 같은 이메일로 예전에 이메일·비밀번호로 가입한 계정 → 이 소셜 계정을 붙이고 로그인 */
+  | { kind: 'link'; userId: string }
   /** 처음 오는 사용자 → 역할·동의를 받고 가입 */
   | { kind: 'signup' };
 
 /**
  * 소셜 로그인 결과를 어떻게 처리할지 정한다.
- * 이메일이 같다는 이유로 기존 계정에 자동으로 붙이지 않는다. 이 서비스는 이메일 가입 때 메일 주인을
- * 확인하지 않아서, 남이 먼저 만든 계정에 붙으면 그 사람이 비밀번호로 계속 들어올 수 있기 때문이다.
+ * 운영에서는 구글 로그인만 쓰므로, 예전에 이메일로 가입한 사람이 같은 이메일(제공자가 확인한 이메일)의
+ * 구글 계정으로 오면 기존 계정에 붙인다. 붙일 때 그 계정의 비밀번호는 지워서(linkExistingAccount),
+ * 혹시 남이 그 이메일로 먼저 만든 계정이었더라도 비밀번호로는 더 이상 들어올 수 없게 한다.
  */
 export function decideLink(input: {
   linkedUserId: string | null;
   emailOwnerId: string | null;
 }): LinkDecision {
   if (input.linkedUserId) return { kind: 'login', userId: input.linkedUserId };
-  if (input.emailOwnerId) return { kind: 'email-taken' };
+  if (input.emailOwnerId) return { kind: 'link', userId: input.emailOwnerId };
   return { kind: 'signup' };
 }
 

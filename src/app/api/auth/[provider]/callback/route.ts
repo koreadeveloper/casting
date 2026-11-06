@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { findOAuthUser, getUserByEmail } from '@/lib/accounts';
+import { findOAuthUser, getUserByEmail, linkExistingAccount } from '@/lib/accounts';
 import { homeFor, startSession } from '@/lib/auth';
 import { claimApplications } from '@/lib/db';
 import { decideLink, isProvider, openPayload, sealPayload } from '@/lib/oauth';
@@ -57,18 +57,21 @@ export async function GET(
       emailOwnerId: emailOwner?.id ?? null,
     });
 
-    if (decision.kind === 'email-taken') return done('/login?error=email-taken');
+    // 예전 이메일 가입 계정이면 이 소셜 계정을 붙인다(비밀번호는 지운다).
+    if (decision.kind === 'link' && emailOwner)
+      await linkExistingAccount(emailOwner.id, provider, profile.subject, profile.email);
+    const user = decision.kind === 'login' ? linked : decision.kind === 'link' ? emailOwner : null;
 
-    if (decision.kind === 'login' && linked) {
-      await startSession({ userId: linked.id, role: linked.role });
-      if (linked.role === 'actor') await claimApplications(linked.id, linked.email);
+    if (user) {
+      await startSession({ userId: user.id, role: user.role });
+      if (user.role === 'actor') await claimApplications(user.id, user.email);
       const target =
         saved.next &&
-        (linked.role === 'producer'
+        (user.role === 'producer'
           ? saved.next.startsWith('/studio')
           : !saved.next.startsWith('/studio'))
           ? saved.next
-          : homeFor(linked.role);
+          : homeFor(user.role);
       return done(target);
     }
 

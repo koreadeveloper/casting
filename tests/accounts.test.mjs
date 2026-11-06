@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hashPassword, passwordProblem, verifyPassword } from '../src/lib/password.ts';
+import {
+  hashPassword,
+  passwordLoginEnabled,
+  passwordProblem,
+  verifyPassword,
+} from '../src/lib/password.ts';
 import { createSessionToken, readSessionToken } from '../src/lib/session-token.ts';
 import {
   availabilityIn,
@@ -186,4 +191,10 @@ test('회원 탈퇴 본인 확인: 비밀번호 계정과 소셜 로그인 계�
   assert.equal(deletionConfirmed({ email: '' }, social), false);
   // 소셜 계정에 아무 비밀번호나 넣어도 통과하지 않는다.
   assert.equal(deletionConfirmed({ password: 'anything1' }, social), false);
+});
+
+test('비밀번호 로그인은 운영에서 막고, 체험 사이트·개발 중에만 연다', () => {
+  assert.equal(passwordLoginEnabled({ NODE_ENV: 'production' }), false);
+  assert.equal(passwordLoginEnabled({ NODE_ENV: 'production', DEMO_MODE: 'true' }), true);
+  assert.equal(passwordLoginEnabled({ NODE_ENV: 'development' }), true);
 });

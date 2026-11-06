@@ -108,12 +108,15 @@ test('카카오: 이메일이 없거나 확인 안 된 경우를 구분한다', 
   assert.equal(unverified.emailVerified, false);
 });
 
-test('로그인 결정: 연결된 계정 > 이메일 중복(자동 합치기 없음) > 신규 가입', () => {
+test('로그인 결정: 연결된 계정 > 같은 이메일 기존 계정에 연결 > 신규 가입', () => {
   assert.deepEqual(decideLink({ linkedUserId: 'u1', emailOwnerId: 'u2' }), {
     kind: 'login',
     userId: 'u1',
   });
-  assert.deepEqual(decideLink({ linkedUserId: null, emailOwnerId: 'u2' }), { kind: 'email-taken' });
+  assert.deepEqual(decideLink({ linkedUserId: null, emailOwnerId: 'u2' }), {
+    kind: 'link',
+    userId: 'u2',
+  });
   assert.deepEqual(decideLink({ linkedUserId: null, emailOwnerId: null }), { kind: 'signup' });
 });
 

@@ -8,10 +8,13 @@ export default function LoginForm({
   next,
   notice = '',
   social = null,
+  password = false,
 }: {
   next: string;
   notice?: string;
   social?: React.ReactNode;
+  /** 이메일·비밀번호 칸을 보일지(체험 사이트·개발 중에만) */
+  password?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(notice);
@@ -51,26 +54,45 @@ export default function LoginForm({
       </header>
       <section className="auth-card">
         <h1>다시 만나서 반가워요</h1>
-        <p className="muted">이메일과 비밀번호로 로그인하세요.</p>
-        <form className="auth-form" onSubmit={submit}>
-          <label>
-            이메일
-            <input name="email" type="email" autoComplete="email" required />
-          </label>
-          <label>
-            비밀번호
-            <input name="password" type="password" autoComplete="current-password" required />
-          </label>
-          {error && (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          )}
-          <button className="button button-primary full" disabled={busy}>
-            {busy ? '로그인 중…' : '로그인'}
-          </button>
-        </form>
-        {social && (
+        <p className="muted">
+          {password ? '이메일과 비밀번호로 로그인하세요.' : 'Google 계정으로 로그인하세요.'}
+        </p>
+        {!password && error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+        {!password && social}
+        {!password && !social && (
+          <p className="form-error">지금은 로그인할 수 없어요. 잠시 뒤에 다시 시도해 주세요.</p>
+        )}
+        {!password && (
+          <p className="small-note center">
+            예전에 이메일로 가입했다면, 같은 이메일의 Google 계정으로 로그인하면 기존 계정으로
+            들어가요.
+          </p>
+        )}
+        {password && (
+          <form className="auth-form" onSubmit={submit}>
+            <label>
+              이메일
+              <input name="email" type="email" autoComplete="email" required />
+            </label>
+            <label>
+              비밀번호
+              <input name="password" type="password" autoComplete="current-password" required />
+            </label>
+            {error && (
+              <p className="form-error" role="alert">
+                {error}
+              </p>
+            )}
+            <button className="button button-primary full" disabled={busy}>
+              {busy ? '로그인 중…' : '로그인'}
+            </button>
+          </form>
+        )}
+        {password && social && (
           <>
             <div className="divider-text">
               <span>또는 간편하게 로그인</span>
