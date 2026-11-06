@@ -14,7 +14,8 @@ export type ProducerSection =
   | 'recommend'
   | 'compare'
   | 'board'
-  | 'calendar';
+  | 'calendar'
+  | 'contact';
 
 const stroke = {
   width: 21,
@@ -83,6 +84,13 @@ const icons: Record<ProducerSection, React.ReactNode> = {
       <path d="M8 3.5v4M16 3.5v4M4 10.5h16" strokeLinecap="round" />
     </svg>
   ),
+  contact: (
+    <svg {...stroke}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M9.6 9.4a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2.1-2.4 3.6" strokeLinecap="round" />
+      <circle cx="12" cy="17" r="0.6" fill="currentColor" />
+    </svg>
+  ),
   profile: (
     <svg {...stroke}>
       <circle cx="12" cy="8" r="3.6" />
@@ -101,6 +109,8 @@ const items: { key: ProducerSection; label: string; href: string; mobile: boolea
   { key: 'calendar', label: '캘린더', href: '/studio/calendar', mobile: false },
   { key: 'new-project', label: '프로젝트 등록', href: '/studio/projects/new', mobile: false },
   { key: 'profile', label: '내 정보', href: '/studio?tab=profile', mobile: true },
+  // 휴대폰 하단바는 자리가 없어 넓은 화면 사이드바에만 둔다(휴대폰은 '내 정보' 메뉴에 있음).
+  { key: 'contact', label: '문의하기', href: '/contact', mobile: false },
 ];
 
 type StudioTab = 'home' | 'messages' | 'profile';

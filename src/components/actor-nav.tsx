@@ -73,6 +73,17 @@ export default function ActorNav({
         </span>
         <span className="nav-label">미리보기</span>
       </Link>
+      {/* 문의하기: 휴대폰 하단바는 자리가 없어 사이드바에만(휴대폰은 프로필 관리 아래 '계정'에 있음) */}
+      <Link href="/contact" className="desk-only" data-label="문의하기">
+        <span className="nav-ic">
+          <svg {...stroke}>
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M9.6 9.4a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2.1-2.4 3.6" strokeLinecap="round" />
+            <circle cx="12" cy="17" r="0.6" fill="currentColor" />
+          </svg>
+        </span>
+        <span className="nav-label">문의하기</span>
+      </Link>
       {/* 휴대폰 하단바에서는 실수로 누르기 쉬워 빼고(프로필 관리 아래 '계정'에 있음), 넓은 화면 사이드바에만 둔다. */}
       <button className="desk-only" data-label="로그아웃" onClick={() => void confirmLogout()}>
         <span className="nav-ic">

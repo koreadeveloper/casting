@@ -1070,6 +1070,13 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
               <p className="small-note">
                 탈퇴하면 프로필과 지원 기록이 모두 삭제되고 되돌릴 수 없어요.
               </p>
+              <Link
+                href="/contact"
+                className="button button-outline full"
+                style={{ marginBottom: 10 }}
+              >
+                문의하기
+              </Link>
               <button
                 type="button"
                 className="button button-outline full"

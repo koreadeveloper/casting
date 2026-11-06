@@ -1345,6 +1345,7 @@ export default function Studio({
               <button onClick={() => role && void shareRole(role)} disabled={!role}>
                 {Icon.upload} 지원 링크 공유
               </button>
+              <a href="/contact">{Icon.chat} 문의하기</a>
               <button onClick={() => void confirmLogout()}>{Icon.out} 로그아웃</button>
             </div>
             <a href="/account/delete" className="account-danger">
