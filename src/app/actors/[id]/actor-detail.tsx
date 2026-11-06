@@ -90,7 +90,9 @@ export default function ActorDetail({
       setProposed((current) => [...current, roleId]);
       setRoleId('');
       setProposeOpen(false);
-      setNotice('캐스팅 제안을 보냈습니다. 배우가 수락하면 지원자 목록에 표시됩니다.');
+      setNotice(
+        `캐스팅 제안을 보냈습니다${data.notified ? '(배우에게 메일로도 알렸어요)' : ''}. 배우가 수락하면 지원자 목록에 표시됩니다.`,
+      );
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '제안을 보내지 못했습니다.');
     } finally {

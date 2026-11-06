@@ -6483,6 +6483,8 @@ button.agree-view {
 /* 팀 보드: 배우 대화방 방식 */
 .chat-mode-pick {
   display: flex;
+  flex-wrap: wrap;
+  margin: 0;
   align-items: center;
   gap: 8px;
   font-size: 12px;

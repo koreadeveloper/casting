@@ -198,10 +198,11 @@ export default function ChatThread({
   const [file, setFile] = useState<File | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const messageList = useRef<HTMLDivElement>(null);
-  // 대화방: 배우는 개별방 방식이면 팀원별 방을 골라 들어간다(''은 기본 방). 제작진의 방은 서버가 정한다.
+  // 대화방: ''은 단톡방(제작진 모두 + 배우), 그 밖에는 제작진 한 사람과 배우의 1:1 방(방 id = 그 제작진 id).
+  // 채팅 목록에서 열면 방이 정해져 오고(fixedRoom), 그 밖에서 열면 위의 탭으로 방을 고른다.
   const [room, setRoom] = useState(fixedRoom ?? '');
   const [rooms, setRooms] = useState<{ room: string; name: string }[]>([]);
-  const [chatMode, setChatMode] = useState<'group' | 'private'>('group');
+  const currentRoom = rooms.find((item) => item.room === room);
   const [me, setMe] = useState('');
   // 내가 보낸 글인지. 제작진은 같은 편이 여럿일 수 있어 보낸 사람 id까지 본다(예전 글은 id가 없다).
   const isMine = (message: ChatMessage) =>
@@ -234,12 +235,10 @@ export default function ChatThread({
       if (!response.ok) return;
       const data = (await response.json()) as {
         messages: ChatMessage[];
-        mode?: 'group' | 'private';
         rooms?: { room: string; name: string }[];
         me?: string;
       };
       setMessages(data.messages);
-      setChatMode(data.mode ?? 'group');
       setRooms(data.rooms ?? []);
       setMe(data.me ?? '');
     } catch {
@@ -461,32 +460,32 @@ export default function ChatThread({
         )}
         {mode === 'actor' && profileHref && <a href={profileHref}>공고 보기 ›</a>}
       </div>
-      {mode === 'actor' &&
-        fixedRoom === undefined &&
-        chatMode === 'private' &&
-        rooms.length > 0 && (
-          <div className="chat-rooms" role="tablist" aria-label="대화방">
-            {[{ room: '', name: peerName || '제작진' }, ...rooms].map((item) => (
-              <button
-                key={item.room || 'main'}
-                role="tab"
-                aria-selected={room === item.room}
-                className={room === item.room ? 'on' : ''}
-                onClick={() => {
-                  setRoom(item.room);
-                  setMessages([]);
-                }}
-              >
-                {item.name}
-              </button>
-            ))}
-          </div>
-        )}
-      {mode === 'producer' && chatMode === 'private' && (
-        <p className="chat-room-note">개별방이에요. 이 대화는 나와 배우만 볼 수 있어요.</p>
+      {fixedRoom === undefined && rooms.length > 1 && (
+        <div className="chat-rooms" role="tablist" aria-label="대화방">
+          {rooms.map((item) => (
+            <button
+              key={item.room || 'main'}
+              role="tab"
+              aria-selected={room === item.room}
+              className={room === item.room ? 'on' : ''}
+              onClick={() => {
+                setRoom(item.room);
+                setMessages([]);
+              }}
+            >
+              {!item.room ? '단톡방' : mode === 'producer' ? '1:1 (나와 배우)' : `${item.name} 1:1`}
+            </button>
+          ))}
+        </div>
       )}
-      {mode === 'producer' && chatMode === 'group' && (
-        <p className="chat-room-note">단톡방이에요. 프로젝트 팀원 모두가 이 대화를 함께 봐요.</p>
+      {rooms.length > 1 && (
+        <p className="chat-room-note">
+          {!room
+            ? '단톡방이에요. 제작진 모두와 배우가 함께 봐요.'
+            : mode === 'producer'
+              ? '1:1 방이에요. 나와 배우만 볼 수 있어요.'
+              : `${currentRoom?.name || '제작진'}님과의 1:1 방이에요. 다른 제작진은 볼 수 없어요.`}
+        </p>
       )}
       {confirmed && (
         <div className="confirmed-schedule">

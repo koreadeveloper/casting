@@ -3,7 +3,7 @@
 import { randomUUID } from 'node:crypto';
 import { listMyBoardProjects } from './board';
 import { MESSAGE_PREVIEW_SQL } from './chat-files';
-import { chatMode, producerRoom } from './chat-rooms';
+import { actorRooms, hasPrivateRooms, producerRooms } from './chat-rooms';
 import { db } from './db';
 import {
   actorReaderKey,
@@ -51,6 +51,22 @@ async function messagesOf(applicationIds: string[]) {
     .all(...applicationIds)) as Row[];
 }
 
+/** 공고별 제작진 id(주인 먼저, 그다음 초대된 순서의 팀원) */
+async function teamsOf(projectIds: string[], owners: Map<string, Row | { owner_id: unknown }>) {
+  const teams = new Map<string, string[]>();
+  for (const id of projectIds) teams.set(id, [str(owners.get(id)?.owner_id)].filter(Boolean));
+  if (projectIds.length === 0) return teams;
+  const rows = (await db()
+    .prepare(
+      `SELECT tm.project_id, tm.user_id FROM team_members tm JOIN projects p ON p.id=tm.project_id
+       WHERE tm.project_id IN (${marks(projectIds.length)}) AND tm.user_id<>p.owner_id
+       ORDER BY tm.invited_at ASC`,
+    )
+    .all(...projectIds)) as Row[];
+  for (const row of rows) teams.get(str(row.project_id))?.push(str(row.user_id));
+  return teams;
+}
+
 function preview(row: Row) {
   return str(row.kind) === 'offer' ? '📅 오디션 일정 제안' : str(row.preview);
 }
@@ -66,12 +82,13 @@ export async function producerInbox(userId: string) {
     const ids = projects.map((project) => project.id);
     const meta = (await db()
       .prepare(
-        `SELECT p.id, p.owner_id, p.chat_mode,
+        `SELECT p.id, p.owner_id,
            (SELECT COUNT(*) FROM team_members tm WHERE tm.project_id=p.id AND tm.user_id<>p.owner_id) members
          FROM projects p WHERE p.id IN (${marks(ids.length)})`,
       )
       .all(...ids)) as Row[];
     const byId = new Map(meta.map((row) => [str(row.id), row]));
+    const teams = await teamsOf(ids, byId);
 
     // 팀 내부방: 팀원이 한 명이라도 있는 공고만
     const teamRows = (await db()
@@ -105,12 +122,11 @@ export async function producerInbox(userId: string) {
         projectId: project.id,
         projectTitle: project.title,
         roleTitle: '',
-        mode: chatMode(info?.chat_mode),
         members: members + 1,
       });
     }
 
-    // 배우와의 방: 지원서마다 내 방(단톡방이면 기본 방, 개별방이면 주인은 기본 방·팀원은 자기 방).
+    // 배우와의 방: 지원서마다 단톡방 + (팀원이 있으면) 나와 배우의 1:1 방.
     // 대화가 아직 없어도 보여 줘서 목록에서 바로 말을 걸 수 있게 한다(빈 방은 정렬상 아래로 간다).
     const apps = (await db()
       .prepare(
@@ -122,42 +138,44 @@ export async function producerInbox(userId: string) {
     const messages = await messagesOf(apps.map((app) => str(app.id)));
     for (const app of apps) {
       const project = projects.find((item) => item.id === str(app.project_id))!;
-      const info = byId.get(project.id);
-      const mode = chatMode(info?.chat_mode);
-      const ownerId = str(info?.owner_id);
-      const room = producerRoom(mode, ownerId, userId);
-      const mine = messages.filter(
-        (row) => str(row.application_id) === str(app.id) && str(row.room) === room,
-      );
-      const key = threadKey(str(app.id), room);
-      const last = mine.at(-1);
-      rooms.push({
-        key,
-        folderKey: project.id,
-        folderTitle: project.title,
-        kind: 'actor',
-        title: str(app.name),
-        subtitle: `${str(app.role_title)} · ${mode === 'group' ? '단톡방' : '나와의 개별방'}`,
-        photo: str(app.photo_url),
-        last: last ? preview(last) : '아직 대화가 없어요. 먼저 말을 걸어 보세요.',
-        lastAt: last ? str(last.created_at) : '',
-        unread: unreadCount(
-          mine.map((row) => ({
-            at: str(row.created_at),
-            // 예전 메시지는 보낸 사람 id가 없어서, 주인이 보낸 것으로 본다.
-            mine:
-              str(row.sender) === 'producer' &&
-              (str(row.sender_id) === userId || (!str(row.sender_id) && userId === ownerId)),
-          })),
-          readAt(key),
-        ),
-        applicationId: str(app.id),
-        room,
-        projectId: project.id,
-        projectTitle: project.title,
-        roleTitle: str(app.role_title),
-        mode,
-      });
+      const ownerId = str(byId.get(project.id)?.owner_id);
+      const team = teams.get(project.id) ?? [ownerId];
+      const own = messages.filter((row) => str(row.application_id) === str(app.id));
+      const existing = own.map((row) => str(row.room)).filter(Boolean);
+      for (const room of producerRooms(team, userId, existing)) {
+        const mine = own.filter((row) => str(row.room) === room);
+        const key = threadKey(str(app.id), room);
+        const last = mine.at(-1);
+        const group = room === '';
+        rooms.push({
+          key,
+          folderKey: project.id,
+          folderTitle: project.title,
+          kind: 'actor',
+          title: str(app.name),
+          subtitle: `${str(app.role_title)} · ${
+            !hasPrivateRooms(team) ? '배우와 대화' : group ? '단톡방' : '1:1 (나와 배우)'
+          }`,
+          photo: str(app.photo_url),
+          last: last ? preview(last) : '아직 대화가 없어요. 먼저 말을 걸어 보세요.',
+          lastAt: last ? str(last.created_at) : '',
+          unread: unreadCount(
+            mine.map((row) => ({
+              at: str(row.created_at),
+              // 예전 메시지는 보낸 사람 id가 없어서, 주인이 보낸 것으로 본다.
+              mine:
+                str(row.sender) === 'producer' &&
+                (str(row.sender_id) === userId || (!str(row.sender_id) && userId === ownerId)),
+            })),
+            readAt(key),
+          ),
+          applicationId: str(app.id),
+          room,
+          projectId: project.id,
+          projectTitle: project.title,
+          roleTitle: str(app.role_title),
+        });
+      }
     }
   }
 
@@ -192,7 +210,6 @@ export async function producerInbox(userId: string) {
       room: '',
       projectTitle: str(app.project_title),
       roleTitle: str(app.role_title),
-      mode: 'group',
     });
   }
   return buildFolders(rooms);
@@ -204,7 +221,7 @@ export async function actorInbox(actorId: string) {
     .prepare(
       `SELECT a.id, a.receipt_token, r.id role_id, r.title role_title,
          COALESCE(p.title, r.project_title) project_title, r.project_id,
-         r.contact_name, p.chat_mode, p.owner_id, u.name owner_name
+         r.contact_name, p.owner_id, u.name owner_name
        FROM applications a JOIN roles r ON r.id=a.role_id
        LEFT JOIN projects p ON p.id=r.project_id
        LEFT JOIN users u ON u.id=COALESCE(p.owner_id, r.owner_id)
@@ -213,35 +230,41 @@ export async function actorInbox(actorId: string) {
     .all(actorId)) as Row[];
   const messages = await messagesOf(apps.map((app) => str(app.id)));
   const reads = await readTimes(apps.map((app) => actorReaderKey(str(app.id))));
+  const projectIds = [...new Set(apps.map((app) => str(app.project_id)).filter(Boolean))];
+  const owners = new Map(apps.map((app) => [str(app.project_id), { owner_id: app.owner_id }]));
+  const teams = await teamsOf(projectIds, owners);
+  const everyone = [
+    ...[...teams.values()].flat(),
+    ...messages.map((row) => str(row.room)).filter(Boolean),
+  ];
   const names = new Map<string, string>();
-  const roomIds = [...new Set(messages.map((row) => str(row.room)).filter(Boolean))];
-  if (roomIds.length > 0)
+  const unique = [...new Set(everyone)];
+  if (unique.length > 0)
     for (const row of (await db()
-      .prepare(`SELECT id, name FROM users WHERE id IN (${marks(roomIds.length)})`)
-      .all(...roomIds)) as Row[])
+      .prepare(`SELECT id, name FROM users WHERE id IN (${marks(unique.length)})`)
+      .all(...unique)) as Row[])
       names.set(str(row.id), str(row.name));
 
   const rooms: InboxRoom[] = [];
   for (const app of apps) {
-    const mode = chatMode(app.project_id ? app.chat_mode : '');
+    const team = app.project_id ? (teams.get(str(app.project_id)) ?? []) : [];
     const own = messages.filter((row) => str(row.application_id) === str(app.id));
-    // 개별방 방식이면 메시지가 있는 팀원별 방도 보여 준다. 단톡방 방식이면 기본 방만.
-    const roomList = mode === 'private' ? ['', ...new Set(own.map((row) => str(row.room)))] : [''];
-    for (const room of [...new Set(roomList)]) {
+    const existing = own.map((row) => str(row.room)).filter(Boolean);
+    const solo = !hasPrivateRooms(team);
+    for (const room of actorRooms(team, existing)) {
       const inRoom = own.filter((row) => str(row.room) === room);
-      if (inRoom.length === 0 && room !== '') continue;
       const key = threadKey(str(app.id), room);
       const last = inRoom.at(-1);
-      const peer = room
-        ? names.get(room) || '제작진'
-        : str(app.owner_name) || str(app.contact_name);
+      const lead = str(app.owner_name) || str(app.contact_name) || '제작진';
       rooms.push({
         key,
         folderKey: str(app.project_id) || `role:${str(app.role_id)}`,
         folderTitle: str(app.project_title),
         kind: 'actor',
-        title: mode === 'group' ? '제작진 단톡방' : peer,
-        subtitle: `${str(app.role_title)} · ${mode === 'group' ? `${peer} 외 제작진 전체` : '개별방'}`,
+        title: room ? names.get(room) || '제작진' : solo ? lead : '제작진 단톡방',
+        subtitle: `${str(app.role_title)} · ${
+          room ? '1:1 대화' : solo ? '제작진과 대화' : `제작진 ${team.length}명 모두와 함께`
+        }`,
         photo: '',
         last: last ? preview(last) : '궁금한 점을 제작진에게 물어보세요.',
         lastAt: last ? str(last.created_at) : '',
@@ -255,7 +278,6 @@ export async function actorInbox(actorId: string) {
         projectId: str(app.project_id),
         projectTitle: str(app.project_title),
         roleTitle: str(app.role_title),
-        mode,
       });
     }
   }

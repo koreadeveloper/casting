@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getProducerId } from '@/lib/auth';
 import { isBoardMember, isBoardOwner, listBoard, listMyBoardProjects } from '@/lib/board';
 import { todayKst } from '@/lib/calendar-grid';
-import { getProjectChatMode, listProjectRoles } from '@/lib/db';
+import { listProjectRoles } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   const userId = await getProducerId();
@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
     project: {
       ...board.project,
       role: (await isBoardOwner(projectId, userId)) ? ('owner' as const) : ('member' as const),
-      chatMode: await getProjectChatMode(projectId),
     },
     members: board.members,
     columns: board.columns,

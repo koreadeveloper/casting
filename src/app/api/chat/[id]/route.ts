@@ -3,9 +3,9 @@ import { canSeeRoom, chatParticipant, participantRoom } from '@/lib/chat-access'
 import {
   getChatMessage,
   listChatMessages,
-  listChatRooms,
   respondToOffer,
   sendChatMessage,
+  userNames,
 } from '@/lib/db';
 import { markRead } from '@/lib/inbox';
 import { actorReaderKey, threadKey } from '@/lib/inbox-rules';
@@ -21,14 +21,16 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     participant.kind === 'producer' ? participant.userId : actorReaderKey(id),
     threadKey(id, room),
   );
-  // 배우에게는 들어갈 수 있는 방 목록(개별방 방식에서 팀원별 방)도 함께 준다.
-  const rooms =
-    participant.kind === 'actor' && participant.mode === 'private' ? await listChatRooms(id) : [];
+  // 들어갈 수 있는 방 목록(단톡방 + 1:1 방들). 1:1 방 이름은 그 제작진의 이름.
+  const names = await userNames(participant.rooms);
+  const rooms = participant.rooms.map((item) => ({
+    room: item,
+    name: item ? names.get(item) || '제작진' : '단톡방',
+  }));
   return NextResponse.json(
     {
       messages: await listChatMessages(id, room),
       room,
-      mode: participant.mode,
       rooms,
       me: participant.kind === 'producer' ? participant.userId : '',
     },

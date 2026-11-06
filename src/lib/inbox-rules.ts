@@ -1,5 +1,5 @@
 // 채팅 목록(공고별 폴더) 규칙. DB·Next에 기대지 않아 테스트로 지킨다.
-// 폴더 = 공고(프로젝트). 폴더 안의 방 = 배우와의 방(단톡방 또는 개별방) + 팀 내부방(제작진만).
+// 폴더 = 공고(프로젝트). 폴더 안의 방 = 배우와의 방(단톡방 + 1:1 방들) + 팀 내부방(제작진만).
 
 /** 읽은 시각을 저장할 때 쓰는 방 이름 */
 export const threadKey = (applicationId: string, room: string) => `app:${applicationId}:${room}`;
@@ -26,7 +26,6 @@ export type InboxRoom = {
   projectId?: string;
   projectTitle: string;
   roleTitle: string;
-  mode: 'group' | 'private';
   /** 팀 내부방이면 사람 수 */
   members?: number;
 };

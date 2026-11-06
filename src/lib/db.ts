@@ -7,7 +7,6 @@ import { matchesRoleFilters, sortRoleListings, type RoleFilters } from './role-s
 import { MESSAGE_PREVIEW_SQL } from './chat-files';
 import { attendanceMessage, type AttendanceCheck, type AttendanceStatus } from './attendance';
 import { schoolDomainRows } from './school-domains';
-import { chatMode, type ChatMode } from './chat-rooms';
 import { conn as rawConnection, withAdvisoryLock, type Conn, type Statement } from './sql';
 
 // 스키마 생성은 프로세스당 한 번만, 다른 인스턴스와 겹치지 않게 실행한다.
@@ -316,6 +315,7 @@ async function initialize(database: Conn) {
       `CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')`,
     );
   }
+  await moveOldPrivateChats(database);
   // 목록을 고쳤을 때 다음 시작에 반영된다. 한 번에 넣고, 이미 있는 도메인은 이름·줄임말만 갱신한다.
   const quote = (text: string) => `'${text.replace(/'/g, "''")}'`;
   await database.exec(
@@ -327,6 +327,22 @@ async function initialize(database: Conn) {
       .join(',')}
      ON CONFLICT (domain) DO UPDATE SET school_name = EXCLUDED.school_name, aliases = EXCLUDED.aliases`,
   );
+}
+
+/**
+ * 한 번만: 예전 '개별방' 방식 공고에서 주인이 배우와 나눈 대화는 기본 방('')에 있었다.
+ * 이제 기본 방은 팀 전체 단톡방이므로, 팀원이 있는 공고의 그 대화를 주인의 1:1 방으로 옮긴다
+ * (팀원에게 보이지 않던 대화가 갑자기 보이지 않게).
+ */
+async function moveOldPrivateChats(connection: Conn) {
+  if (await connection.prepare(`SELECT 1 FROM app_meta WHERE key='chat_rooms_v2'`).get()) return;
+  await connection.exec(`
+    UPDATE chat_messages m SET room = p.owner_id
+    FROM applications a JOIN roles r ON r.id=a.role_id JOIN projects p ON p.id=r.project_id
+    WHERE m.application_id=a.id AND m.room='' AND p.chat_mode='private'
+      AND EXISTS (SELECT 1 FROM team_members tm WHERE tm.project_id=p.id AND tm.user_id<>p.owner_id);
+    INSERT INTO app_meta (key, value) VALUES ('chat_rooms_v2', 'done') ON CONFLICT (key) DO NOTHING;
+  `);
 }
 
 /**
@@ -972,24 +988,38 @@ export async function findChatAttachment(applicationId: string, key: string) {
 export async function getChatContext(applicationId: string) {
   const row = (await db()
     .prepare(
-      `SELECT r.project_id pid, r.owner_id role_owner, p.owner_id project_owner, p.chat_mode
+      `SELECT r.project_id pid, r.owner_id role_owner, p.owner_id project_owner
        FROM applications a JOIN roles r ON r.id=a.role_id
        LEFT JOIN projects p ON p.id=r.project_id WHERE a.id=?`,
     )
     .get(applicationId)) as
-    | {
-        pid: string | null;
-        role_owner: string | null;
-        project_owner: string | null;
-        chat_mode: string | null;
-      }
+    | { pid: string | null; role_owner: string | null; project_owner: string | null }
     | undefined;
   if (!row) return null;
-  return {
-    projectId: row.project_owner ? String(row.pid) : '',
-    ownerId: String(row.project_owner || row.role_owner || ''),
-    mode: chatMode(row.project_owner ? row.chat_mode : ''),
-  };
+  const projectId = row.project_owner ? String(row.pid) : '';
+  const ownerId = String(row.project_owner || row.role_owner || '');
+  return { projectId, ownerId, teamIds: await projectTeamIds(projectId, ownerId) };
+}
+
+/** 공고의 제작진(주인 먼저, 그다음 초대된 순서의 팀원). 프로젝트가 없는 예전 배역은 주인만. */
+export async function projectTeamIds(projectId: string, ownerId: string) {
+  if (!projectId) return ownerId ? [ownerId] : [];
+  const members = (await db()
+    .prepare(
+      'SELECT user_id FROM team_members WHERE project_id=? AND user_id<>? ORDER BY invited_at ASC',
+    )
+    .all(projectId, ownerId)) as { user_id: string }[];
+  return [ownerId, ...members.map((row) => String(row.user_id))].filter(Boolean);
+}
+
+/** 사용자 id → 이름 */
+export async function userNames(ids: string[]) {
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return new Map<string, string>();
+  const rows = (await db()
+    .prepare(`SELECT id, name FROM users WHERE id IN (${unique.map(() => '?').join(',')})`)
+    .all(...unique)) as { id: string; name: string }[];
+  return new Map(rows.map((row) => [String(row.id), String(row.name)]));
 }
 
 /** 개별방 방식에서 팀원이 말을 걸어 생긴 방들(기본 방 제외)과 그 팀원 이름 */
@@ -1004,16 +1034,6 @@ export async function listChatRooms(applicationId: string) {
   ).map((row) => ({ room: row.room, name: row.name || '제작진' }));
 }
 
-/** 프로젝트의 배우 대화방 방식을 바꾼다(주인만 부른다). */
-export async function setProjectChatMode(projectId: string, mode: ChatMode) {
-  await db().prepare('UPDATE projects SET chat_mode=? WHERE id=?').run(mode, projectId);
-}
-
-export async function getProjectChatMode(projectId: string) {
-  const row = (await db().prepare('SELECT chat_mode FROM projects WHERE id=?').get(projectId)) as
-    { chat_mode: string | null } | undefined;
-  return chatMode(row?.chat_mode);
-}
 
 export async function getLatestOffer(applicationId: string) {
   const row = await db()

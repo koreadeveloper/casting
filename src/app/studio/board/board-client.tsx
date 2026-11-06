@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import BackButton from '@/components/back-button';
 import ChatThread from '@/components/chat-thread';
 import { conditionLabel, conditionTone } from '@/lib/conditions';
-import { CHAT_MODE_LABEL, type ChatMode } from '@/lib/chat-rooms';
 import PhotoLightbox from '@/components/photo-lightbox';
 import ProducerNav from '@/components/producer-nav';
 import { profileAge } from '@/lib/profile';
@@ -84,7 +83,7 @@ type ActorResult = {
 };
 type Column = { key: ColumnKey; title: string; cards: Card[] };
 type BoardData = {
-  project: { id: string; title: string; role: BoardRole; chatMode: ChatMode };
+  project: { id: string; title: string; role: BoardRole };
   members: Member[];
   columns: Column[];
   roles: BoardRoleOption[];
@@ -482,33 +481,6 @@ export default function BoardClient({ meId }: { meId: string }) {
     }
   }
 
-  /** 배우 대화방 방식 바꾸기(주인만). 이미 나눈 대화는 지워지지 않는다. */
-  async function changeChatMode(mode: ChatMode) {
-    if (!board) return;
-    setBusy(true);
-    try {
-      const response = await fetch('/api/board/chat-mode', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: board.project.id, mode }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || '바꾸지 못했어요.');
-      setBoard((current) =>
-        current ? { ...current, project: { ...current.project, chatMode: data.mode } } : current,
-      );
-      setToast(
-        data.mode === 'private'
-          ? '개별방으로 바꿨어요. 팀원마다 배우와 따로 대화하고, 서로의 방은 볼 수 없어요.'
-          : '단톡방으로 바꿨어요. 팀원 모두가 배우와 한 방에서 대화해요.',
-      );
-    } catch (reason) {
-      setToast(reason instanceof Error ? reason.message : '바꾸지 못했어요.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function invite(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
@@ -635,22 +607,14 @@ export default function BoardClient({ meId }: { meId: string }) {
                   + 후보 배우 추가
                 </button>
                 {board && (
-                  <label className="chat-mode-pick">
+                  <p className="chat-mode-pick">
                     배우 대화방
-                    {isOwner ? (
-                      <select
-                        value={board.project.chatMode}
-                        disabled={busy}
-                        onChange={(event) => void changeChatMode(event.target.value as ChatMode)}
-                        aria-label="배우 대화방 방식"
-                      >
-                        <option value="group">{CHAT_MODE_LABEL.group}</option>
-                        <option value="private">{CHAT_MODE_LABEL.private}</option>
-                      </select>
-                    ) : (
-                      <strong>{CHAT_MODE_LABEL[board.project.chatMode]}</strong>
-                    )}
-                  </label>
+                    <strong>
+                      {board.members.length > 1
+                        ? '단톡방(제작진 모두 + 배우)과 제작진별 1:1 방이 자동으로 생겨요'
+                        : '배우와 한 방에서 대화해요 · 팀원을 초대하면 1:1 방도 생겨요'}
+                    </strong>
+                  </p>
                 )}
                 {isOwner && !inviteOpen && (
                   <button className={styles.inviteBtn} onClick={() => setInviteOpen(true)}>

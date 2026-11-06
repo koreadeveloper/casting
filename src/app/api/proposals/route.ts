@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createProposal } from '@/lib/accounts';
+import { createProposal, getUserById } from '@/lib/accounts';
 import { getProducerId } from '@/lib/auth';
+import { mailConfigured, sendMail } from '@/lib/mail';
+import { proposalMail } from '@/lib/proposal-mail';
 import { requiredText } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
@@ -16,7 +18,18 @@ export async function POST(request: NextRequest) {
     requiredText(body.roleId, 60),
     message,
   );
-  return 'error' in result
-    ? NextResponse.json({ error: result.error }, { status: 400 })
-    : NextResponse.json({ proposal: result.proposal }, { status: 201 });
+  if ('error' in result) return NextResponse.json({ error: result.error }, { status: 400 });
+
+  // 배우에게 알림 메일. 메일이 안 가도 제안은 이미 저장됐으므로 실패로 돌려주지 않는다.
+  let notified = false;
+  const actor = await getUserById(result.proposal.actorId);
+  if (actor?.email && !actor.email.endsWith('@demo.casting') && mailConfigured()) {
+    try {
+      await sendMail({ to: actor.email, ...proposalMail(result.proposal, request.nextUrl.origin) });
+      notified = true;
+    } catch (error) {
+      console.error('제안 알림 메일 실패', error);
+    }
+  }
+  return NextResponse.json({ proposal: result.proposal, notified }, { status: 201 });
 }

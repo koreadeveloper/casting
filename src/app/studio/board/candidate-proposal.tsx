@@ -71,7 +71,9 @@ export default function CandidateProposalBlock({
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || '제안을 보내지 못했습니다.');
       setRoleId('');
-      setNotice('제안을 보냈어요. 배우가 수락하고 지원하면 지원자 카드로 올라와요.');
+      setNotice(
+        `제안을 보냈어요${data.notified ? '(배우에게 메일로도 알렸어요)' : ''}. 배우가 수락하고 지원하면 지원자 카드로 올라와요.`,
+      );
       onSent();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '제안을 보내지 못했습니다.');
