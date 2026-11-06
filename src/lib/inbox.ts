@@ -110,7 +110,8 @@ export async function producerInbox(userId: string) {
       });
     }
 
-    // 배우와의 방: 내 방(단톡방이면 기본 방, 개별방이면 주인은 기본 방·팀원은 자기 방)에 메시지가 있는 지원서
+    // 배우와의 방: 지원서마다 내 방(단톡방이면 기본 방, 개별방이면 주인은 기본 방·팀원은 자기 방).
+    // 대화가 아직 없어도 보여 줘서 목록에서 바로 말을 걸 수 있게 한다(빈 방은 정렬상 아래로 간다).
     const apps = (await db()
       .prepare(
         `SELECT a.id, a.name, a.photo_url, r.title role_title, r.project_id
@@ -128,9 +129,8 @@ export async function producerInbox(userId: string) {
       const mine = messages.filter(
         (row) => str(row.application_id) === str(app.id) && str(row.room) === room,
       );
-      if (mine.length === 0) continue;
       const key = threadKey(str(app.id), room);
-      const last = mine.at(-1)!;
+      const last = mine.at(-1);
       rooms.push({
         key,
         folderKey: project.id,
@@ -139,8 +139,8 @@ export async function producerInbox(userId: string) {
         title: str(app.name),
         subtitle: `${str(app.role_title)} · ${mode === 'group' ? '단톡방' : '나와의 개별방'}`,
         photo: str(app.photo_url),
-        last: preview(last),
-        lastAt: str(last.created_at),
+        last: last ? preview(last) : '아직 대화가 없어요. 먼저 말을 걸어 보세요.',
+        lastAt: last ? str(last.created_at) : '',
         unread: unreadCount(
           mine.map((row) => ({
             at: str(row.created_at),
@@ -172,9 +172,8 @@ export async function producerInbox(userId: string) {
   const legacyMessages = await messagesOf(legacy.map((app) => str(app.id)));
   for (const app of legacy) {
     const mine = legacyMessages.filter((row) => str(row.application_id) === str(app.id));
-    if (mine.length === 0) continue;
     const key = threadKey(str(app.id), '');
-    const last = mine.at(-1)!;
+    const last = mine.at(-1);
     rooms.push({
       key,
       folderKey: `role:${str(app.role_id)}`,
@@ -183,8 +182,8 @@ export async function producerInbox(userId: string) {
       title: str(app.name),
       subtitle: str(app.role_title),
       photo: str(app.photo_url),
-      last: preview(last),
-      lastAt: str(last.created_at),
+      last: last ? preview(last) : '아직 대화가 없어요. 먼저 말을 걸어 보세요.',
+      lastAt: last ? str(last.created_at) : '',
       unread: unreadCount(
         mine.map((row) => ({ at: str(row.created_at), mine: str(row.sender) === 'producer' })),
         readAt(key),
