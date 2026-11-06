@@ -309,6 +309,19 @@ export async function linkOAuthAccount(
     .run(provider, subject, userId, email.toLowerCase(), new Date().toISOString());
 }
 
+/**
+ * 예전에 이메일·비밀번호로 가입한 계정에 소셜 계정을 붙인다. 비밀번호는 지워서 이후로는 소셜 로그인으로만 들어온다.
+ */
+export async function linkExistingAccount(
+  userId: string,
+  provider: string,
+  subject: string,
+  email: string,
+) {
+  await linkOAuthAccount(userId, provider, subject, email);
+  await db().prepare("UPDATE users SET password_hash='' WHERE id=?").run(userId);
+}
+
 export async function createUser(input: {
   email: string;
   /** 소셜 로그인으로 가입하면 없다(비밀번호가 없는 계정). */

@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithHash } from '@/lib/accounts';
 import { endSession, hasSetup, homeFor, startSession } from '@/lib/auth';
 import { claimApplications } from '@/lib/db';
-import { verifyPassword } from '@/lib/password';
+import { passwordLoginEnabled, verifyPassword } from '@/lib/password';
 import { clientIp, overLimit, TOO_MANY } from '@/lib/rate-limit';
 import { requiredText } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   if (!hasSetup())
     return NextResponse.json({ error: 'SESSION_SECRET이 설정되지 않았습니다.' }, { status: 503 });
+  if (!passwordLoginEnabled())
+    return NextResponse.json({ error: 'Google 계정으로 로그인해 주세요.' }, { status: 403 });
   const body = await request.json().catch(() => ({}));
   const email = requiredText(body.email, 254).toLowerCase();
   // 체험용 계정은 비밀번호가 공개돼 있으므로 운영 배포에서는 체험 모드일 때만 들어갈 수 있다.

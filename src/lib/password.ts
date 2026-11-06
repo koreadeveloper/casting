@@ -17,6 +17,14 @@ export function verifyPassword(password: string, stored: string) {
 }
 
 /** 비밀번호가 있는 계정인지. 소셜 로그인으로만 가입한 계정은 저장된 값이 빈 문자열이다. */
+/**
+ * 이메일·비밀번호 로그인을 받을지. 운영에서는 구글 로그인만 쓴다.
+ * 체험 사이트(DEMO_MODE)는 공개된 체험 계정으로 들어가야 해서, 개발 중에는 테스트 계정으로 들어가야 해서 연다.
+ */
+export function passwordLoginEnabled(env: Record<string, string | undefined> = process.env) {
+  return env.NODE_ENV !== 'production' || env.DEMO_MODE === 'true';
+}
+
 export function hasPassword(stored: string) {
   return stored.startsWith('scrypt$');
 }
