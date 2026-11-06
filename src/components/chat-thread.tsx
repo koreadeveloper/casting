@@ -202,6 +202,7 @@ export default function ChatThread({
   // 채팅 목록에서 열면 방이 정해져 오고(fixedRoom), 그 밖에서 열면 위의 탭으로 방을 고른다.
   const [room, setRoom] = useState(fixedRoom ?? '');
   const [rooms, setRooms] = useState<{ room: string; name: string }[]>([]);
+  const [teamSize, setTeamSize] = useState(0);
   const currentRoom = rooms.find((item) => item.room === room);
   const [me, setMe] = useState('');
   // 내가 보낸 글인지. 제작진은 같은 편이 여럿일 수 있어 보낸 사람 id까지 본다(예전 글은 id가 없다).
@@ -236,10 +237,12 @@ export default function ChatThread({
       const data = (await response.json()) as {
         messages: ChatMessage[];
         rooms?: { room: string; name: string }[];
+        teamSize?: number;
         me?: string;
       };
       setMessages(data.messages);
       setRooms(data.rooms ?? []);
+      setTeamSize(data.teamSize ?? 0);
       setMe(data.me ?? '');
     } catch {
       /* 연결 안내는 전송 시 표시 */
@@ -481,7 +484,9 @@ export default function ChatThread({
       {rooms.length > 1 && (
         <p className="chat-room-note">
           {!room
-            ? '단톡방이에요. 제작진 모두와 배우가 함께 봐요.'
+            ? mode === 'producer' && teamSize <= 1
+              ? '단톡방이에요. 지금은 나와 배우만 있고, 팀원을 초대하면 그 팀원도 이 대화를 봐요.'
+              : '단톡방이에요. 제작진 모두와 배우가 함께 봐요.'
             : mode === 'producer'
               ? '1:1 방이에요. 나와 배우만 볼 수 있어요.'
               : `${currentRoom?.name || '제작진'}님과의 1:1 방이에요. 다른 제작진은 볼 수 없어요.`}

@@ -612,7 +612,7 @@ export default function BoardClient({ meId }: { meId: string }) {
                     <strong>
                       {board.members.length > 1
                         ? '단톡방(제작진 모두 + 배우)과 제작진별 1:1 방이 자동으로 생겨요'
-                        : '배우와 한 방에서 대화해요 · 팀원을 초대하면 1:1 방도 생겨요'}
+                        : '단톡방과 나와 배우의 1:1 방이 자동으로 생겨요 · 팀원을 초대하면 단톡방에 함께해요'}
                     </strong>
                   </p>
                 )}

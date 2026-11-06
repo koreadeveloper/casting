@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { actorRooms, hasPrivateRooms, pickRoom, producerRooms } from '../src/lib/chat-rooms.ts';
+import { actorRooms, pickRoom, producerRooms } from '../src/lib/chat-rooms.ts';
 
-test('주인 혼자인 공고는 단톡방 하나만', () => {
-  assert.equal(hasPrivateRooms(['owner']), false);
-  assert.deepEqual(producerRooms(['owner'], 'owner'), ['']);
-  assert.deepEqual(actorRooms(['owner']), ['']);
+test('주인 혼자인 공고도 단톡방 + 1:1 방이 생긴다', () => {
+  assert.deepEqual(producerRooms(['owner'], 'owner'), ['', 'owner']);
+  assert.deepEqual(actorRooms(['owner']), ['', 'owner']);
+});
+
+test('프로젝트가 없는 예전 배역은 단톡방 하나', () => {
+  assert.deepEqual(producerRooms([], 'owner'), ['']);
+  assert.deepEqual(actorRooms([]), ['']);
 });
 
 test('팀원이 있으면 단톡방 + 제작진 각자와의 1:1 방이 모두 생긴다', () => {
@@ -17,12 +21,8 @@ test('팀원이 있으면 단톡방 + 제작진 각자와의 1:1 방이 모두 �
   assert.deepEqual(actorRooms(team), ['', 'owner', 'member-a', 'member-b']);
 });
 
-test('혼자 남은 주인도 예전 자기 1:1 대화는 본다', () => {
-  assert.deepEqual(producerRooms(['owner'], 'owner', ['owner']), ['', 'owner']);
-  assert.deepEqual(producerRooms(['owner'], 'owner', ['someone-else']), ['']);
-});
-
-test('팀에서 빠진 사람과의 예전 대화도 배우는 계속 본다', () => {
+test('팀에서 빠진 사람과의 예전 대화도 계속 본다', () => {
+  assert.deepEqual(producerRooms([], 'owner', ['owner']), ['', 'owner']);
   assert.deepEqual(actorRooms(['owner', 'member-a'], ['old-member']), [
     '',
     'owner',
