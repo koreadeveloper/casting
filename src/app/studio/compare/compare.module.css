@@ -319,6 +319,80 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.duelCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.duelCol .duelCard {
+  flex: 1;
+}
+.moreBtn {
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 999px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.moreBtn:disabled {
+  opacity: 0.45;
+}
+.detailSheet {
+  max-height: calc(88 * var(--vh));
+  overflow-y: auto;
+}
+.detailAge {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.detailPhotos {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 4px;
+}
+.detailPhotos img {
+  flex: none;
+  width: min(62%, 260px);
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: center 22%;
+  border-radius: 14px;
+  scroll-snap-align: start;
+  background: #e6e9ef;
+}
+.detailFacts {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.detailWorks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.detailIntro {
+  white-space: pre-wrap;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.detailLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 12px 0;
+  font-size: 13px;
+  font-weight: 700;
+}
 .vsBadge {
   position: absolute;
   top: 50%;
@@ -462,4 +536,10 @@
   display: block;
   margin: 0 auto;
   font-size: 13px;
+}
+.detailSheet .duelTags,
+.detailSheet .duelConds {
+  justify-content: flex-start;
+  padding: 0;
+  margin: 0;
 }

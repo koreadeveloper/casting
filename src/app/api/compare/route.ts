@@ -29,11 +29,22 @@ type Candidate = {
   /** 지원서의 조건 답(촬영일·지역 이동·출연료). 프로필 후보는 빈 목록 */
   conditions: { label: string; value: string }[];
   hasVideo: boolean;
+  /** '자세히 보기'용: 사진 전부, 출연작 전부, 영상 주소, 프로필 주소(계정이 있는 배우만) */
+  photos: string[];
+  filmography: string[];
+  videoUrl: string;
+  profileHref: string;
 };
+
+const workLine = (work: { year?: unknown; title?: unknown; role?: unknown }) =>
+  [work.year, work.title, work.role].filter(Boolean).join(' · ');
 
 /** 프로필에서 월드컵 카드에 보일 내용. 생년월일·출연 불가일처럼 민감한 값은 넣지 않는다. */
 function profileDetails(profile: ActorProfile | null) {
-  if (!profile) return { facts: [], tags: [], works: [] };
+  if (!profile) return { facts: [], tags: [], works: [], filmography: [] };
+  const sorted = [...profile.filmography].sort((a, b) =>
+    String(b.year).localeCompare(String(a.year)),
+  );
   return {
     facts: [
       profile.height ? `${profile.height}cm` : '',
@@ -43,10 +54,8 @@ function profileDetails(profile: ActorProfile | null) {
         : '',
     ].filter(Boolean),
     tags: [...profile.tags, ...profile.skills].slice(0, 5),
-    works: [...profile.filmography]
-      .sort((a, b) => String(b.year).localeCompare(String(a.year)))
-      .slice(0, 2)
-      .map((work) => [work.year, work.title, work.role].filter(Boolean).join(' · ')),
+    works: sorted.slice(0, 2).map(workLine),
+    filmography: sorted.map(workLine),
   };
 }
 
@@ -85,6 +94,12 @@ async function fromApplication(application: Application): Promise<Candidate> {
       { label: '출연료', value: application.payAccepted },
     ],
     hasVideo: Boolean(application.videoUrl),
+    photos:
+      application.photoUrls.length > 0
+        ? application.photoUrls
+        : [application.photoUrl].filter(Boolean),
+    videoUrl: application.videoUrl,
+    profileHref: application.actorId ? `/actors/${application.actorId}` : '',
   };
 }
 
@@ -100,6 +115,9 @@ function fromProfile(profile: ActorProfile): Candidate {
     ...profileDetails(profile),
     conditions: [],
     hasVideo: Boolean(profile.videoUrl),
+    photos: profile.photos,
+    videoUrl: profile.videoUrl,
+    profileHref: `/actors/${profile.userId}`,
   };
 }
 

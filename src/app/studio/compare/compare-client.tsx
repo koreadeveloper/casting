@@ -4,6 +4,7 @@ import { conditionLabel, conditionTone } from '@/lib/conditions';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import BackButton from '@/components/back-button';
 import ProducerNav from '@/components/producer-nav';
+import { useBackClose } from '@/lib/use-back-close';
 import {
   applyPick,
   canDefer,
@@ -36,6 +37,10 @@ type Candidate = {
   works?: string[];
   conditions?: { label: string; value: string }[];
   hasVideo?: boolean;
+  photos?: string[];
+  filmography?: string[];
+  videoUrl?: string;
+  profileHref?: string;
 };
 
 type RoleOption = { id: string; title: string; projectTitle: string };
@@ -74,6 +79,110 @@ function Photo({ candidate, big }: { candidate: Candidate; big?: boolean }) {
   );
 }
 
+/** 대결 중 한 후보를 자세히 보는 시트: 사진 전부, 조건 답, 태그, 출연작 전부, 소개 전문, 영상·프로필 링크 */
+function CandidateDetail({
+  candidate,
+  onClose,
+  onChoose,
+}: {
+  candidate: Candidate;
+  onClose: () => void;
+  onChoose?: () => void;
+}) {
+  const photos = candidate.photos?.length ? candidate.photos : [candidate.photo].filter(Boolean);
+  return (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <section
+        className={`detail-sheet ${styles.detailSheet}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${candidate.name} 자세히 보기`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="sheet-handle" />
+        <div className="sheet-title">
+          <span>
+            {candidate.name}
+            {candidate.age !== null && (
+              <small className={styles.detailAge}> {candidate.age}세</small>
+            )}
+          </span>
+          <button onClick={onClose} aria-label="닫기">
+            ×
+          </button>
+        </div>
+        {photos.length > 0 && (
+          <div className={styles.detailPhotos}>
+            {photos.map((url, index) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={url + index} src={url} alt={`${candidate.name} 사진 ${index + 1}`} />
+            ))}
+          </div>
+        )}
+        {(candidate.facts?.length ?? 0) > 0 && (
+          <p className={styles.detailFacts}>{candidate.facts!.join(' · ')}</p>
+        )}
+        {(candidate.conditions?.length ?? 0) > 0 && (
+          <div className="detail-block">
+            <h3>지원 조건</h3>
+            <p className={styles.duelConds}>
+              {candidate.conditions!.map((item) => (
+                <span key={item.label}>
+                  {item.label}{' '}
+                  <b className={conditionTone(item.value)}>{conditionLabel(item.value)}</b>
+                </span>
+              ))}
+            </p>
+          </div>
+        )}
+        {(candidate.tags?.length ?? 0) > 0 && (
+          <div className="detail-block">
+            <h3>이미지·특기</h3>
+            <p className={styles.duelTags}>
+              {candidate.tags!.map((tag) => (
+                <i key={tag}>{tag}</i>
+              ))}
+            </p>
+          </div>
+        )}
+        {(candidate.filmography?.length ?? 0) > 0 && (
+          <div className="detail-block">
+            <h3>출연작</h3>
+            <ul className={styles.detailWorks}>
+              {candidate.filmography!.map((work, index) => (
+                <li key={work + index}>🎬 {work}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {candidate.intro && (
+          <div className="detail-block">
+            <h3>소개</h3>
+            <p className={styles.detailIntro}>{candidate.intro}</p>
+          </div>
+        )}
+        <div className={styles.detailLinks}>
+          {candidate.videoUrl && (
+            <a href={candidate.videoUrl} target="_blank" rel="noopener noreferrer">
+              ▶ 영상 보기 ↗
+            </a>
+          )}
+          {candidate.profileHref && (
+            <a href={candidate.profileHref} target="_blank" rel="noopener">
+              프로필 전체 보기 ↗
+            </a>
+          )}
+        </div>
+        {onChoose && (
+          <button className="button button-primary full" onClick={onChoose}>
+            이 배우 선택
+          </button>
+        )}
+      </section>
+    </div>
+  );
+}
+
 export default function CompareClient() {
   const [stage, setStage] = useState<Stage>('setup');
 
@@ -92,6 +201,9 @@ export default function CompareClient() {
   // ── 대결 단계 상태 ──────────────────────────────
   const [state, setState] = useState<CompareState | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
+  // 대결 중 한 사람을 더 자세히 보는 시트(고르지 않고 보기만 한다). 휴대폰 뒤로가기로 닫힌다.
+  const [detailOf, setDetailOf] = useState<Candidate | null>(null);
+  useBackClose(Boolean(detailOf), () => setDetailOf(null));
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── 우승/저장 상태 ──────────────────────────────
@@ -462,58 +574,71 @@ export default function CompareClient() {
                 const candidate = id ? byId.get(id) : null;
                 if (!candidate) return null;
                 return (
-                  <button
-                    key={candidate.id}
-                    className={`${styles.duelCard}${picked === candidate.id ? ` ${styles.picked}` : ''}`}
-                    onClick={() => choose(candidate.id)}
-                    disabled={Boolean(picked)}
-                  >
-                    <Photo candidate={candidate} big />
-                    <span className={styles.duelName}>
-                      {candidate.name}
-                      {candidate.age !== null && <em>{candidate.age}세</em>}
-                    </span>
-                    {(candidate.facts?.length ?? 0) > 0 ? (
-                      <span className={styles.duelMeta}>{candidate.facts!.join(' · ')}</span>
-                    ) : (
-                      candidate.meta && <span className={styles.duelMeta}>{candidate.meta}</span>
-                    )}
-                    {(candidate.conditions?.length ?? 0) > 0 && (
-                      <span className={styles.duelConds}>
-                        {candidate.conditions!.map((item) => (
-                          <span key={item.label}>
-                            {item.label}{' '}
-                            <b className={conditionTone(item.value)}>
-                              {conditionLabel(item.value)}
-                            </b>
-                          </span>
-                        ))}
+                  <div key={candidate.id} className={styles.duelCol}>
+                    <button
+                      className={`${styles.duelCard}${picked === candidate.id ? ` ${styles.picked}` : ''}`}
+                      onClick={() => choose(candidate.id)}
+                      disabled={Boolean(picked)}
+                    >
+                      <Photo candidate={candidate} big />
+                      <span className={styles.duelName}>
+                        {candidate.name}
+                        {candidate.age !== null && <em>{candidate.age}세</em>}
                       </span>
-                    )}
-                    {((candidate.tags?.length ?? 0) > 0 || candidate.hasVideo) && (
-                      <span className={styles.duelTags}>
-                        {candidate.hasVideo && <i className={styles.videoTag}>▶ 영상</i>}
-                        {candidate.tags?.map((tag) => (
-                          <i key={tag}>{tag}</i>
-                        ))}
-                      </span>
-                    )}
-                    {(candidate.works?.length ?? 0) > 0 && (
-                      <span className={styles.duelWorks}>
-                        {candidate.works!.map((work) => (
-                          <span key={work}>🎬 {work}</span>
-                        ))}
-                      </span>
-                    )}
-                    {candidate.intro && <span className={styles.duelIntro}>{candidate.intro}</span>}
-                  </button>
+                      {(candidate.facts?.length ?? 0) > 0 ? (
+                        <span className={styles.duelMeta}>{candidate.facts!.join(' · ')}</span>
+                      ) : (
+                        candidate.meta && <span className={styles.duelMeta}>{candidate.meta}</span>
+                      )}
+                      {(candidate.conditions?.length ?? 0) > 0 && (
+                        <span className={styles.duelConds}>
+                          {candidate.conditions!.map((item) => (
+                            <span key={item.label}>
+                              {item.label}{' '}
+                              <b className={conditionTone(item.value)}>
+                                {conditionLabel(item.value)}
+                              </b>
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                      {((candidate.tags?.length ?? 0) > 0 || candidate.hasVideo) && (
+                        <span className={styles.duelTags}>
+                          {candidate.hasVideo && <i className={styles.videoTag}>▶ 영상</i>}
+                          {candidate.tags?.map((tag) => (
+                            <i key={tag}>{tag}</i>
+                          ))}
+                        </span>
+                      )}
+                      {(candidate.works?.length ?? 0) > 0 && (
+                        <span className={styles.duelWorks}>
+                          {candidate.works!.map((work) => (
+                            <span key={work}>🎬 {work}</span>
+                          ))}
+                        </span>
+                      )}
+                      {candidate.intro && (
+                        <span className={styles.duelIntro}>{candidate.intro}</span>
+                      )}
+                    </button>
+                    <button
+                      className={styles.moreBtn}
+                      onClick={() => setDetailOf(candidate)}
+                      disabled={Boolean(picked)}
+                    >
+                      자세히 보기
+                    </button>
+                  </div>
                 );
               })}
               <span className={styles.vsBadge} aria-hidden>
                 VS
               </span>
             </div>
-            <p className={styles.hint}>더 어울리는 후보를 탭해 주세요.</p>
+            <p className={styles.hint}>
+              더 어울리는 후보를 탭해 주세요. 사진·출연작을 더 보려면 &lsquo;자세히 보기&rsquo;를
+              눌러 주세요.
+            </p>
             {canDefer(state) && (
               <button
                 className={`button button-soft ${styles.deferButton}`}
@@ -579,6 +704,21 @@ export default function CompareClient() {
           </section>
         )}
       </div>
+      {detailOf && (
+        <CandidateDetail
+          candidate={detailOf}
+          onClose={() => setDetailOf(null)}
+          onChoose={
+            stage === 'match' && !picked
+              ? () => {
+                  const id = detailOf.id;
+                  setDetailOf(null);
+                  choose(id);
+                }
+              : undefined
+          }
+        />
+      )}
     </main>
   );
 }
