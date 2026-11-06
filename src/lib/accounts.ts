@@ -783,13 +783,29 @@ export async function createProposal(
   message: string,
 ) {
   const role = await getRoleById(roleId);
-  if (!role || role.ownerId !== producerId) return { error: '배역을 찾을 수 없습니다.' } as const;
+  // 배역 주인, 또는 그 배역이 속한 공고의 팀원(팀 보드에서 후보에게 제안할 때)
+  const allowed =
+    role &&
+    (role.ownerId === producerId ||
+      (role.projectId &&
+        (await db()
+          .prepare(
+            `SELECT 1 FROM projects WHERE id=? AND owner_id=?
+             UNION SELECT 1 FROM team_members WHERE project_id=? AND user_id=?`,
+          )
+          .get(role.projectId, producerId, role.projectId, producerId))));
+  if (!role || !allowed) return { error: '배역을 찾을 수 없습니다.' } as const;
+  if (role.isClosed) return { error: '모집이 끝난 배역에는 제안할 수 없습니다.' } as const;
   const actor = await getUserById(actorId);
   if (!actor || actor.role !== 'actor') return { error: '배우를 찾을 수 없습니다.' } as const;
   const existing = await db()
     .prepare('SELECT id FROM proposals WHERE actor_id=? AND role_id=?')
     .get(actorId, roleId);
   if (existing) return { error: '이미 이 배역으로 제안을 보냈습니다.' } as const;
+  const applied = await db()
+    .prepare('SELECT 1 FROM applications WHERE actor_id=? AND role_id=?')
+    .get(actorId, roleId);
+  if (applied) return { error: '이미 이 배역에 지원한 배우입니다.' } as const;
   const id = randomUUID();
   await db()
     .prepare(

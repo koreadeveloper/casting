@@ -10,6 +10,11 @@ import ProducerNav from '@/components/producer-nav';
 import { profileAge } from '@/lib/profile';
 import { useBackClose } from '@/lib/use-back-close';
 import styles from './board.module.css';
+import CandidateProposalBlock, {
+  proposalBadge,
+  type BoardRoleOption,
+  type CandidateProposal,
+} from './candidate-proposal';
 
 type BoardRole = 'owner' | 'member';
 type ColumnKey = 'review' | 'passed' | 'final' | 'hold';
@@ -64,6 +69,8 @@ type CandidateCard = CardBase & {
   actorId: string;
   meta: string;
   addedBy: { userId: string; name: string };
+  proposals: CandidateProposal[];
+  applied: boolean;
 };
 type Card = ApplicationCard | CandidateCard;
 type ActorResult = {
@@ -80,6 +87,7 @@ type BoardData = {
   project: { id: string; title: string; role: BoardRole; chatMode: ChatMode };
   members: Member[];
   columns: Column[];
+  roles: BoardRoleOption[];
 };
 
 /**
@@ -200,6 +208,18 @@ export default function BoardClient({ meId }: { meId: string }) {
   useBackClose(Boolean(detail), () => setDetail(null));
   useBackClose(pickerOpen, () => setPickerOpen(false));
   useBackClose(Boolean(menuFor), () => setMenuFor(null));
+
+  // 보드를 다시 불러오면 열려 있는 상세 패널의 카드도 새 내용으로 바꾼다(제안 상태·투표 등).
+  useEffect(() => {
+    if (!board) return;
+    setDetail((current) => {
+      if (!current) return current;
+      const fresh = board.columns
+        .flatMap((column) => column.cards)
+        .find((card) => cardRefId(card) === cardRefId(current.card));
+      return fresh ? { ...current, card: fresh } : current;
+    });
+  }, [board]);
 
   async function openDetail(card: Card) {
     setDetail({ card, application: null });
@@ -762,6 +782,17 @@ export default function BoardClient({ meId }: { meId: string }) {
                                 >
                                   {card.kind === 'candidate' ? '등록 배우' : '지원자'}
                                 </em>
+                                {card.kind === 'candidate' &&
+                                  (() => {
+                                    const badge = proposalBadge(card.proposals, card.applied);
+                                    return badge ? (
+                                      <em
+                                        className={`${styles.kindBadge} ${styles[`pb_${badge.tone}`]}`}
+                                      >
+                                        {badge.label}
+                                      </em>
+                                    ) : null;
+                                  })()}
                               </strong>
                               <span className={styles.cardRole}>
                                 {card.kind === 'candidate' ? card.meta : card.roleTitle}
@@ -1131,6 +1162,17 @@ export default function BoardClient({ meId }: { meId: string }) {
                 </p>
                 <a href={`/actors/${detail.card.actorId}`}>프로필 전체 보기 ↗</a>
               </div>
+            )}
+            {detail.card.kind === 'candidate' && board && (
+              <CandidateProposalBlock
+                key={detail.card.candidateId}
+                actorName={detail.card.name}
+                actorId={detail.card.actorId}
+                proposals={detail.card.proposals}
+                applied={detail.card.applied}
+                roles={board.roles ?? []}
+                onSent={() => void loadBoard(projectId, true)}
+              />
             )}
 
             <div className="detail-block">
