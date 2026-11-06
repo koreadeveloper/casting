@@ -167,7 +167,7 @@ export default function ChatInbox({ viewer }: { viewer: 'producer' | 'actor' }) 
                 applicationId={open.applicationId!}
                 mode={viewer}
                 receipt={viewer === 'actor' ? open.receipt : undefined}
-                fixedRoom={viewer === 'actor' ? (open.room ?? '') : undefined}
+                fixedRoom={open.room ?? ''}
                 peerName={open.title}
                 peerPhoto={open.photo || undefined}
                 peerSub={open.subtitle}

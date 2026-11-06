@@ -15,7 +15,6 @@ const room = (key, folderKey, lastAt, unread) => ({
   unread,
   projectTitle: '',
   roleTitle: '',
-  mode: 'group',
 });
 
 test('읽은 시각 뒤에 남이 보낸 메시지만 안 읽음으로 센다', () => {
