@@ -3,7 +3,7 @@
 import { randomUUID } from 'node:crypto';
 import { listMyBoardProjects } from './board';
 import { MESSAGE_PREVIEW_SQL } from './chat-files';
-import { actorRooms, hasPrivateRooms, producerRooms } from './chat-rooms';
+import { actorRooms, producerRooms } from './chat-rooms';
 import { db } from './db';
 import {
   actorReaderKey,
@@ -154,7 +154,11 @@ export async function producerInbox(userId: string) {
           kind: 'actor',
           title: str(app.name),
           subtitle: `${str(app.role_title)} · ${
-            !hasPrivateRooms(team) ? '배우와 대화' : group ? '단톡방' : '1:1 (나와 배우)'
+            !group
+              ? '1:1 (나와 배우)'
+              : team.length > 1
+                ? `단톡방 (제작진 ${team.length}명)`
+                : '단톡방'
           }`,
           photo: str(app.photo_url),
           last: last ? preview(last) : '아직 대화가 없어요. 먼저 말을 걸어 보세요.',
@@ -250,7 +254,7 @@ export async function actorInbox(actorId: string) {
     const team = app.project_id ? (teams.get(str(app.project_id)) ?? []) : [];
     const own = messages.filter((row) => str(row.application_id) === str(app.id));
     const existing = own.map((row) => str(row.room)).filter(Boolean);
-    const solo = !hasPrivateRooms(team);
+    const solo = team.length === 0; // 프로젝트가 없는 예전 배역
     for (const room of actorRooms(team, existing)) {
       const inRoom = own.filter((row) => str(row.room) === room);
       const key = threadKey(str(app.id), room);
@@ -263,7 +267,7 @@ export async function actorInbox(actorId: string) {
         kind: 'actor',
         title: room ? names.get(room) || '제작진' : solo ? lead : '제작진 단톡방',
         subtitle: `${str(app.role_title)} · ${
-          room ? '1:1 대화' : solo ? '제작진과 대화' : `제작진 ${team.length}명 모두와 함께`
+          room ? '1:1 대화' : solo ? '제작진과 대화' : `제작진 ${team.length}명과 함께`
         }`,
         photo: '',
         last: last ? preview(last) : '궁금한 점을 제작진에게 물어보세요.',

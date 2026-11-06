@@ -316,6 +316,7 @@ async function initialize(database: Conn) {
     );
   }
   await moveOldPrivateChats(database);
+  await moveSoloPrivateChats(database);
   // 목록을 고쳤을 때 다음 시작에 반영된다. 한 번에 넣고, 이미 있는 도메인은 이름·줄임말만 갱신한다.
   const quote = (text: string) => `'${text.replace(/'/g, "''")}'`;
   await database.exec(
@@ -342,6 +343,20 @@ async function moveOldPrivateChats(connection: Conn) {
     WHERE m.application_id=a.id AND m.room='' AND p.chat_mode='private'
       AND EXISTS (SELECT 1 FROM team_members tm WHERE tm.project_id=p.id AND tm.user_id<>p.owner_id);
     INSERT INTO app_meta (key, value) VALUES ('chat_rooms_v2', 'done') ON CONFLICT (key) DO NOTHING;
+  `);
+}
+
+/**
+ * 한 번만: 이제 주인 혼자인 공고에도 1:1 방이 있으므로, 예전 '개별방' 방식이던 나머지 공고(팀원 없음)의
+ * 주인 대화도 주인의 1:1 방으로 옮긴다. 나중에 팀원을 초대해도 그 대화가 단톡방에 드러나지 않게.
+ */
+async function moveSoloPrivateChats(connection: Conn) {
+  if (await connection.prepare(`SELECT 1 FROM app_meta WHERE key='chat_rooms_v3'`).get()) return;
+  await connection.exec(`
+    UPDATE chat_messages m SET room = p.owner_id
+    FROM applications a JOIN roles r ON r.id=a.role_id JOIN projects p ON p.id=r.project_id
+    WHERE m.application_id=a.id AND m.room='' AND p.chat_mode='private';
+    INSERT INTO app_meta (key, value) VALUES ('chat_rooms_v3', 'done') ON CONFLICT (key) DO NOTHING;
   `);
 }
 
@@ -993,17 +1008,16 @@ export async function getChatContext(applicationId: string) {
        LEFT JOIN projects p ON p.id=r.project_id WHERE a.id=?`,
     )
     .get(applicationId)) as
-    | { pid: string | null; role_owner: string | null; project_owner: string | null }
-    | undefined;
+    { pid: string | null; role_owner: string | null; project_owner: string | null } | undefined;
   if (!row) return null;
   const projectId = row.project_owner ? String(row.pid) : '';
   const ownerId = String(row.project_owner || row.role_owner || '');
   return { projectId, ownerId, teamIds: await projectTeamIds(projectId, ownerId) };
 }
 
-/** 공고의 제작진(주인 먼저, 그다음 초대된 순서의 팀원). 프로젝트가 없는 예전 배역은 주인만. */
+/** 공고의 제작진(주인 먼저, 그다음 초대된 순서의 팀원). 프로젝트가 없는 예전 배역은 팀이 없다(빈 목록). */
 export async function projectTeamIds(projectId: string, ownerId: string) {
-  if (!projectId) return ownerId ? [ownerId] : [];
+  if (!projectId) return [];
   const members = (await db()
     .prepare(
       'SELECT user_id FROM team_members WHERE project_id=? AND user_id<>? ORDER BY invited_at ASC',
@@ -1033,7 +1047,6 @@ export async function listChatRooms(applicationId: string) {
       .all(applicationId)) as { room: string; name: string | null }[]
   ).map((row) => ({ room: row.room, name: row.name || '제작진' }));
 }
-
 
 export async function getLatestOffer(applicationId: string) {
   const row = await db()

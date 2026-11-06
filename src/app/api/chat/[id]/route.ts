@@ -32,6 +32,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       messages: await listChatMessages(id, room),
       room,
       rooms,
+      // 제작진 수(단톡방 안내 문구에 쓴다)
+      teamSize: participant.teamIds.length,
       me: participant.kind === 'producer' ? participant.userId : '',
     },
     { headers: { 'Cache-Control': 'private, no-store' } },
