@@ -21,7 +21,7 @@ export const EMAIL_CODE_MAX_ATTEMPTS = 5;
 export type VerificationRecord = {
   id: string;
   kind: VerificationKind;
-  method: 'email' | 'document';
+  method: 'email' | 'document' | 'nts';
   status: 'code_sent' | 'approved' | 'rejected';
   orgName: string;
   detail: string;
@@ -34,7 +34,7 @@ function recordFromRow(row: Row): VerificationRecord {
   return {
     id: str(row.id),
     kind: row.kind === 'business' ? 'business' : 'school',
-    method: row.method === 'email' ? 'email' : 'document',
+    method: row.method === 'email' ? 'email' : row.method === 'nts' ? 'nts' : 'document',
     status: row.status as VerificationRecord['status'],
     orgName: str(row.org_name),
     detail: str(row.detail),
@@ -99,6 +99,7 @@ export async function saveDocumentVerdict(
   userId: string,
   kind: VerificationKind,
   verdict: Verdict,
+  method: 'document' | 'nts' = 'document',
 ) {
   const now = new Date();
   await db()
@@ -110,7 +111,7 @@ export async function saveDocumentVerdict(
       randomUUID(),
       userId,
       kind,
-      'document',
+      method,
       verdict.approved ? 'approved' : 'rejected',
       verdict.orgName.slice(0, 100),
       verdict.detail.slice(0, 100),
