@@ -1740,7 +1740,8 @@ img {
 input[type='date'] {
   min-width: 0;
   max-width: 100%;
-}@supports (-webkit-touch-callout: none) {
+}
+@supports (-webkit-touch-callout: none) {
   input[type='date'] {
     -webkit-appearance: none;
     appearance: none;
@@ -4169,7 +4170,8 @@ input[type='date'] {
     padding: 22px 36px 0;
   }
   .pnav {
-    top: 0;
+    /* 파일럿 안내 띠가 있으면 그 아래에서 시작한다 */
+    top: var(--pilot-h, 0px);
     bottom: 0;
     left: max(0px, calc(50% - 640px));
     transform: none;
@@ -5582,6 +5584,22 @@ input[type='date'] {
   line-height: 1.6;
   margin: 0;
 }
+.verify-biz label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.verify-biz input {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 14px;
+  background: var(--page);
+  color: var(--ink);
+  min-width: 0;
+}
 .verify-input {
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -6921,4 +6939,47 @@ button.agree-view {
 }
 .char-count.over {
   color: #d14343;
+}
+
+/* 파일럿 안내 띠 (components/pilot-banner.tsx) */
+html[data-pilot] {
+  --pilot-h: 36px;
+}
+.pilot-banner {
+  position: sticky;
+  top: 0;
+  z-index: 95;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 44px 6px 16px;
+  background: var(--obsidian, #0b0d12);
+  color: #fff;
+  font-size: 12.5px;
+  line-height: 1.4;
+  text-align: center;
+}
+.pilot-banner b {
+  color: var(--lime, #c6ff3d);
+}
+.pilot-banner a {
+  color: #fff;
+  font-weight: 800;
+  text-decoration: underline;
+}
+.pilot-banner button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
 }

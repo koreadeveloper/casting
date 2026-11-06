@@ -8,7 +8,7 @@ import { judgeDocument } from '@/lib/verification-rules';
 import { saveDocumentVerdict } from '@/lib/verifications';
 
 /**
- * 재학증명서(학교 인증) 또는 사업자등록증(제작사 인증)을 올리면 AI가 읽고 규칙으로 바로 판정한다.
+ * 재학증명서(학교 인증)를 올리면 AI가 읽고 규칙으로 바로 판정한다.
  * 서류는 저장하지 않는다(이 요청 안에서 읽고 버린다).
  */
 export async function POST(request: NextRequest) {
@@ -16,7 +16,13 @@ export async function POST(request: NextRequest) {
   if (!user || user.role !== 'producer')
     return NextResponse.json({ error: '제작자로 로그인해 주세요.' }, { status: 401 });
   const form = await request.formData().catch(() => null);
-  const kind = form?.get('kind') === 'business' ? 'business' : 'school';
+  // 제작사 인증은 국세청 조회(/api/verify/business)로 한다. 서류는 학교 인증(재학증명서)만 받는다.
+  if (form?.get('kind') === 'business')
+    return NextResponse.json(
+      { error: '제작사 인증은 사업자 정보 입력(국세청 조회)으로 해 주세요.' },
+      { status: 400 },
+    );
+  const kind = 'school' as const;
   const file = form?.get('file');
   if (!(file instanceof File) || file.size === 0)
     return NextResponse.json({ error: '서류 파일을 선택해 주세요.' }, { status: 400 });

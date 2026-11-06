@@ -101,6 +101,97 @@ function DocumentUpload({
   );
 }
 
+/** 사업자 정보를 입력해 국세청 진위확인으로 인증하는 칸 */
+function BusinessForm({
+  disabled,
+  accountName,
+  orgName,
+  onVerdict,
+}: {
+  disabled: boolean;
+  accountName: string;
+  orgName: string;
+  onVerdict: (verdict: Verdict) => void;
+}) {
+  const [businessNumber, setBusinessNumber] = useState('');
+  const [ownerName, setOwnerName] = useState(accountName);
+  const [openDate, setOpenDate] = useState('');
+  const [companyName, setCompanyName] = useState(orgName);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      const data = await post('/api/verify/business', {
+        businessNumber,
+        ownerName,
+        openDate,
+        companyName,
+      });
+      onVerdict(data.verdict as Verdict);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '처리하지 못했어요.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="verify-method verify-biz" onSubmit={submit}>
+      <strong>사업자 정보로 인증 (국세청 조회)</strong>
+      <p>
+        사업자등록증에 적힌 그대로 입력해 주세요. 국세청 기록과 맞고 계속사업자이면 바로 인증돼요.
+        대표자 성명이 계정 이름({accountName})과 같거나, 상호가 가입 정보의 소속(
+        {orgName || '미기재'})과 같아야 해요.
+      </p>
+      <label>
+        사업자등록번호
+        <input
+          inputMode="numeric"
+          placeholder="숫자 10자리"
+          maxLength={12}
+          value={businessNumber}
+          onChange={(event) => setBusinessNumber(event.target.value.replace(/[^\d-]/g, ''))}
+          required
+        />
+      </label>
+      <label>
+        대표자 성명
+        <input value={ownerName} onChange={(event) => setOwnerName(event.target.value)} required />
+      </label>
+      <label>
+        개업일자
+        <input
+          type="date"
+          value={openDate}
+          onChange={(event) => setOpenDate(event.target.value)}
+          required
+        />
+      </label>
+      <label>
+        상호
+        <input
+          value={companyName}
+          onChange={(event) => setCompanyName(event.target.value)}
+          placeholder="사업자등록증의 상호(법인명)"
+          required
+        />
+      </label>
+      <button className="button button-primary" disabled={disabled || busy}>
+        {busy ? '국세청에 조회하는 중…' : '조회하고 인증하기'}
+      </button>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
+
 /** 학교 이메일로 코드를 받아 인증하는 칸 */
 function SchoolEmail({
   disabled,
@@ -215,7 +306,7 @@ function StatusLine({ slot, kind }: { slot: Slot; kind: 'school' | 'business' })
     return (
       <p className="verify-status ok">
         인증됨 · {slot.approved.orgName}
-        {slot.approved.method === 'document' && slot.approved.detail
+        {slot.approved.method !== 'email' && slot.approved.detail
           ? ` ${kind === 'school' ? slot.approved.detail : `(${slot.approved.detail})`}`
           : ''}
         {slot.approved.expiresAt ? ` · ${dateOnly(slot.approved.expiresAt)}까지` : ''}
@@ -239,6 +330,7 @@ export default function VerifyClient({
   accountName,
   orgName,
   ready,
+  ntsReady,
   mailReady,
   school,
   business,
@@ -246,6 +338,7 @@ export default function VerifyClient({
   accountName: string;
   orgName: string;
   ready: boolean;
+  ntsReady: boolean;
   mailReady: boolean;
   school: Slot;
   business: Slot;
@@ -280,8 +373,7 @@ export default function VerifyClient({
 
         {!ready && (
           <p className="verify-warn">
-            서류 자동 확인(AI)이 아직 설정되지 않아 서류로는 신청할 수 없어요. 학교 메일 인증은 지금
-            쓸 수 있어요.
+            재학증명서 자동 확인(AI)이 아직 설정되지 않았어요. 학교 인증은 학교 메일로 해 주세요.
           </p>
         )}
 
@@ -332,20 +424,25 @@ export default function VerifyClient({
             <span className="trust-badge trust-business">제작사 인증됨</span>
           </div>
           <StatusLine slot={business} kind="business" />
-          <DocumentUpload
-            kind="business"
-            label="사업자등록증으로 인증"
-            hint={`인디 제작사·프로덕션용이에요. 대표자 이름이 계정 이름(${accountName})과 같거나, 상호가 가입 정보의 소속(${orgName || '미기재'})과 같아야 해요.`}
-            disabled={!ready}
+          <p className="small-note">인디 제작사·프로덕션용이에요.</p>
+          {!ntsReady && (
+            <p className="small-note">
+              국세청 사업자 조회를 준비 중이에요. 잠시 뒤에 다시 와 주세요.
+            </p>
+          )}
+          <BusinessForm
+            disabled={!ntsReady}
+            accountName={accountName}
+            orgName={orgName}
             onVerdict={show}
           />
         </section>
 
         <p className="small-note verify-privacy">
-          올린 서류는 캐스팅플로우 서버에 저장하지 않아요. 확인을 위해 AI(Anthropic Claude)에 한 번
-          보내고, 판정 결과(학교·상호 이름, 승인 여부, 이유)만 남겨요. 사업자등록번호는 앞 5자리만
-          남겨요. AI가 읽은 내용을 정해진 기준(이름·재학 상태·발급일·사업자번호 검증)과 맞춰 보고
-          자동으로 승인해요.
+          재학증명서는 캐스팅플로우 서버에 저장하지 않아요. 확인을 위해 AI(Anthropic Claude)에 한 번
+          보내고, 판정 결과(학교 이름, 승인 여부, 이유)만 남겨요. 사업자 정보는 국세청
+          사업자등록정보 진위확인 서비스(공공데이터포털)로 조회하고, 상호와 사업자등록번호 앞 5자리,
+          판정 결과만 남겨요. 대표자 성명·개업일자는 저장하지 않아요.
         </p>
       </div>
     </main>

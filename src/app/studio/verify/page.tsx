@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { mailAvailable } from '@/lib/mail';
+import { ntsConfigured } from '@/lib/nts';
 import { aiConfigured } from '@/lib/verification-ai';
 import { getMyVerifications } from '@/lib/verifications';
 import VerifyClient from './verify-client';
@@ -17,6 +18,7 @@ export default async function VerifyPage() {
       accountName={user.name}
       orgName={user.orgName}
       ready={aiConfigured()}
+      ntsReady={ntsConfigured()}
       mailReady={mailAvailable()}
       school={mine.school}
       business={mine.business}
