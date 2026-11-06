@@ -6621,6 +6621,10 @@ button.agree-view {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.inbox-last.empty {
+  color: var(--muted);
+  font-style: italic;
+}
 .inbox-side {
   flex: none;
   display: grid;

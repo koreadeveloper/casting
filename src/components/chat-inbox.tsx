@@ -106,7 +106,7 @@ export default function ChatInbox({ viewer }: { viewer: 'producer' | 'actor' }) 
           {filter === 'unread'
             ? '안 읽은 메시지가 없어요.'
             : viewer === 'producer'
-              ? '아직 대화가 없어요. 지원자 목록이나 팀 보드에서 배우와 대화를 시작해 보세요.'
+              ? '아직 대화방이 없어요. 공고에 지원서가 들어오면 지원자마다 방이 여기에 생겨요.'
               : '아직 열린 대화가 없어요. 제작진이 연락하면 여기에 모여요.'}
         </div>
       )}
@@ -135,7 +135,7 @@ export default function ChatInbox({ viewer }: { viewer: 'producer' | 'actor' }) 
                 )}
                 <strong className="inbox-title">{room.title}</strong>
                 <span className="inbox-sub">{room.subtitle}</span>
-                <span className="inbox-last">{room.last}</span>
+                <span className={`inbox-last${room.lastAt ? '' : ' empty'}`}>{room.last}</span>
               </span>
               <span className="inbox-side">
                 <small>{timeLabel(room.lastAt)}</small>
