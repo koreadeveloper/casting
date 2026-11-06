@@ -166,8 +166,15 @@
 }
 .photoBig {
   width: 100%;
-  height: 180px;
+  height: auto;
+  /* 프로필 사진은 대부분 세로라 3:4로 보여 준다. 화면이 넓어도 너무 커지지 않게 높이를 묶는다. */
+  aspect-ratio: 3 / 4;
+  max-height: calc(46 * var(--vh));
   border-radius: 16px 16px 0 0;
+}
+.photoBig img {
+  /* 잘려야 할 때는 얼굴이 있는 위쪽을 남긴다 */
+  object-position: center 22%;
 }
 .photoBig .photoFallback {
   font-size: 34px;
@@ -251,6 +258,53 @@
   letter-spacing: -0.4px;
   margin-top: 8px;
 }
+.duelName em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-left: 5px;
+}
+.duelConds {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 8px;
+  padding: 0 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.duelConds b {
+  font-weight: 800;
+}
+.duelTags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+}
+.duelTags i {
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #eef0f4;
+  color: #4a5160;
+}
+.duelTags i.videoTag {
+  background: var(--obsidian);
+  color: var(--lime);
+}
+.duelWorks {
+  display: grid;
+  gap: 2px;
+  padding: 0 10px;
+  font-size: 11px;
+  color: #4a5160;
+  font-weight: 600;
+}
 .duelMeta {
   font-size: 11px;
   color: var(--muted);
@@ -261,7 +315,7 @@
   color: var(--faint);
   padding: 0 10px;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
