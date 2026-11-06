@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProfile, listFavoriteIds, listPublicProfiles } from '@/lib/accounts';
+import {
+  getProfile,
+  listFavoriteIds,
+  listPublicProfiles,
+  type ActorProfileFull,
+} from '@/lib/accounts';
 import { getProducerId } from '@/lib/auth';
 import { MIN_CANDIDATES } from '@/lib/compare';
 import { listApplications, roleOwnedBy } from '@/lib/db';
@@ -15,7 +20,35 @@ type Candidate = {
   meta: string;
   /** 성별. 비로그인 지원처럼 알 수 없으면 빈 문자열 — 이때는 걸러내지 않고 남긴다. */
   gender: string;
+  /** 키·지역·소속사처럼 짧은 사실 */
+  facts: string[];
+  /** 이미지 태그·특기 */
+  tags: string[];
+  /** 대표 출연작(최근 순 두 개) */
+  works: string[];
+  /** 지원서의 조건 답(촬영일·지역 이동·출연료). 프로필 후보는 빈 목록 */
+  conditions: { label: string; value: string }[];
+  hasVideo: boolean;
 };
+
+/** 프로필에서 월드컵 카드에 보일 내용. 생년월일·출연 불가일처럼 민감한 값은 넣지 않는다. */
+function profileDetails(profile: ActorProfile | null) {
+  if (!profile) return { facts: [], tags: [], works: [] };
+  return {
+    facts: [
+      profile.height ? `${profile.height}cm` : '',
+      profile.region,
+      (profile as Partial<ActorProfileFull>).agency
+        ? `소속 ${(profile as Partial<ActorProfileFull>).agency}`
+        : '',
+    ].filter(Boolean),
+    tags: [...profile.tags, ...profile.skills].slice(0, 5),
+    works: [...profile.filmography]
+      .sort((a, b) => String(b.year).localeCompare(String(a.year)))
+      .slice(0, 2)
+      .map((work) => [work.year, work.title, work.role].filter(Boolean).join(' · ')),
+  };
+}
 
 async function fromApplication(application: Application): Promise<Candidate> {
   const meta = [
@@ -35,6 +68,23 @@ async function fromApplication(application: Application): Promise<Candidate> {
     intro: application.introduction,
     meta,
     gender: profile?.gender ?? '',
+    ...profileDetails(profile),
+    // 지원서에 적은 특기는 프로필 태그 앞에 둔다
+    ...(application.skill && !profile
+      ? {
+          tags: application.skill
+            .split(/[,·]/)
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .slice(0, 5),
+        }
+      : {}),
+    conditions: [
+      { label: '촬영일', value: application.available },
+      { label: '지역 이동', value: application.travel },
+      { label: '출연료', value: application.payAccepted },
+    ],
+    hasVideo: Boolean(application.videoUrl),
   };
 }
 
@@ -47,6 +97,9 @@ function fromProfile(profile: ActorProfile): Candidate {
     intro: profile.intro,
     meta: [profile.region, ...profile.tags.slice(0, 3)].filter(Boolean).join(' · '),
     gender: profile.gender,
+    ...profileDetails(profile),
+    conditions: [],
+    hasVideo: Boolean(profile.videoUrl),
   };
 }
 

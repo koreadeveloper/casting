@@ -1,5 +1,6 @@
 'use client';
 
+import { conditionLabel, conditionTone } from '@/lib/conditions';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import BackButton from '@/components/back-button';
 import ProducerNav from '@/components/producer-nav';
@@ -30,6 +31,11 @@ type Candidate = {
   intro: string;
   meta: string;
   gender: string;
+  facts?: string[];
+  tags?: string[];
+  works?: string[];
+  conditions?: { label: string; value: string }[];
+  hasVideo?: boolean;
 };
 
 type RoleOption = { id: string; title: string; projectTitle: string };
@@ -463,12 +469,42 @@ export default function CompareClient() {
                     disabled={Boolean(picked)}
                   >
                     <Photo candidate={candidate} big />
-                    <span className={styles.duelName}>{candidate.name}</span>
-                    <span className={styles.duelMeta}>
-                      {[candidate.age !== null ? `${candidate.age}세` : '', candidate.meta]
-                        .filter(Boolean)
-                        .join(' · ')}
+                    <span className={styles.duelName}>
+                      {candidate.name}
+                      {candidate.age !== null && <em>{candidate.age}세</em>}
                     </span>
+                    {(candidate.facts?.length ?? 0) > 0 ? (
+                      <span className={styles.duelMeta}>{candidate.facts!.join(' · ')}</span>
+                    ) : (
+                      candidate.meta && <span className={styles.duelMeta}>{candidate.meta}</span>
+                    )}
+                    {(candidate.conditions?.length ?? 0) > 0 && (
+                      <span className={styles.duelConds}>
+                        {candidate.conditions!.map((item) => (
+                          <span key={item.label}>
+                            {item.label}{' '}
+                            <b className={conditionTone(item.value)}>
+                              {conditionLabel(item.value)}
+                            </b>
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                    {((candidate.tags?.length ?? 0) > 0 || candidate.hasVideo) && (
+                      <span className={styles.duelTags}>
+                        {candidate.hasVideo && <i className={styles.videoTag}>▶ 영상</i>}
+                        {candidate.tags?.map((tag) => (
+                          <i key={tag}>{tag}</i>
+                        ))}
+                      </span>
+                    )}
+                    {(candidate.works?.length ?? 0) > 0 && (
+                      <span className={styles.duelWorks}>
+                        {candidate.works!.map((work) => (
+                          <span key={work}>🎬 {work}</span>
+                        ))}
+                      </span>
+                    )}
                     {candidate.intro && <span className={styles.duelIntro}>{candidate.intro}</span>}
                   </button>
                 );
