@@ -56,6 +56,17 @@ export type BoardCandidateCard = {
   noteCount: number;
   lastMove: BoardMove | null;
   addedBy: { userId: string; name: string };
+  /** 이 공고의 배역으로 보낸 출연 제안 */
+  proposals: CandidateProposal[];
+  /** 이 공고의 배역에 지원했는지(제안을 받고 지원하면 지원자 카드로도 올라온다) */
+  applied: boolean;
+};
+export type CandidateProposal = {
+  roleId: string;
+  roleTitle: string;
+  status: 'sent' | 'accepted' | 'declined';
+  senderName: string;
+  createdAt: string;
 };
 export type BoardCardItem = BoardCard | BoardCandidateCard;
 export type BoardColumn = { key: BoardColumnKey; title: string; cards: BoardCardItem[] };
@@ -482,6 +493,7 @@ async function candidateCard(
   const actor = await getUserById(row.actor_id);
   const adder = await getUserById(row.added_by);
   const intro = profile?.intro || '';
+  const { proposals, applied } = await candidateProposals(row.project_id, row.actor_id);
   return {
     kind: 'candidate',
     candidateId: row.id,
@@ -496,7 +508,39 @@ async function candidateCard(
     noteCount,
     lastMove,
     addedBy: { userId: row.added_by, name: adder?.name || '' },
+    proposals,
+    applied,
   };
+}
+
+/** 이 배우에게 이 공고의 배역으로 보낸 제안들과, 이 공고에 지원했는지 */
+export async function candidateProposals(projectId: string, actorId: string) {
+  const conn = db();
+  const rows = (await conn
+    .prepare(
+      `SELECT pr.role_id, r.title, pr.status, u.name sender, pr.created_at FROM proposals pr
+       JOIN roles r ON r.id=pr.role_id LEFT JOIN users u ON u.id=pr.producer_id
+       WHERE pr.actor_id=? AND r.project_id=? ORDER BY pr.created_at ASC`,
+    )
+    .all(actorId, projectId)) as Record<string, unknown>[];
+  const applied = Boolean(
+    await conn
+      .prepare(
+        `SELECT 1 FROM applications a JOIN roles r ON r.id=a.role_id
+         WHERE a.actor_id=? AND r.project_id=? LIMIT 1`,
+      )
+      .get(actorId, projectId),
+  );
+  const proposals: CandidateProposal[] = rows.map((row) => ({
+    roleId: String(row.role_id),
+    roleTitle: String(row.title),
+    status: (['accepted', 'declined'].includes(String(row.status))
+      ? row.status
+      : 'sent') as CandidateProposal['status'],
+    senderName: String(row.sender ?? ''),
+    createdAt: String(row.created_at),
+  }));
+  return { proposals, applied };
 }
 
 export async function getCandidate(candidateId: string) {

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProducerId } from '@/lib/auth';
 import { isBoardMember, isBoardOwner, listBoard, listMyBoardProjects } from '@/lib/board';
-import { getProjectChatMode } from '@/lib/db';
+import { todayKst } from '@/lib/calendar-grid';
+import { getProjectChatMode, listProjectRoles } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   const userId = await getProducerId();
@@ -20,5 +21,11 @@ export async function GET(request: NextRequest) {
     },
     members: board.members,
     columns: board.columns,
+    // 후보 배우에게 출연 제안을 보낼 때 고르는 배역(모집 중인 것만 고를 수 있다)
+    roles: (await listProjectRoles(projectId)).map((role) => ({
+      id: role.id,
+      title: role.title,
+      open: !role.isClosed && role.deadline >= todayKst(),
+    })),
   });
 }
