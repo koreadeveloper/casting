@@ -12,7 +12,14 @@ type Pending = { provider: string; email: string; name: string };
 const TITLE = { producer: '제작자 회원가입', actor: '배우 회원가입' };
 
 /** 역할별 가입 화면. 소셜 계정을 연결하기 전에는 버튼을, 연결한 뒤에는 정보 입력 폼을 보여 준다. */
-export default async function SignupEntry({ role }: { role: 'producer' | 'actor' }) {
+export default async function SignupEntry({
+  role,
+  then = '',
+}: {
+  role: 'producer' | 'actor';
+  /** 가입을 마친 뒤 돌아갈 화면(배우만) */
+  then?: string;
+}) {
   const pending = openPayload<Pending>(
     (await cookies()).get(PENDING_COOKIE)?.value,
     socialSecret(),
@@ -24,6 +31,7 @@ export default async function SignupEntry({ role }: { role: 'producer' | 'actor'
         providerLabel={PROVIDER_LABEL[pending.provider]}
         name={pending.name}
         email={pending.email}
+        then={then}
       />
     );
 
@@ -40,7 +48,10 @@ export default async function SignupEntry({ role }: { role: 'producer' | 'actor'
         <h1>{TITLE[role]}</h1>
         <p className="muted">Google 계정으로 간편하게 가입해요.</p>
         {enabled ? (
-          <SocialButtons only={['google']} next={`/signup/${role}`} />
+          <SocialButtons
+            only={['google']}
+            next={`/signup/${role}${then ? `?then=${encodeURIComponent(then)}` : ''}`}
+          />
         ) : (
           <p className="form-error">지금은 가입할 수 없어요. 잠시 뒤에 다시 시도해 주세요.</p>
         )}

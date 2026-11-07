@@ -76,7 +76,9 @@ export async function GET(
     }
 
     // 처음 온 사용자: 가입 정보와 약관 동의를 받는 화면으로 보낸다(역할을 골랐다면 그 화면으로).
-    const response = done(/^\/signup\/(producer|actor)$/.test(saved.next) ? saved.next : '/signup');
+    const response = done(
+      /^\/signup\/(producer|actor)(\?|$)/.test(saved.next) ? saved.next : '/signup',
+    );
     response.cookies.set(
       PENDING_COOKIE,
       sealPayload(

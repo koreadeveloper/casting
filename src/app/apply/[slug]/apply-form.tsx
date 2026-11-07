@@ -58,6 +58,7 @@ export default function ApplyForm({
   role,
   project,
   prefill,
+  guest = false,
   appliedToken = '',
   producer,
   trust,
@@ -66,6 +67,8 @@ export default function ApplyForm({
   role: Role;
   project: Project | null;
   prefill: Prefill | null;
+  /** 로그인하지 않은 방문자. 가입하고 지원하기를 먼저 권한다. */
+  guest?: boolean;
   /** 로그인한 배우가 이미 이 배역에 낸 지원서의 접수 링크. 있으면 다시 지원하지 못하게 한다. */
   appliedToken?: string;
   producer: ProducerIntro | null;
@@ -409,13 +412,38 @@ export default function ApplyForm({
             </>
           ) : (
             <>
-              <p className="small-note">지원 후 접수 상태를 확인할 수 있습니다.</p>
+              {guest && !closed ? (
+                <div className="join-apply">
+                  <strong>Google로 가입하고 지원하면 더 편해요</strong>
+                  <ul>
+                    <li>다음 지원부터 프로필이 자동으로 채워져요</li>
+                    <li>지원 현황과 제작진 채팅을 한곳에서 볼 수 있어요</li>
+                    <li>제작진의 출연 제안을 받을 수 있어요</li>
+                  </ul>
+                  <a
+                    className="button button-primary full"
+                    href={`/signup/actor?then=${encodeURIComponent(`/apply/${role.slug}`)}`}
+                  >
+                    Google로 가입하고 지원하기
+                  </a>
+                  <p className="join-apply-login">
+                    이미 회원이면{' '}
+                    <a href={`/login?next=${encodeURIComponent(`/apply/${role.slug}`)}`}>로그인</a>
+                  </p>
+                </div>
+              ) : (
+                <p className="small-note">지원 후 접수 상태를 확인할 수 있습니다.</p>
+              )}
               <button
-                className="button button-primary full sticky-action"
+                className={`button ${guest && !closed ? 'button-soft' : 'button-primary sticky-action'} full`}
                 onClick={begin}
                 disabled={closed}
               >
-                {closed ? '지원이 마감되었습니다' : '이 배역에 지원하기'}
+                {closed
+                  ? '지원이 마감되었습니다'
+                  : guest
+                    ? '가입 없이 지원하기'
+                    : '이 배역에 지원하기'}
               </button>
             </>
           )}

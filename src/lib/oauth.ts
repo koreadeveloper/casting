@@ -182,6 +182,12 @@ export function decideLink(input: {
   return { kind: 'signup' };
 }
 
+/** 배우 가입·로그인을 마친 뒤 돌아갈 화면. 지원 화면·지원 현황·내 홈만 허용한다. */
+export function safeThen(value: unknown) {
+  const next = safeNext(value);
+  return /^\/(apply|status|me)(\/|\?|$)/.test(next) ? next : '';
+}
+
 /** 로그인 후 돌아갈 곳. 같은 사이트 안의 경로만 허용한다(열린 리디렉션 방지). */
 export function safeNext(value: unknown) {
   const next = typeof value === 'string' ? value : '';
