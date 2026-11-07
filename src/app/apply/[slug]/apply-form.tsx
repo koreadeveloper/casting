@@ -26,7 +26,12 @@ import TrustBadges from '@/components/trust-badges';
 import type { ProducerBadges } from '@/lib/verification-rules';
 import { PRIVACY_PATH } from '@/lib/legal';
 import { latestBirthDate, manAge } from '@/lib/age';
-import { CHILD_APPLY_MESSAGE, isChildRole, isUnderApplyAge } from '@/lib/child-policy';
+import {
+  AGE_REQUIRED_MESSAGE,
+  CHILD_APPLY_MESSAGE,
+  isChildRole,
+  isUnderApplyAge,
+} from '@/lib/child-policy';
 
 export type Prefill = {
   name: string;
@@ -142,6 +147,10 @@ export default function ApplyForm({
       return;
     }
     // 만 14세 미만은 보호자 동의 절차가 없어 지원서를 받지 않는다(서버도 같은 규칙으로 막는다).
+    if (age === null) {
+      setError(AGE_REQUIRED_MESSAGE);
+      return;
+    }
     if (isUnderApplyAge(age)) {
       setError(CHILD_APPLY_MESSAGE);
       return;
@@ -481,7 +490,7 @@ export default function ApplyForm({
               <label>
                 {/* 이 폼의 라벨은 세로로 쌓이므로 '만 N세'가 글자 바로 옆에 오도록 한 덩어리로 묶는다 */}
                 <span>
-                  생년월일
+                  생년월일 <em>필수</em>
                   {age !== null && (
                     <span className="label-age">
                       만 {age}세{birthDate ? '' : ' (프로필 기준)'}
@@ -494,6 +503,8 @@ export default function ApplyForm({
                   max={latestBirthDate()}
                   value={birthDate}
                   onChange={(event) => setBirthDate(event.target.value)}
+                  // 프로필에 나이가 있으면 비워 둬도 된다(프로필 기준 나이로 낸다).
+                  required={prefill?.age == null}
                 />
                 {/* 생년월일은 보내지 않고, 계산한 만 나이만 지원서에 담는다 */}
                 <input type="hidden" name="age" value={age ?? ''} />
@@ -669,8 +680,9 @@ export default function ApplyForm({
                     </span>
                   </label>
                   <p className="agree-detail">
-                    항목: 이름, 이메일, 연락처, 소개, (선택) 영상 링크·나이·사진·특기 · 목적: 지원
-                    접수와 결과 안내 · 보유: 삭제를 요청하거나 공고를 올린 제작자가 탈퇴할 때까지
+                    항목: 이름, 이메일, 연락처, 소개, 만 나이(생년월일은 저장하지 않음), (선택) 영상
+                    링크·사진·특기 · 목적: 지원 접수와 결과 안내 · 보유: 삭제를 요청하거나 공고를
+                    올린 제작자가 탈퇴할 때까지
                   </p>
                 </div>
               )}

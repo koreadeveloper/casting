@@ -6,6 +6,24 @@ export const MIN_APPLY_AGE = 14;
 export const CHILD_APPLY_MESSAGE =
   '만 14세 미만은 지금은 지원서를 받을 수 없어요. 보호자가 제작진에게 직접 문의해 주세요.';
 
+export const CHILD_PROFILE_MESSAGE =
+  '만 14세 미만은 지금은 프로필을 만들 수 없어요. 보호자가 제작진에게 직접 문의해 주세요.';
+
+/**
+ * 프로필의 생년월일(또는 예전 프로필의 출생 연도)로 보아 만 14세 미만이 확실한지.
+ * 출생 연도만 있으면 올해 - 출생 연도가 가능한 최대 만 나이라, 그것도 14 미만일 때만 막는다.
+ */
+export function isChildProfile(
+  birthAge: number | null,
+  birthYear: number | null,
+  currentYear = new Date().getFullYear(),
+) {
+  if (birthAge !== null) return birthAge < MIN_APPLY_AGE;
+  return typeof birthYear === 'number' && birthYear > 0 && currentYear - birthYear < MIN_APPLY_AGE;
+}
+
+export const AGE_REQUIRED_MESSAGE = '생년월일을 입력해 주세요. 만 14세 이상만 지원할 수 있어요.';
+
 /** 지원자 나이가 만 14세 미만인지(나이를 모르면 false) */
 export function isUnderApplyAge(age: number | null | undefined) {
   return typeof age === 'number' && age < MIN_APPLY_AGE;

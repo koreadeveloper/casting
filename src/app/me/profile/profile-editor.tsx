@@ -30,6 +30,7 @@ import {
 } from '@/lib/profile';
 import { embedUrl } from '@/lib/video';
 import { latestBirthDate, manAge } from '@/lib/age';
+import { CHILD_PROFILE_MESSAGE, isChildProfile } from '@/lib/child-policy';
 import { confirmLogout } from '@/lib/logout';
 import {
   addDates,
@@ -664,6 +665,11 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                         }));
                       }}
                     />
+                    {isChildProfile(birthAge, profile.birthYear ?? null) && (
+                      <small className="form-error" role="alert">
+                        {CHILD_PROFILE_MESSAGE}
+                      </small>
+                    )}
                   </label>
                 </div>
                 <div className="form-three">
