@@ -1,3 +1,4 @@
+import { CHILD_PROFILE_MESSAGE, isChildProfile } from '@/lib/child-policy';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getProfileFull,
@@ -77,6 +78,9 @@ export async function PUT(request: NextRequest) {
   const birthYear = birthDate
     ? Number(birthDate.slice(0, 4))
     : intIn(body.birthYear, 1930, new Date().getFullYear());
+  // 만 14세 미만은 보호자 동의 절차가 없어 프로필을 받지 않는다(lib/child-policy.ts).
+  if (isChildProfile(birthDate ? manAge(birthDate) : null, birthYear))
+    return NextResponse.json({ error: CHILD_PROFILE_MESSAGE, child: true }, { status: 400 });
   // 소개글은 말없이 자르지 않고, 넘치면 줄여 달라고 알린다(예전에 길게 쓴 글을 잃지 않게).
   if (typeof body.intro === 'string' && body.intro.trim().length > PROFILE_INTRO_MAX)
     return NextResponse.json(

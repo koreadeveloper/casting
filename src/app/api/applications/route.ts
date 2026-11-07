@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { clientIp, overLimit, TOO_MANY } from '@/lib/rate-limit';
 import { getProposal, setProposalStatus } from '@/lib/accounts';
 import { getActorId, getProducerId } from '@/lib/auth';
-import { CHILD_APPLY_MESSAGE, isChildRole, isUnderApplyAge } from '@/lib/child-policy';
+import {
+  AGE_REQUIRED_MESSAGE,
+  CHILD_APPLY_MESSAGE,
+  isChildRole,
+  isUnderApplyAge,
+} from '@/lib/child-policy';
 import {
   createApplication,
   findActorApplicationToken,
@@ -88,6 +93,8 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+  // 나이를 비우면 만 14세 미만을 걸러낼 수 없어서 필수로 받는다(생년월일은 저장하지 않고 만 나이만).
+  if (age === null) return NextResponse.json({ error: AGE_REQUIRED_MESSAGE }, { status: 400 });
   // 파일럿에서는 만 14세 미만 지원서를 받지 않는다(법정대리인 동의 절차가 없어서). lib/child-policy.ts
   if (isUnderApplyAge(age) || isChildRole(role.ageMin, role.ageMax))
     return NextResponse.json({ error: CHILD_APPLY_MESSAGE, child: true }, { status: 400 });
