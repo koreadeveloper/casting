@@ -6983,3 +6983,36 @@ html[data-pilot] {
   font-size: 18px;
   line-height: 1;
 }
+
+/* 지원 화면·지원 현황의 'Google로 가입하고 지원하기' 안내 */
+.join-apply {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1.5px solid var(--obsidian);
+}
+.join-apply strong {
+  font-size: 15px;
+  letter-spacing: -0.3px;
+}
+.join-apply p,
+.join-apply ul {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.join-apply ul {
+  padding-left: 18px;
+}
+.join-apply .join-apply-login {
+  text-align: center;
+}
+.join-apply .join-apply-login a {
+  color: var(--ink);
+  font-weight: 800;
+  text-decoration: underline;
+}

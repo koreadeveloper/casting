@@ -8,6 +8,7 @@ import {
   pkcePair,
   providerEnabled,
   safeNext,
+  safeThen,
   sealPayload,
 } from '../src/lib/oauth.ts';
 import { createHash } from 'node:crypto';
@@ -135,4 +136,14 @@ test('키가 둘 다 있을 때만 제공자를 켠다', () => {
   );
   assert.equal(providerEnabled('google', { GOOGLE_CLIENT_ID: 'a' }), false);
   assert.equal(providerEnabled('kakao', {}), false);
+});
+
+test('배우 가입 뒤 돌아갈 화면은 지원·지원 현황·내 홈만', () => {
+  assert.equal(safeThen('/apply/abc-123'), '/apply/abc-123');
+  assert.equal(safeThen('/status/tok'), '/status/tok');
+  assert.equal(safeThen('/me'), '/me');
+  assert.equal(safeThen('/studio'), '');
+  assert.equal(safeThen('//evil.com'), '');
+  assert.equal(safeThen('https://evil.com/apply/x'), '');
+  assert.equal(safeThen('/api/apply'), '');
 });

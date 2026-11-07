@@ -3,7 +3,7 @@ import { APPLICATION_INTRO_MAX } from '@/lib/validation';
 import { notFound } from 'next/navigation';
 import { isPosterUrl } from '@/lib/project-meta';
 import { getProducerIntro, getProfile, getProject, getUserById } from '@/lib/accounts';
-import { getActorId } from '@/lib/auth';
+import { getActorId, getSession } from '@/lib/auth';
 import { findActorApplicationToken, getRole } from '@/lib/db';
 import { profileAge } from '@/lib/profile';
 import { getProducerBadges } from '@/lib/verifications';
@@ -55,10 +55,27 @@ export default async function ApplyPage({
   const role = await getRole(slug);
   if (!role) notFound();
   const actorId = await getActorId();
+  // 로그인하지 않은 사람에게는 'Google로 가입하고 지원하기'를 먼저 보여 준다.
+  const guest = !(await getSession());
   let prefill: Prefill | null = null;
   if (actorId) {
     const user = await getUserById(actorId);
     const profile = await getProfile(actorId);
+    // 막 가입해서 아직 프로필이 없으면 계정 정보(이름·이메일·연락처)만 채운다.
+    if (user && !profile)
+      prefill = {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        age: null,
+        birthDate: '',
+        introduction: '',
+        photoUrl: '',
+        photos: [],
+        videoUrl: '',
+        skill: '',
+        unavailable: false,
+      };
     if (user && profile)
       prefill = {
         name: profile.name,
@@ -89,6 +106,7 @@ export default async function ApplyPage({
       role={role}
       project={role.projectId ? await getProject(role.projectId) : null}
       prefill={prefill}
+      guest={guest}
       appliedToken={actorId ? await findActorApplicationToken(actorId, role.id) : ''}
       producer={role.ownerId ? await getProducerIntro(role.ownerId) : null}
       trust={role.ownerId ? (await getProducerBadges([role.ownerId])).get(role.ownerId) : undefined}

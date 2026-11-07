@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getSession } from '@/lib/auth';
 import { koDate } from '@/lib/dates';
 import {
   getApplicationByReceipt,
@@ -83,6 +84,9 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
   // 대화는 따로 연 화면(/status/[token]/chat)에서 하고, 여기서는 마지막 메시지만 미리 보여 준다.
   const lastMessage = (await listChatMessages(application.id)).at(-1);
   const chatHref = `/status/${token}/chat`;
+  // 가입 없이 낸 지원서를 로그인하지 않은 채 보고 있으면 가입을 권한다.
+  // 같은 이메일로 가입하면 이 지원서가 계정에 자동으로 붙는다.
+  const suggestJoin = !application.actorId && !(await getSession());
   return (
     <main className="app-shell narrow">
       <header className="sub-header">
@@ -93,6 +97,18 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
         <span className="sh-more" />
       </header>
       <div className="status-wrap">
+        {suggestJoin && (
+          <div className="join-apply">
+            <strong>가입하고 이 지원서를 계정에서 관리해 보세요</strong>
+            <p>
+              지원할 때 쓴 이메일과 <b>같은 이메일의 Google 계정</b>으로 가입하면, 이 지원서가 내
+              계정에 자동으로 연결돼요. 이 링크를 잃어버려도 지원 현황과 채팅을 다시 찾을 수 있어요.
+            </p>
+            <a className="button button-primary full" href="/signup/actor?then=%2Fme">
+              Google로 가입하기
+            </a>
+          </div>
+        )}
         <div className="mini-proj">
           <div className="mp-main">
             <span className="badge-soft mp-badge">{role.isClosed ? '지원 마감' : '모집 중'}</span>

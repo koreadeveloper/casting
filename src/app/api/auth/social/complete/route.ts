@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createUser, findOAuthUser, getUserByEmail, linkOAuthAccount } from '@/lib/accounts';
 import { hasSetup, homeFor, startSession } from '@/lib/auth';
 import { claimApplications } from '@/lib/db';
-import { isProvider, openPayload } from '@/lib/oauth';
+import { isProvider, openPayload, safeThen } from '@/lib/oauth';
 import { clientIp, overLimit, TOO_MANY } from '@/lib/rate-limit';
 import { PENDING_COOKIE, socialSecret } from '@/lib/social-login';
 import { requiredText, validEmail } from '@/lib/validation';
@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '소속 유형을 선택해 주세요.' }, { status: 400 });
 
   const finish = (user: { id: string; role: 'producer' | 'actor'; email: string }) => {
-    const next = user.role === 'actor' ? '/me/profile' : homeFor(user.role);
+    // 지원 화면에서 가입하러 왔으면 그 화면으로 돌려보낸다.
+    const then = safeThen(body.then);
+    const next = user.role === 'actor' ? then || '/me/profile' : homeFor(user.role);
     const response = NextResponse.json({ ok: true, next }, { status: 201 });
     response.cookies.delete({ name: PENDING_COOKIE, path: '/' });
     return response;
@@ -51,7 +53,10 @@ export async function POST(request: NextRequest) {
   }
   if (await getUserByEmail(email))
     return NextResponse.json(
-      { error: '이미 가입된 이메일입니다. 이메일로 로그인해 주세요.' },
+      {
+        error:
+          '이미 가입된 이메일입니다. 로그인 화면에서 같은 이메일의 Google 계정으로 로그인해 주세요.',
+      },
       { status: 409 },
     );
 

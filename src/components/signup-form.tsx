@@ -28,11 +28,14 @@ export default function SignupForm({
   providerLabel,
   name,
   email,
+  then = '',
 }: {
   role: Role;
   providerLabel: string;
   name: string;
   email: string;
+  /** 가입을 마친 뒤 돌아갈 화면(배우만, 서버가 다시 검사한다) */
+  then?: string;
 }) {
   const [form, setForm] = useState({
     name,
@@ -75,7 +78,7 @@ export default function SignupForm({
       const response = await fetch('/api/auth/social/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, role }),
+        body: JSON.stringify({ ...form, role, then }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || '가입하지 못했습니다.');
