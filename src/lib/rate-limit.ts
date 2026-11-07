@@ -9,9 +9,27 @@ export function clientIp(headers: Headers) {
   );
 }
 
+/**
+ * 횟수 제한 기록(접속 IP·이메일이 key에 들어간다)은 가장 긴 창(하루)이 지나면 쓸모가 없다.
+ * 개인정보처리방침대로 2일이 지난 기록은 지운다. 요청마다 지우면 부담이라 대략 50번에 한 번만 정리한다.
+ */
+export const RATE_LIMIT_KEEP_MS = 2 * 24 * 3600 * 1000;
+
+export function shouldPrune(random = Math.random()) {
+  return random < 0.02;
+}
+
+async function pruneOld(now: number) {
+  await db()
+    .prepare('DELETE FROM rate_limits WHERE window_start < ?')
+    .run(now - RATE_LIMIT_KEEP_MS)
+    .catch((error: unknown) => console.error('횟수 제한 기록 정리 실패', error));
+}
+
 /** 이번 시도를 세고, 창 안에서 limit을 넘었으면 true를 돌려준다. */
 export async function overLimit(key: string, limit: number, windowSeconds: number) {
   const now = Date.now();
+  if (shouldPrune()) await pruneOld(now);
   const expired = now - windowSeconds * 1000;
   const row = (await db()
     .prepare(
