@@ -1817,6 +1817,11 @@ input[type='date'] {
   justify-content: space-between;
   gap: 10px;
 }
+/* 저장 바가 있는 화면(프로필 편집)에서는 알림이 '저장하기' 버튼을 가리지 않게 그 위에 띄운다 */
+.save-bar ~ .toast,
+body:has(.save-bar) .toast {
+  bottom: calc(146px + env(safe-area-inset-bottom));
+}
 .toast button {
   border: 0;
   background: none;
