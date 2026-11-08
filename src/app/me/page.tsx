@@ -171,7 +171,7 @@ export default async function ActorHome({
         {matched.length > 0 && (
           <>
             <div className="section-head">
-              <h2>{user.name}배우님을 위한 맞춤 공고</h2>
+              <h2>{user.name} 배우님을 위한 맞춤 공고</h2>
               <span className="muted" style={{ fontSize: 12 }}>
                 프로필 기반 추천
               </span>

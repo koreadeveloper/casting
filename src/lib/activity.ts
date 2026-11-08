@@ -4,6 +4,7 @@ import { db } from './db';
 import { MESSAGE_PREVIEW_SQL } from './chat-files';
 import { isAttendanceAskOpen, nextShootDate, shootDateLabel, shootDayLabel } from './attendance';
 import { matchNotice, matchRoleForActor, type MatchProfileInput } from './match';
+import { testRoleSql } from './test-listing';
 import {
   dDayLabel,
   daysUntilResult,
@@ -348,7 +349,10 @@ export async function actorFeed(
     const roles = (await db()
       .prepare(
         `SELECT slug, title, description, requirement, location, shoot_date, project_title, created_at
-         FROM roles WHERE is_closed = 0 AND created_at >= ? ORDER BY created_at DESC`,
+         FROM roles WHERE is_closed = 0 AND created_at >= ?
+           AND NOT EXISTS (SELECT 1 FROM projects ap WHERE ap.id=roles.project_id AND ap.archived_at IS NOT NULL)
+           AND NOT ${testRoleSql('roles')}
+         ORDER BY created_at DESC`,
       )
       .all(since)) as Row[];
     const matched = roles
