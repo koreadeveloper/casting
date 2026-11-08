@@ -7,7 +7,7 @@ import { matchesRoleFilters, sortRoleListings, type RoleFilters } from './role-s
 import { MESSAGE_PREVIEW_SQL } from './chat-files';
 import { attendanceMessage, type AttendanceCheck, type AttendanceStatus } from './attendance';
 import { schoolDomainRows } from './school-domains';
-import { testRoleSql } from './test-listing';
+import { hiddenRoleSql } from './test-listing';
 import { conn as rawConnection, withAdvisoryLock, type Conn, type Statement } from './sql';
 
 // 스키마 생성은 프로세스당 한 번만, 다른 인스턴스와 겹치지 않게 실행한다.
@@ -552,7 +552,7 @@ export async function listProjectRoles(projectId: string) {
 
 // 배우에게 보이는 모집 중 배역: 보관한 프로젝트와 [테스트] 공고는 뺀다(lib/test-listing.ts).
 const OPEN_ROLES = `${ROLE_STATS} WHERE roles.is_closed=0 AND roles.deadline>=? AND NOT ${IN_ARCHIVED_PROJECT}
-  AND NOT ${testRoleSql('roles')}
+  AND NOT ${hiddenRoleSql('roles')}
   GROUP BY roles.id`;
 
 export async function listOpenRoles(today: string) {
