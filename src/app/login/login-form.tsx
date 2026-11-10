@@ -37,7 +37,9 @@ export default function LoginForm({
       if (!response.ok) throw new Error(data.error || '로그인하지 못했습니다.');
       const target =
         next &&
-        (data.role === 'producer' ? next.startsWith('/studio') : !next.startsWith('/studio'))
+        // 관리자 화면(/admin)은 역할과 상관없이 돌아간다(권한은 그 화면이 확인한다).
+        (next.startsWith('/admin') ||
+          (data.role === 'producer' ? next.startsWith('/studio') : !next.startsWith('/studio')))
           ? next
           : data.next;
       location.href = target;

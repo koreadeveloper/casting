@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { isAdminAccount } from '@/lib/admin-rules';
 import { getCurrentUser } from '@/lib/auth';
 import Studio from './studio';
 
@@ -22,6 +23,7 @@ export default async function StudioPage({
       userName={user.name}
       orgName={user.orgName || user.orgType}
       email={user.email}
+      admin={isAdminAccount(user)}
     />
   );
 }

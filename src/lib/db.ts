@@ -61,7 +61,7 @@ async function initialize(database: Conn) {
   const migrated = await database
     .prepare(
       `SELECT 1 FROM information_schema.columns
-       WHERE table_schema = current_schema() AND table_name='email_codes' AND column_name='code_hash'`,
+       WHERE table_schema = current_schema() AND table_name='users' AND column_name='suspended_at'`,
     )
     .get();
   if (!migrated) {
@@ -321,14 +321,16 @@ async function initialize(database: Conn) {
     await database.exec(
       `UPDATE users SET email_verified=1 WHERE id IN (SELECT user_id FROM oauth_accounts)`,
     );
-    // 이 표가 구조 변경 기준(맨 위 migrated)이다. 구조를 바꿀 때는 이 기준도 새로 만든 것으로 옮긴다.
-    // 한 트랜잭션 안에서 돌아서, 도중에 실패하면 이 표도 생기지 않고 다음 시작에 다시 시도한다.
+    // 한 트랜잭션 안에서 돌아서, 도중에 실패하면 아래 기준 칸도 생기지 않고 다음 시작에 다시 시도한다.
     await database.exec(`
     -- 이메일 가입 인증번호. 원문은 메일로만 보내고 여기에는 해시만 둔다.
     CREATE TABLE IF NOT EXISTS email_codes (
       email TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at TEXT NOT NULL,
       attempts INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL
     );`);
+    // 관리자가 정지한 시각(/admin/members). 비어 있으면 정상 계정. 정지되면 로그인과 기존 세션이 모두 막힌다.
+    // 이 칸이 구조 변경 기준(맨 위 migrated)이다. 구조를 바꿀 때는 이 기준도 새로 만든 것으로 옮긴다.
+    await addColumn(database, 'users', 'suspended_at', 'TEXT');
     await enableRowLevelSecurity(database);
   }
   await moveOldPrivateChats(database);

@@ -18,7 +18,10 @@ export async function getSession(): Promise<Session | null> {
   if (!session) return null;
   const user = await getUserById(session.userId);
   // 비밀번호를 바꾸면 회원의 세션 버전이 올라가, 그 전에 만든 로그인(다른 기기)은 여기서 끊긴다.
-  return user && (session.version ?? 0) === user.sessionVersion ? session : null;
+  // 관리자가 정지한 계정은 이미 로그인해 있던 기기에서도 바로 끊긴다.
+  return user && !user.suspendedAt && (session.version ?? 0) === user.sessionVersion
+    ? session
+    : null;
 }
 
 export async function getCurrentUser() {

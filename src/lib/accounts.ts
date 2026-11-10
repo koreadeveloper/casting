@@ -51,6 +51,8 @@ export type User = {
   sessionVersion: number;
   /** 메일 주인임을 확인한 계정인지 */
   emailVerified: boolean;
+  /** 관리자가 정지한 시각. null이면 정상 계정 */
+  suspendedAt: string | null;
 };
 
 export type Project = {
@@ -177,6 +179,7 @@ function userFromRow(row: Row): User {
     createdAt: String(row.created_at),
     sessionVersion: Number(row.session_version ?? 0),
     emailVerified: Number(row.email_verified ?? 0) === 1,
+    suspendedAt: row.suspended_at ? String(row.suspended_at) : null,
   };
 }
 

@@ -57,6 +57,9 @@ export async function GET(
       emailOwnerId: emailOwner?.id ?? null,
     });
 
+    // 관리자가 정지한 계정은 로그인도, 소셜 계정 연결도 하지 않는다.
+    if (linked?.suspendedAt || (decision.kind === 'link' && emailOwner?.suspendedAt))
+      return done('/login?error=suspended');
     // 예전 이메일 가입 계정이면 이 소셜 계정을 붙인다(비밀번호는 지운다).
     if (decision.kind === 'link' && emailOwner)
       await linkExistingAccount(emailOwner.id, provider, profile.subject, profile.email);
@@ -67,9 +70,11 @@ export async function GET(
       if (user.role === 'actor') await claimApplications(user.id, user.email);
       const target =
         saved.next &&
-        (user.role === 'producer'
-          ? saved.next.startsWith('/studio')
-          : !saved.next.startsWith('/studio'))
+        // 관리자 화면(/admin)은 역할과 상관없이 돌아간다(권한은 그 화면이 확인한다).
+        (saved.next.startsWith('/admin') ||
+          (user.role === 'producer'
+            ? saved.next.startsWith('/studio')
+            : !saved.next.startsWith('/studio')))
           ? saved.next
           : homeFor(user.role);
       return done(target);

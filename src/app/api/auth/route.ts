@@ -26,6 +26,11 @@ export async function POST(request: NextRequest) {
   const found = await getUserWithHash(email);
   if (!found || !verifyPassword(String(body.password || ''), found.passwordHash))
     return NextResponse.json({ error: '이메일 또는 비밀번호가 맞지 않습니다.' }, { status: 401 });
+  if (found.user.suspendedAt)
+    return NextResponse.json(
+      { error: '이용이 정지된 계정이에요. 문의하기로 연락해 주세요.' },
+      { status: 403 },
+    );
   await startSession({ userId: found.user.id, role: found.user.role });
   // 로그아웃 상태로 낸 지원서를 이 계정에 붙인다 ('내 지원 현황'에서 다시 찾을 수 있도록)
   if (found.user.role === 'actor') await claimApplications(found.user.id, found.user.email);

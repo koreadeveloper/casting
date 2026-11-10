@@ -371,11 +371,14 @@ export default function Studio({
   userName,
   orgName,
   email,
+  admin = false,
 }: {
   initialTab: Tab;
   userName: string;
   orgName: string;
   email: string;
+  /** 관리자 계정이면 '내 정보'에 회원 관리 링크를 보인다 */
+  admin?: boolean;
 }) {
   const [roles, setRoles] = useState<Role[]>([]);
   const [roleId, setRoleId] = useState('');
@@ -1346,6 +1349,7 @@ export default function Studio({
                 {Icon.upload} 지원 링크 공유
               </button>
               <a href="/contact">{Icon.chat} 문의하기</a>
+              {admin && <a href="/admin/members">{Icon.users} 회원 관리 (관리자)</a>}
               <button onClick={() => void confirmLogout()}>{Icon.out} 로그아웃</button>
             </div>
             <a href="/account/delete" className="account-danger">
