@@ -709,7 +709,6 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                   <input
                     value={profile.agency}
                     maxLength={60}
-                    placeholder="소속사 또는 에이전시명 (없으면 비워 두세요)"
                     onChange={(event) => update('agency', event.target.value)}
                   />
                 </label>
@@ -1005,9 +1004,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                 </label>
                 <span aria-hidden>~</span>
                 <label>
-                  <span>
-                    끝날짜 <i>선택</i>
-                  </span>
+                  <span>끝날짜</span>
                   <input
                     type="date"
                     value={newDateEnd}

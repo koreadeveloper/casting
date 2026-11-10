@@ -1752,7 +1752,7 @@ input[type='date'] {
     text-align: left;
   }
 }
-/* 필수(*)와 선택 표시. 둘 다 적어야 '별표가 없는 건 뭐지?'가 생기지 않는다. */
+/* 필수 항목만 빨간 별표(*)로 표시한다. 별표가 없으면 선택 항목이다. ('여러 개 선택' 같은 보충 설명은 i) */
 .role-form label em,
 .role-form label i {
   font-style: normal;
@@ -1791,7 +1791,7 @@ input[type='date'] {
 .form-legend em {
   font-style: normal;
   font-weight: 700;
-  color: var(--primary);
+  color: #d45151;
 }
 .form-error {
   font-size: 12px;
@@ -4987,7 +4987,7 @@ body:has(.save-bar) .toast {
 .wiz-field legend em {
   font-style: normal;
   font-size: 11px;
-  color: var(--primary);
+  color: #d45151;
 }
 /* 지원 화면: 해당 장면이 있으면 눈에 띄게 */
 .scene-card.has-scenes {

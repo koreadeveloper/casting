@@ -506,7 +506,7 @@ export default function ApplyForm({
               기본 정보 <span>01 / 03</span>
             </div>
             <label>
-              이름 <em>필수</em>
+              이름 <em>*</em>
               <input
                 name="name"
                 required
@@ -520,7 +520,7 @@ export default function ApplyForm({
               <label>
                 {/* 이 폼의 라벨은 세로로 쌓이므로 '만 N세'가 글자 바로 옆에 오도록 한 덩어리로 묶는다 */}
                 <span>
-                  생년월일 <em>필수</em>
+                  생년월일 <em>*</em>
                   {age !== null && (
                     <span className="label-age">
                       만 {age}세{birthDate ? '' : ' (프로필 기준)'}
@@ -545,7 +545,7 @@ export default function ApplyForm({
                 )}
               </label>
               <label>
-                연락처 <em>필수</em>
+                연락처 <em>*</em>
                 <input
                   name="phone"
                   type="tel"
@@ -557,21 +557,20 @@ export default function ApplyForm({
               </label>
             </div>
             <label>
-              이메일 <em>필수</em>
+              이메일 <em>*</em>
               <input
                 name="email"
                 type="email"
                 required
                 autoComplete="email"
                 defaultValue={prefill?.email}
-                placeholder="example@email.com"
               />
             </label>
             <div className="form-section-title">
               프로필과 자료 <span>02 / 03</span>
             </div>
             <label>
-              소개와 연기 경험 <em>필수</em>
+              소개와 연기 경험 <em>*</em>
               <textarea
                 name="introduction"
                 required
@@ -629,7 +628,7 @@ export default function ApplyForm({
                   name="photoUrl"
                   inputMode="url"
                   defaultValue={prefill?.photoUrl}
-                  placeholder="https://... (선택)"
+                  placeholder="https://..."
                 />
                 <small>
                   공유 가능한 프로필 사진 링크를 넣어 주세요. 회원으로 로그인하면 프로필에 올린
@@ -638,7 +637,7 @@ export default function ApplyForm({
               </label>
             )}
             <label>
-              연기 영상 링크 <i>선택</i>
+              연기 영상 링크
               <input
                 name="videoUrl"
                 type="url"
@@ -661,7 +660,7 @@ export default function ApplyForm({
               참여 조건 <span>03 / 03</span>
             </div>
             <label>
-              촬영일에 참여할 수 있나요? <em>필수</em>
+              촬영일에 참여할 수 있나요? <em>*</em>
               {prefill?.unavailable && (
                 <small className="warn">프로필에 이 촬영일을 출연 불가로 등록해 두셨어요.</small>
               )}
@@ -675,7 +674,7 @@ export default function ApplyForm({
               </select>
             </label>
             <label>
-              촬영 지역으로 이동할 수 있나요? <em>필수</em>
+              촬영 지역으로 이동할 수 있나요? <em>*</em>
               <select name="travel" required defaultValue="">
                 <option value="" disabled>
                   선택해 주세요
@@ -686,7 +685,7 @@ export default function ApplyForm({
               </select>
             </label>
             <label>
-              출연료 조건을 확인했나요? <em>필수</em>
+              출연료 조건을 확인했나요? <em>*</em>
               <select name="payAccepted" required defaultValue="">
                 <option value="" disabled>
                   선택해 주세요
