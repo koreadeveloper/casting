@@ -7,7 +7,7 @@ import {
   namesMatch,
 } from '../src/lib/verification-rules.ts';
 
-const account = { name: '전나영', orgName: '봄날필름' };
+const account = { name: '전나영' };
 const cert = {
   document_type: 'enrollment_certificate',
   readable: true,
@@ -73,13 +73,11 @@ test('재학증명서: 이름·재학 상태·발급일·위변조 각각 거절
   assert.ok(!judgeDocument('school', biz, account, today).approved);
 });
 
-test('사업자등록증: 대표자가 달라도 상호가 소속과 같으면 승인', () => {
+test('사업자등록증: 계정 이름·소속과 달라도 승인', () => {
   const verdict = judgeDocument('business', biz, account, '2026-10-29');
   assert.ok(verdict.approved, verdict.reasons.join());
   assert.equal(verdict.detail, '124-81-*****');
-  assert.ok(
-    !judgeDocument('business', biz, { name: '전나영', orgName: '다른회사' }, '2026-10-29').approved,
-  );
+  assert.ok(judgeDocument('business', biz, { name: '다른사람' }, '2026-10-29').approved);
   assert.ok(
     !judgeDocument('business', { ...biz, business_number: '1248100999' }, account, '2026-10-29')
       .approved,

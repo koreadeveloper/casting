@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { setOrgName } from '@/lib/accounts';
 import { getCurrentUser } from '@/lib/auth';
 import { NtsUnavailable, validateBusiness } from '@/lib/nts';
 import { businessInputProblems, judgeBusiness } from '@/lib/nts-rules';
@@ -29,8 +30,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: TOO_MANY }, { status: 429 });
   try {
     const nts = await validateBusiness(input);
-    const verdict = judgeBusiness(input, nts, { name: user.name, orgName: user.orgName });
+    const verdict = judgeBusiness(input, nts);
     await saveDocumentVerdict(user.id, 'business', verdict, 'nts');
+    // 인증된 상호를 가입 정보의 소속명으로 맞춘다(공고의 소속 표기와 인증 표시가 같아지게).
+    if (verdict.approved) await setOrgName(user.id, verdict.orgName);
     return NextResponse.json({ verdict });
   } catch (error) {
     if (error instanceof NtsUnavailable)

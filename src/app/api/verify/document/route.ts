@@ -40,12 +40,7 @@ export async function POST(request: NextRequest) {
     );
   try {
     const facts = await readVerificationDocument(kind, bytes, ext);
-    const verdict = judgeDocument(
-      kind,
-      facts,
-      { name: user.name, orgName: user.orgName },
-      kstToday(),
-    );
+    const verdict = judgeDocument(kind, facts, { name: user.name }, kstToday());
     await saveDocumentVerdict(user.id, kind, verdict);
     return NextResponse.json({ verdict });
   } catch (error) {

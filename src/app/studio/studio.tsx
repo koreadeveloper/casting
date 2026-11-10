@@ -1289,13 +1289,16 @@ export default function Studio({
             </h1>
             <div className="profile-card">
               <div className="avatar">{userName.slice(-2)}</div>
-              <div>
+              <div className="profile-card-text">
                 <strong>{userName}</strong>
                 <span>
                   {orgName ? `${orgName} · ` : ''}
                   {email}
                 </span>
               </div>
+              <a className="profile-card-edit" href="/studio/account">
+                수정
+              </a>
             </div>
             <a className="verify-entry" href="/studio/verify">
               <strong>제작진 인증</strong>

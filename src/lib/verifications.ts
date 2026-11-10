@@ -268,3 +268,17 @@ export async function revokeVerification(
     .run(reason, new Date().toISOString(), userId, kind);
   return result.changes;
 }
+
+/**
+ * 이름을 바꾸면 재학증명서로 받은 학교 인증을 거둔다(서류의 이름을 계정 이름과 맞춰 본 인증이라서).
+ * 학교 메일·관리자 인증은 이름과 상관없어 그대로 둔다. 거둔 수를 돌려준다.
+ */
+export async function revokeNameCheckedSchool(userId: string) {
+  const result = await db()
+    .prepare(
+      `UPDATE verifications SET status='rejected', reason=?, decided_at=?
+       WHERE user_id=? AND kind='school' AND method='document' AND status='approved'`,
+    )
+    .run('계정 이름을 바꿔서 재학증명서 인증을 다시 받아야 해요', new Date().toISOString(), userId);
+  return result.changes;
+}

@@ -104,17 +104,15 @@ function DocumentUpload({
 /** 사업자 정보를 입력해 국세청 진위확인으로 인증하는 칸 */
 function BusinessForm({
   disabled,
-  accountName,
   orgName,
   onVerdict,
 }: {
   disabled: boolean;
-  accountName: string;
   orgName: string;
   onVerdict: (verdict: Verdict) => void;
 }) {
   const [businessNumber, setBusinessNumber] = useState('');
-  const [ownerName, setOwnerName] = useState(accountName);
+  const [ownerName, setOwnerName] = useState('');
   const [openDate, setOpenDate] = useState('');
   const [companyName, setCompanyName] = useState(orgName);
   const [busy, setBusy] = useState(false);
@@ -144,8 +142,8 @@ function BusinessForm({
       <strong>사업자 정보로 인증 (국세청 조회)</strong>
       <p>
         사업자등록증에 적힌 그대로 입력해 주세요. 국세청 기록과 맞고 계속사업자이면 바로 인증돼요.
-        대표자 성명이 계정 이름({accountName})과 같거나, 상호가 가입 정보의 소속(
-        {orgName || '미기재'})과 같아야 해요.
+        대표자가 아니어도(직원·팀원) 인증할 수 있고, 인증되면 소속명이 상호로 바뀌어 공고에 그대로
+        보여요.
       </p>
       <label>
         사업자등록번호
@@ -412,7 +410,7 @@ export default function VerifyClient({
           <DocumentUpload
             kind="school"
             label="재학증명서로 인증"
-            hint={`최근 90일 안에 발급한 재학증명서(사진 또는 PDF). 서류의 이름이 계정 이름(${accountName})과 같아야 해요.`}
+            hint={`최근 90일 안에 발급한 재학증명서(사진 또는 PDF). 서류의 이름이 계정 이름(${accountName})과 같아야 해요. 이름이 다르면 ‘내 정보 → 수정’에서 먼저 고쳐 주세요.`}
             disabled={!ready}
             onVerdict={show}
           />
@@ -430,12 +428,7 @@ export default function VerifyClient({
               국세청 사업자 조회를 준비 중이에요. 잠시 뒤에 다시 와 주세요.
             </p>
           )}
-          <BusinessForm
-            disabled={!ntsReady}
-            accountName={accountName}
-            orgName={orgName}
-            onVerdict={show}
-          />
+          <BusinessForm disabled={!ntsReady} orgName={orgName} onVerdict={show} />
         </section>
 
         <p className="small-note verify-privacy">

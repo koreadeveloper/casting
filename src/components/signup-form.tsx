@@ -4,18 +4,10 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Brand } from './brand';
 import LegalModal from './legal-modal';
+import { ORG_TYPES } from '@/lib/account-edit';
 import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal';
 
 type Role = 'producer' | 'actor';
-
-const ORG_TYPES = [
-  '영화 제작사',
-  '학생 제작팀',
-  '영화동아리',
-  '독립 제작자(개인)',
-  '광고·숏폼 제작사',
-  '기타',
-];
 
 const DOCS = {
   terms: { title: '이용약관', src: TERMS_PATH },

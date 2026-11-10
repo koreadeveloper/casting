@@ -14,7 +14,6 @@ const input = {
   openDate: '2020-03-02',
   companyName: '세종필름',
 };
-const account = { name: '홍길동', orgName: '' };
 const ok = { matched: true, statusCode: '01', statusText: '계속사업자' };
 
 test('입력 형식 검사', () => {
@@ -43,21 +42,15 @@ test('국세청 응답 읽기', () => {
   assert.equal(readNtsItem(null).matched, false);
 });
 
-test('일치하고 계속사업자이며 대표자가 계정 주인이면 승인', () => {
-  const verdict = judgeBusiness(input, ok, account);
+test('국세청 기록과 일치하고 계속사업자면 승인 (계정 이름·소속과는 맞춰 보지 않음)', () => {
+  const verdict = judgeBusiness(input, ok);
   assert.equal(verdict.approved, true);
   assert.equal(verdict.orgName, '세종필름');
   assert.equal(verdict.detail, '220-81-*****');
 });
 
 test('불일치·휴업·폐업은 거절', () => {
-  assert.equal(judgeBusiness(input, { ...ok, matched: false }, account).approved, false);
-  assert.match(judgeBusiness(input, { ...ok, statusCode: '02' }, account).reasons[0], /휴업/);
-  assert.match(judgeBusiness(input, { ...ok, statusCode: '03' }, account).reasons[0], /폐업/);
-});
-
-test('대표자가 계정 주인이 아니어도 상호가 가입 소속과 같으면 승인', () => {
-  const member = { name: '김팀원', orgName: '세종필름' };
-  assert.equal(judgeBusiness(input, ok, member).approved, true);
-  assert.equal(judgeBusiness(input, ok, { name: '김팀원', orgName: '다른회사' }).approved, false);
+  assert.equal(judgeBusiness(input, { ...ok, matched: false }).approved, false);
+  assert.match(judgeBusiness(input, { ...ok, statusCode: '02' }).reasons[0], /휴업/);
+  assert.match(judgeBusiness(input, { ...ok, statusCode: '03' }).reasons[0], /폐업/);
 });

@@ -1,12 +1,7 @@
 // 국세청 사업자등록정보 진위확인 결과로 제작사 인증을 판정하는 규칙. DB·Next·네트워크에 기대지 않아 테스트로 지킨다.
 // 조회 자체는 nts.ts가 하고, 승인·거절은 여기 고정된 규칙으로 정한다.
 
-import {
-  isValidBusinessNumber,
-  maskBusinessNumber,
-  namesMatch,
-  type Verdict,
-} from './verification-rules.ts';
+import { isValidBusinessNumber, maskBusinessNumber, type Verdict } from './verification-rules.ts';
 
 /** 사용자가 입력한 사업자 정보 */
 export type BusinessInput = {
@@ -68,14 +63,12 @@ export function readNtsItem(item: unknown): NtsResult {
 }
 
 /**
- * 판정: 국세청 기록과 일치하고 계속사업자여야 하며, 대표자가 계정 주인이거나 상호가 가입 정보의 소속과 같아야 한다.
- * (사업자번호·대표자·개업일은 남이 알 수도 있는 정보라, 계정 정보와도 맞춰 본다)
+ * 판정: 국세청 기록과 일치하고 계속사업자면 승인한다.
+ * 계정 이름·소속과는 맞춰 보지 않는다. 둘 다 가입할 때 본인이 적는 값이라 사칭을 막지 못하고,
+ * 직원이 대신 인증하거나 닉네임으로 가입한 사람만 막혔다. 대신 인증 표시에 국세청에서 확인한 상호를 보여 주고,
+ * 남의 사업자로 받은 인증은 신고를 받아 관리자가 거둔다.
  */
-export function judgeBusiness(
-  input: BusinessInput,
-  nts: NtsResult,
-  account: { name: string; orgName: string },
-): Verdict {
+export function judgeBusiness(input: BusinessInput, nts: NtsResult): Verdict {
   const reasons: string[] = [];
   if (!nts.matched)
     reasons.push(
@@ -84,17 +77,6 @@ export function judgeBusiness(
   else if (nts.statusCode === '02') reasons.push('휴업 중인 사업자로 조회돼요.');
   else if (nts.statusCode === '03') reasons.push('폐업한 사업자로 조회돼요.');
   else if (nts.statusCode !== '01') reasons.push('사업자 상태를 확인할 수 없어요.');
-
-  const compact = (value: string) =>
-    value.replace(/[\s·.()（）]|주식회사|\(주\)/g, '').toLowerCase();
-  const sameOrg =
-    Boolean(account.orgName.trim()) &&
-    (compact(input.companyName).includes(compact(account.orgName)) ||
-      compact(account.orgName).includes(compact(input.companyName)));
-  if (!namesMatch(input.ownerName, account.name) && !sameOrg)
-    reasons.push(
-      '대표자 성명이나 상호가 계정 정보(이름·소속)와 달라요. 가입 정보의 소속을 상호와 같게 맞춰 주세요.',
-    );
   return {
     approved: reasons.length === 0,
     reasons,
