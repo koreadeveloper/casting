@@ -6338,6 +6338,36 @@ body:has(.save-bar) .toast {
   margin: 14px 4px 0;
 }
 
+/* 신고하기(/report): 신고 대상 한 줄, 대화 화면의 신고 링크 */
+.report-target {
+  margin: 16px 0 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--page);
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 2px;
+}
+.report-target span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.report-target strong {
+  font-size: 14px;
+  word-break: keep-all;
+}
+.chat-context a.chat-report {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.detail-info > .account-danger {
+  margin-top: 18px;
+}
+
 /* 문의하기 */
 .auth-form textarea {
   width: 100%;
