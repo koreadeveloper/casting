@@ -3,7 +3,7 @@ import { setOrgName } from '@/lib/accounts';
 import { getCurrentUser } from '@/lib/auth';
 import { isAdminAccount } from '@/lib/admin-rules';
 import { businessVerifyOpen, NtsUnavailable, validateBusiness } from '@/lib/nts';
-import { businessInputProblems, judgeBusiness } from '@/lib/nts-rules';
+import { businessInputProblems, judgeBusiness, looksLikeOwner } from '@/lib/nts-rules';
 import { overLimit, TOO_MANY } from '@/lib/rate-limit';
 import { kstToday } from '@/lib/result-deadline';
 import { requiredText } from '@/lib/validation';
@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
   try {
     const nts = await validateBusiness(input);
     const verdict = judgeBusiness(input, nts);
-    await saveDocumentVerdict(user.id, 'business', verdict, 'nts');
+    // 대표자나 상호가 계정 정보와 맞으면 관리자 확인함에 올리지 않는다(소속명을 바꾸기 전 값으로 비교).
+    const owner = looksLikeOwner(input, { name: user.name, orgName: user.orgName });
+    await saveDocumentVerdict(user.id, 'business', verdict, 'nts', owner);
     // 인증된 상호를 가입 정보의 소속명으로 맞춘다(공고의 소속 표기와 인증 표시가 같아지게).
     if (verdict.approved) await setOrgName(user.id, verdict.orgName);
     return NextResponse.json({ verdict });

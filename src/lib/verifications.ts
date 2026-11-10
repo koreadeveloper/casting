@@ -104,12 +104,15 @@ export async function saveDocumentVerdict(
   kind: VerificationKind,
   verdict: Verdict,
   method: 'document' | 'nts' = 'document',
+  /** 관리자 확인이 필요 없는 건(본인 사업자로 보임)이면 저장할 때 바로 확인 처리한다 */
+  autoReviewed = false,
 ) {
   const now = new Date();
+  const reviewed = verdict.approved && autoReviewed;
   await db()
     .prepare(
-      `INSERT INTO verifications (id,user_id,kind,method,status,org_name,detail,reason,created_at,decided_at,expires_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO verifications (id,user_id,kind,method,status,org_name,detail,reason,created_at,decided_at,expires_at,reviewed_at,auto_reviewed)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
     .run(
       randomUUID(),
@@ -123,6 +126,8 @@ export async function saveDocumentVerdict(
       now.toISOString(),
       now.toISOString(),
       verdict.approved && kind === 'school' ? addDays(now, SCHOOL_VALID_DAYS).toISOString() : null,
+      reviewed ? now.toISOString() : null,
+      reviewed ? 1 : 0,
     );
 }
 

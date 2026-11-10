@@ -1,6 +1,7 @@
 // 관리자 인증 확인함(/admin/verifications)의 조회·변경. 권한 확인은 부르는 쪽(getAdmin)에서 한다.
-// 제작사 인증은 국세청 기록만 맞으면 바로 승인되므로(계정 이름과는 맞춰 보지 않음),
-// 남의 사업자로 받은 인증이 없는지 관리자가 사후에 한 건씩 확인한다.
+// 제작사 인증은 국세청 기록만 맞으면 바로 승인되므로(계정 이름과는 맞춰 보지 않음), 남의 사업자로 받은
+// 인증이 없는지 관리자가 사후에 확인한다. 대표자 성명이나 상호가 계정 정보와 맞는 건은 저장할 때
+// 자동으로 확인 처리되어(auto_reviewed), 관리자에게는 둘 다 다른 건만 '확인 전'으로 남는다.
 
 import { db } from './db';
 
@@ -18,6 +19,8 @@ export type AdminVerification = {
   method: 'nts' | 'document';
   createdAt: string;
   reviewedAt: string | null;
+  /** 대표자 성명이나 상호가 계정 정보와 맞아 자동으로 확인된 인증 */
+  autoReviewed: boolean;
 };
 
 const str = (value: unknown) => String(value ?? '');
@@ -49,6 +52,7 @@ function fromRow(row: Record<string, unknown>): AdminVerification {
     method: row.method === 'document' ? 'document' : 'nts',
     createdAt: str(row.created_at),
     reviewedAt: row.reviewed_at ? str(row.reviewed_at) : null,
+    autoReviewed: Number(row.auto_reviewed) === 1,
   };
 }
 

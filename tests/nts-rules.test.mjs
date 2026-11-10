@@ -5,6 +5,7 @@ import {
   ntsFailureCode,
   businessInputProblems,
   judgeBusiness,
+  looksLikeOwner,
   ntsRequestItem,
   readNtsItem,
 } from '../src/lib/nts-rules.ts';
@@ -70,4 +71,14 @@ test('국세청 실패 코드: HTTP 상태와 응답 코드를 짧게', () => {
   assert.equal(ntsFailureCode(401, null), '401');
   assert.equal(ntsFailureCode(200, { status_code: 'BAD_JSON_REQUEST' }), '200·BAD_JSON_REQUEST');
   assert.equal(ntsFailureCode(401, { code: -4, msg: '등록되지 않은 인증키 입니다.' }), '401·-4');
+});
+
+test('본인 사업자로 보이는지: 대표자 성명이나 상호가 계정 정보와 맞으면 참', () => {
+  // input: 대표자 홍길동, 상호 세종필름
+  assert.equal(looksLikeOwner(input, { name: '홍길동', orgName: '' }), true);
+  assert.equal(looksLikeOwner(input, { name: '김팀원', orgName: '(주)세종필름' }), true);
+  assert.equal(looksLikeOwner(input, { name: '김팀원', orgName: '세종필름 연출팀' }), true);
+  // 둘 다 다르면 관리자가 확인한다
+  assert.equal(looksLikeOwner(input, { name: '세종마켓', orgName: '다른회사' }), false);
+  assert.equal(looksLikeOwner(input, { name: '김팀원', orgName: '' }), false);
 });

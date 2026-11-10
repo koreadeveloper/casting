@@ -1,7 +1,12 @@
 // 국세청 사업자등록정보 진위확인 결과로 제작사 인증을 판정하는 규칙. DB·Next·네트워크에 기대지 않아 테스트로 지킨다.
 // 조회 자체는 nts.ts가 하고, 승인·거절은 여기 고정된 규칙으로 정한다.
 
-import { isValidBusinessNumber, maskBusinessNumber, type Verdict } from './verification-rules.ts';
+import {
+  isValidBusinessNumber,
+  maskBusinessNumber,
+  namesMatch,
+  type Verdict,
+} from './verification-rules.ts';
 
 /** 사용자가 입력한 사업자 정보 */
 export type BusinessInput = {
@@ -110,4 +115,18 @@ export function judgeBusiness(input: BusinessInput, nts: NtsResult): Verdict {
     orgName: input.companyName.trim(),
     detail: maskBusinessNumber(input.businessNumber),
   };
+}
+
+/**
+ * 본인(또는 본인 소속) 사업자로 보이는지: 대표자 성명이 계정 이름과 같거나, 상호가 가입 정보의 소속명과 같다.
+ * 승인 여부와는 상관없다(그래서 judgeBusiness와 따로 둔다). 맞으면 관리자 확인함에서 자동으로 확인 처리하고,
+ * 둘 다 다를 때만 관리자가 본다. 대표자 성명은 여기서 비교만 하고 저장하지 않는다.
+ */
+export function looksLikeOwner(input: BusinessInput, account: { name: string; orgName: string }) {
+  const compact = (value: string) =>
+    value.replace(/[\s·.()（）]|주식회사|\(주\)/g, '').toLowerCase();
+  const company = compact(input.companyName);
+  const org = compact(account.orgName);
+  const sameOrg = Boolean(company && org) && (company.includes(org) || org.includes(company));
+  return sameOrg || namesMatch(input.ownerName, account.name);
 }

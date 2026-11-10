@@ -53,9 +53,10 @@ export default function VerificationsClient({
     <section className="admin-body">
       <h1 className="page-title">인증 확인</h1>
       <p className="muted admin-lead">
-        국세청 조회로 바로 승인된 제작사 인증이에요. 사업자번호·대표자·개업일만 맞으면 누구나 인증될
-        수 있어서, 회원 정보와 상호가 어울리는지 한 번씩 봐 주세요. 수상하면 &lsquo;인증
-        취소&rsquo;를 누르고, 필요하면 회원 화면에서 연락하거나 정지해 주세요.
+        국세청 조회로 바로 승인된 제작사 인증이에요. 인증은 이미 공고에 붙어 있고, 여기서는 사후에
+        점검만 해요. 대표자 성명이나 상호가 회원 정보와 맞는 인증은 자동으로 확인돼서, &lsquo;확인
+        전&rsquo;에는 <strong>둘 다 다른 인증</strong>만 남아요. 회원과 상호가 어울리는지 보고,
+        수상하면 &lsquo;인증 취소&rsquo;를 누른 뒤 필요하면 회원 화면에서 연락하거나 정지해 주세요.
       </p>
 
       <div className="admin-tools">
@@ -101,7 +102,7 @@ export default function VerificationsClient({
                       item.reviewedAt ? 'status-chip chip-excluded' : 'status-chip admin-chip-new'
                     }
                   >
-                    {item.reviewedAt ? '확인함' : '확인 전'}
+                    {item.autoReviewed ? '자동 확인' : item.reviewedAt ? '확인함' : '확인 전'}
                   </span>
                   <strong>{item.orgName || '(상호 없음)'}</strong>
                   <span className="status-chip admin-chip-off">
@@ -117,7 +118,11 @@ export default function VerificationsClient({
                 </div>
                 <div className="admin-meta">
                   <span>인증 {formatDateTime(item.createdAt)}</span>
-                  {item.reviewedAt && <span>확인 {formatDateTime(item.reviewedAt)}</span>}
+                  {item.autoReviewed ? (
+                    <span>대표자 또는 상호가 회원 정보와 맞아 자동 확인</span>
+                  ) : (
+                    item.reviewedAt && <span>확인 {formatDateTime(item.reviewedAt)}</span>
+                  )}
                 </div>
               </div>
               <div className="admin-actions admin-actions-col">
