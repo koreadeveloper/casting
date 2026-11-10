@@ -7217,3 +7217,14 @@ html[data-pilot] {
   padding: 9px 14px;
   font-size: 12px;
 }
+.admin-method.m-badge-school {
+  background: #e2f6e9;
+  color: #1c8750;
+}
+.admin-method.m-badge-business {
+  background: #ffefd9;
+  color: #a96f16;
+}
+.admin-confirm-input .chip-pick {
+  justify-content: center;
+}

@@ -15,7 +15,12 @@ import {
 type Pending =
   | { kind: 'suspend' | 'unsuspend'; member: Member }
   | { kind: 'unlink'; member: Member; provider: LoginMethod }
-  | { kind: 'delete'; member: Member };
+  | { kind: 'delete'; member: Member }
+  | { kind: 'verify'; member: Member }
+  | { kind: 'unverify'; member: Member; badge: BadgeKind };
+
+type BadgeKind = 'school' | 'business';
+const BADGE_LABEL: Record<BadgeKind, string> = { school: '학교 인증', business: '제작사 인증' };
 
 const dateFormat = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul',
@@ -66,6 +71,12 @@ export default function MembersClient({
   });
   const [pending, setPending] = useState<Pending | null>(null);
   const [confirmEmail, setConfirmEmail] = useState('');
+  // 제작진 인증 주기 입력: 종류·학교(제작사) 이름·학과
+  const [verifyForm, setVerifyForm] = useState({
+    kind: 'business' as BadgeKind,
+    orgName: '',
+    detail: '',
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
@@ -115,6 +126,8 @@ export default function MembersClient({
     setPending(next);
     setConfirmEmail('');
     setError('');
+    if (next.kind === 'verify')
+      setVerifyForm({ kind: 'business', orgName: next.member.orgName, detail: '' });
   }
 
   async function run() {
@@ -131,19 +144,27 @@ export default function MembersClient({
             ? { confirmEmail }
             : pending.kind === 'unlink'
               ? { action: 'unlink', provider: pending.provider }
-              : { action: pending.kind },
+              : pending.kind === 'verify'
+                ? { action: 'verify', ...verifyForm }
+                : pending.kind === 'unverify'
+                  ? { action: 'unverify', kind: pending.badge }
+                  : { action: pending.kind },
         ),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || '처리하지 못했어요. 다시 시도해 주세요.');
       setToast(
-        pending.kind === 'delete'
-          ? `${pending.member.email} 계정을 삭제했어요.`
-          : pending.kind === 'unlink'
-            ? `${METHOD_LABEL[pending.provider]} 연결을 해제했어요.`
-            : pending.kind === 'suspend'
-              ? `${pending.member.email} 계정을 정지했어요.`
-              : `${pending.member.email} 계정의 정지를 풀었어요.`,
+        pending.kind === 'verify'
+          ? `${pending.member.name || pending.member.email}에게 ${BADGE_LABEL[verifyForm.kind]}을 줬어요.`
+          : pending.kind === 'unverify'
+            ? `${BADGE_LABEL[pending.badge]}을 취소했어요.`
+            : pending.kind === 'delete'
+              ? `${pending.member.email} 계정을 삭제했어요.`
+              : pending.kind === 'unlink'
+                ? `${METHOD_LABEL[pending.provider]} 연결을 해제했어요.`
+                : pending.kind === 'suspend'
+                  ? `${pending.member.email} 계정을 정지했어요.`
+                  : `${pending.member.email} 계정의 정지를 풀었어요.`,
       );
       setTimeout(() => setToast(''), 3000);
       setPending(null);
@@ -306,31 +327,52 @@ export default function MembersClient({
                       {!member.methods.length && (
                         <span className="admin-method m-none">로그인 수단 없음</span>
                       )}
+                      {member.badges.map((badge) => (
+                        <span key={badge.kind} className={`admin-method m-badge-${badge.kind}`}>
+                          {badge.label}
+                          <button
+                            type="button"
+                            aria-label={`${BADGE_LABEL[badge.kind]} 취소`}
+                            onClick={() => open({ kind: 'unverify', member, badge: badge.kind })}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
                     </div>
                     <div className="admin-meta">
                       <span>가입 {day(member.createdAt)}</span>
                       <span>{member.emailVerified ? '메일 확인됨' : '메일 미확인'}</span>
-                      {member.role === 'producer' && (
-                        <span>
-                          {member.badges.length ? member.badges.join(' / ') : '제작진 인증 없음'}
-                        </span>
+                      {member.role === 'producer' && !member.badges.length && (
+                        <span>제작진 인증 없음</span>
                       )}
                       {member.orgName && <span>{member.orgName}</span>}
                       {member.phone && <span>{member.phone}</span>}
                     </div>
                   </div>
-                  {!locked && (
+                  {(!locked || member.role === 'producer') && (
                     <div className="admin-actions">
-                      <button
-                        type="button"
-                        className="button button-outline"
-                        onClick={() =>
-                          open({ kind: member.suspendedAt ? 'unsuspend' : 'suspend', member })
-                        }
-                      >
-                        {member.suspendedAt ? '정지 해제' : '정지'}
-                      </button>
-                      {!member.demo && (
+                      {member.role === 'producer' && (
+                        <button
+                          type="button"
+                          className="button button-soft"
+                          onClick={() => open({ kind: 'verify', member })}
+                        >
+                          인증 주기
+                        </button>
+                      )}
+                      {!locked && (
+                        <button
+                          type="button"
+                          className="button button-outline"
+                          onClick={() =>
+                            open({ kind: member.suspendedAt ? 'unsuspend' : 'suspend', member })
+                          }
+                        >
+                          {member.suspendedAt ? '정지 해제' : '정지'}
+                        </button>
+                      )}
+                      {!locked && !member.demo && (
                         <button
                           type="button"
                           className="button button-danger"
@@ -375,6 +417,44 @@ export default function MembersClient({
                 />
               </label>
             )}
+            {pending.kind === 'verify' && (
+              <div className="admin-confirm-input">
+                <div className="chip-pick" role="group" aria-label="인증 종류">
+                  {(['business', 'school'] as BadgeKind[]).map((kind) => (
+                    <button
+                      key={kind}
+                      type="button"
+                      className={verifyForm.kind === kind ? 'on' : ''}
+                      aria-pressed={verifyForm.kind === kind}
+                      onClick={() => setVerifyForm((form) => ({ ...form, kind }))}
+                    >
+                      {BADGE_LABEL[kind]}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  value={verifyForm.orgName}
+                  onChange={(event) =>
+                    setVerifyForm((form) => ({ ...form, orgName: event.target.value }))
+                  }
+                  placeholder={
+                    verifyForm.kind === 'school' ? '학교 이름 (예: 세종대학교)' : '제작사 이름'
+                  }
+                  maxLength={100}
+                  autoFocus
+                />
+                {verifyForm.kind === 'school' && (
+                  <input
+                    value={verifyForm.detail}
+                    onChange={(event) =>
+                      setVerifyForm((form) => ({ ...form, detail: event.target.value }))
+                    }
+                    placeholder="학과 (선택)"
+                    maxLength={100}
+                  />
+                )}
+              </div>
+            )}
             {error && (
               <p className="form-error" role="alert">
                 {error}
@@ -392,12 +472,15 @@ export default function MembersClient({
               <button
                 type="button"
                 className={
-                  pending.kind === 'unsuspend' ? 'button button-primary' : 'button button-danger'
+                  pending.kind === 'unsuspend' || pending.kind === 'verify'
+                    ? 'button button-primary'
+                    : 'button button-danger'
                 }
                 disabled={
                   busy ||
                   (pending.kind === 'delete' &&
-                    confirmEmail.trim().toLowerCase() !== pending.member.email.toLowerCase())
+                    confirmEmail.trim().toLowerCase() !== pending.member.email.toLowerCase()) ||
+                  (pending.kind === 'verify' && !verifyForm.orgName.trim())
                 }
                 onClick={run}
               >
@@ -427,6 +510,10 @@ function confirmTitle(pending: Pending) {
       return `${who} 계정의 ${METHOD_LABEL[pending.provider]} 연결을 해제할까요?`;
     case 'delete':
       return `${who} 계정을 삭제할까요?`;
+    case 'verify':
+      return `${who}에게 제작진 인증을 줄까요?`;
+    case 'unverify':
+      return `${who}의 ${BADGE_LABEL[pending.badge]}을 취소할까요?`;
   }
 }
 
@@ -446,11 +533,20 @@ function confirmDetail(pending: Pending) {
       return pending.member.role === 'producer'
         ? '계정과 만든 프로젝트·공고, 들어온 지원서와 대화·첨부 파일, 팀 보드 기록이 모두 지워지고 되돌릴 수 없어요.'
         : '계정과 배우 프로필·사진·자료, 낸 지원서와 대화·첨부 파일, 받은 제안이 모두 지워지고 되돌릴 수 없어요.';
+    case 'verify':
+      return '공고와 제작진 소개에 인증 배지가 붙어요. 학교 인증은 1년, 제작사 인증은 취소할 때까지 유지돼요. 같은 종류 인증이 이미 있으면 새 내용으로 바뀌어요.';
+    case 'unverify':
+      return '공고에서 인증 배지가 바로 사라져요. 기록은 남고, 언제든 다시 줄 수 있어요.';
   }
 }
 
 function confirmLabel(pending: Pending) {
-  return { suspend: '정지', unsuspend: '정지 해제', unlink: '연결 해제', delete: '삭제' }[
-    pending.kind
-  ];
+  return {
+    suspend: '정지',
+    unsuspend: '정지 해제',
+    unlink: '연결 해제',
+    delete: '삭제',
+    verify: '인증 주기',
+    unverify: '인증 취소',
+  }[pending.kind];
 }

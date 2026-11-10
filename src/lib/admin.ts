@@ -30,7 +30,7 @@ export type Member = {
   methods: LoginMethod[];
   socials: SocialLink[];
   /** 제작진 인증(학교·제작사) 중 지금 유효한 것 */
-  badges: string[];
+  badges: { kind: 'school' | 'business'; label: string }[];
   demo: boolean;
   admin: boolean;
 };
@@ -87,9 +87,13 @@ export async function listMembers(): Promise<Member[]> {
       ),
       socials,
       badges: [
-        badge?.school && `학교 · ${badge.school.name}`,
-        badge?.business && `제작사 · ${badge.business.name}`,
-      ].filter((text): text is string => Boolean(text)),
+        ...(badge?.school
+          ? [{ kind: 'school' as const, label: `학교 · ${badge.school.name}` }]
+          : []),
+        ...(badge?.business
+          ? [{ kind: 'business' as const, label: `제작사 · ${badge.business.name}` }]
+          : []),
+      ],
       demo: email.endsWith('@demo.casting'),
       admin: isAdminAccount({ email, emailVerified, suspendedAt }),
     };

@@ -21,7 +21,8 @@ export const EMAIL_CODE_MAX_ATTEMPTS = 5;
 export type VerificationRecord = {
   id: string;
   kind: VerificationKind;
-  method: 'email' | 'document' | 'nts';
+  /** admin: 관리자가 관리자 화면(/admin/members)에서 직접 준 인증 */
+  method: 'email' | 'document' | 'nts' | 'admin';
   status: 'code_sent' | 'approved' | 'rejected';
   orgName: string;
   detail: string;
@@ -34,7 +35,10 @@ function recordFromRow(row: Row): VerificationRecord {
   return {
     id: str(row.id),
     kind: row.kind === 'business' ? 'business' : 'school',
-    method: row.method === 'email' ? 'email' : row.method === 'nts' ? 'nts' : 'document',
+    method:
+      row.method === 'email' || row.method === 'nts' || row.method === 'admin'
+        ? row.method
+        : 'document',
     status: row.status as VerificationRecord['status'],
     orgName: str(row.org_name),
     detail: str(row.detail),
@@ -68,7 +72,7 @@ export async function getProducerBadges(ownerIds: (string | null | undefined)[])
       current.school = {
         // 서류 인증은 학과까지(detail), 메일 인증의 detail은 도메인이라 학교 이름만 보인다.
         name:
-          record.method === 'document'
+          record.method !== 'email'
             ? [record.orgName, record.detail].filter(Boolean).join(' ')
             : record.orgName,
         until: record.expiresAt ?? '',
@@ -216,4 +220,51 @@ export async function findSchoolForDomain(domain: string) {
     aliases: str(row.aliases) ? str(row.aliases).split('|') : [],
   }));
   return findSchoolByDomain(domain, rows);
+}
+
+/**
+ * 관리자가 직접 주는 제작진 인증. 이미 유효한 같은 종류 인증이 있으면 거두고 새로 남긴다(이름을 바꿀 때도 같은 길).
+ * 학교 인증은 다른 방법과 같이 SCHOOL_VALID_DAYS 동안, 제작사 인증은 기한 없이 유효하다.
+ */
+export async function grantVerification(
+  userId: string,
+  kind: VerificationKind,
+  orgName: string,
+  detail = '',
+) {
+  await revokeVerification(userId, kind, '관리자가 새 인증으로 바꿨어요');
+  const now = new Date();
+  await db()
+    .prepare(
+      `INSERT INTO verifications (id,user_id,kind,method,status,org_name,detail,reason,created_at,decided_at,expires_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    )
+    .run(
+      randomUUID(),
+      userId,
+      kind,
+      'admin',
+      'approved',
+      orgName.slice(0, 100),
+      detail.slice(0, 100),
+      '관리자가 직접 확인해 인증했어요',
+      now.toISOString(),
+      now.toISOString(),
+      kind === 'school' ? addDays(now, SCHOOL_VALID_DAYS).toISOString() : null,
+    );
+}
+
+/** 이 종류의 승인된 인증을 모두 거둔다(기록은 남기고 반려로 바꾼다). 거둔 수를 돌려준다. */
+export async function revokeVerification(
+  userId: string,
+  kind: VerificationKind,
+  reason = '관리자가 인증을 취소했어요',
+) {
+  const result = await db()
+    .prepare(
+      `UPDATE verifications SET status='rejected', reason=?, decided_at=?
+       WHERE user_id=? AND kind=? AND status='approved'`,
+    )
+    .run(reason, new Date().toISOString(), userId, kind);
+  return result.changes;
 }
