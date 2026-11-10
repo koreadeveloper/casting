@@ -6,6 +6,7 @@
 
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { Pool, types, type PoolClient } from 'pg';
+import { transactionPoolerUrl } from './db-url.ts';
 
 // COUNT/SUM은 기본적으로 문자열로 오므로 숫자로 받는다. (SQLite와 같은 동작)
 types.setTypeParser(20, (value) => Number(value));
@@ -20,7 +21,7 @@ let pool: Pool | undefined;
 function connectionString() {
   const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (!url) throw new Error('DATABASE_URL이 설정되어 있지 않습니다. .env.local을 확인하세요.');
-  return url;
+  return transactionPoolerUrl(url, process.env);
 }
 
 function getPool() {

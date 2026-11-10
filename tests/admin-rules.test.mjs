@@ -60,3 +60,17 @@ test('회원 거르기: 검색어·가입 방식·역할·상태', () => {
     true,
   );
 });
+
+test('Supabase Session 풀러(5432)는 Transaction 풀러(6543)로 바꿔 쓴다', async () => {
+  const { transactionPoolerUrl } = await import('../src/lib/db-url.ts');
+  const session =
+    'postgresql://postgres.abc:pw@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres';
+  assert.equal(
+    transactionPoolerUrl(session),
+    'postgresql://postgres.abc:pw@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres',
+  );
+  assert.equal(transactionPoolerUrl(session, { DB_SESSION_POOLER: 'true' }), session);
+  const local = 'postgresql://user:pw@localhost:5432/app';
+  assert.equal(transactionPoolerUrl(local), local);
+  assert.equal(transactionPoolerUrl('not a url'), 'not a url');
+});
