@@ -5,6 +5,7 @@ import { isPosterUrl } from '@/lib/project-meta';
 import { getProducerIntro, getProfile, getProject, getUserById } from '@/lib/accounts';
 import { getActorId, getSession } from '@/lib/auth';
 import { findActorApplicationToken, getRole } from '@/lib/db';
+import { isSampleRoleSlug, sampleRole } from '@/lib/sample-role';
 import { profileAge } from '@/lib/profile';
 import { getProducerBadges } from '@/lib/verifications';
 import ApplyForm, { type Prefill } from './apply-form';
@@ -18,7 +19,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const role = await getRole(slug);
+  const role = isSampleRoleSlug(slug)
+    ? sampleRole(new Date().toISOString().slice(0, 10))
+    : await getRole(slug);
   if (!role || role.adminHidden) return { title: '공고를 찾을 수 없어요 · 캐스팅플로우' };
   const title = `${role.projectTitle} · ${role.title} 배우 모집`;
   const facts = [
@@ -52,6 +55,20 @@ export default async function ApplyPage({
 }) {
   const { slug } = await params;
   const { proposal } = await searchParams;
+  // 예시 공고는 DB에 없다. 내용만 보여 주고 지원은 받지 않는다.
+  if (isSampleRoleSlug(slug))
+    return (
+      <ApplyForm
+        role={sampleRole(new Date().toISOString().slice(0, 10))}
+        project={null}
+        prefill={null}
+        guest={!(await getSession())}
+        home={(await getActorId()) ? '/me#open-roles' : '/actor#roles'}
+        producer={null}
+        proposalId=""
+        sample
+      />
+    );
   const role = await getRole(slug);
   // 관리자가 내린 공고는 지원 링크로 들어와도 없는 공고처럼 보인다.
   if (!role || role.adminHidden) notFound();

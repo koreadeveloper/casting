@@ -68,6 +68,8 @@ export default function ApplyForm({
   producer,
   trust,
   proposalId,
+  sample = false,
+  home: homeOverride,
 }: {
   role: Role;
   project: Project | null;
@@ -80,9 +82,13 @@ export default function ApplyForm({
   /** 제작진 인증 배지(학교·제작사). 없으면 '이전 작품 이력이 확인되지 않았어요' */
   trust?: ProducerBadges;
   proposalId: string;
+  /** 코드에 둔 예시 공고(lib/sample-role.ts). 내용만 보여 주고 지원 단추 대신 안내를 띄운다. */
+  sample?: boolean;
+  /** 돌아갈 홈 주소. 없으면 프로필이 있으면 /me, 아니면 /actor. */
+  home?: string;
 }) {
   const [step, setStep] = useState<'brief' | 'form'>('brief');
-  const home = prefill ? '/me' : '/actor';
+  const home = homeOverride ?? (prefill ? '/me' : '/actor');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [online, setOnline] = useState(true);
@@ -118,6 +124,7 @@ export default function ApplyForm({
 
   // 본 공고를 '최근 본 공고'에 남긴다 (지원하지 않고 닫아도 다시 찾아갈 수 있게).
   useEffect(() => {
+    if (sample) return;
     pushRecent(RECENT_ROLES, {
       id: role.id,
       name: role.projectTitle,
@@ -125,7 +132,7 @@ export default function ApplyForm({
       photo: role.coverUrl || projectCover(''),
       href: `/apply/${role.slug}`,
     });
-  }, [role.id, role.projectTitle, role.title, role.location, role.slug]);
+  }, [sample, role.id, role.projectTitle, role.title, role.location, role.slug]);
 
   function begin() {
     setStep('form');
@@ -202,7 +209,7 @@ export default function ApplyForm({
           <BrandLogo size={26} />
         </Link>
         <Link href={home} className="text-button">
-          {prefill ? '내 홈' : '배역 목록'}
+          {home.startsWith('/me') ? '내 홈' : '배역 목록'}
         </Link>
       </header>
       {!online && (
@@ -236,7 +243,9 @@ export default function ApplyForm({
             </div>
           </div>
           <div className="apply-intro">
-            <span className="role-state">{closed ? '지원 마감' : '지원 접수 중'}</span>
+            <span className="role-state">
+              {sample ? '예시 공고' : closed ? '지원 마감' : '지원 접수 중'}
+            </span>
             <h2>
               이 배역에
               <br />
@@ -346,114 +355,131 @@ export default function ApplyForm({
               <strong>{koDate(role.announcementDate)}</strong>
             </div>
           </section>
-          <section className="brief-card producer-card">
-            <h3>이 공고를 올린 제작진</h3>
-            <TrustBadges badges={trust} withNames />
-            <div>
-              <span>담당</span>
-              <strong>{role.contactName || '미기재'}</strong>
-            </div>
-            {producer ? (
-              <>
-                <div>
-                  <span>등록자</span>
-                  <strong>
-                    {producer.name}
-                    {producer.orgName ? ` · ${producer.orgName}` : ''}
-                  </strong>
-                </div>
-                <div>
-                  <span>소속 유형</span>
-                  <strong>{producer.orgType || '미기재'}</strong>
-                </div>
-                <div>
-                  <span>올린 공고</span>
-                  <strong>
-                    {producer.totalRoles}개
-                    {producer.totalRoles > 1 && ` · 모집 중 ${producer.openRoles}개`}
-                  </strong>
-                </div>
-                <div>
-                  <span>가입</span>
-                  <strong>
-                    {producer.memberSince.slice(0, 4)}년 {Number(producer.memberSince.slice(5, 7))}
-                    월
-                  </strong>
-                </div>
-                <p className="producer-note">
-                  {trust?.school || trust?.business
-                    ? '인증 표시는 재학증명서·학교 이메일·사업자등록증을 확인한 결과예요. 나머지 내용은 제작자가 직접 등록한 정보이니, 출연료·촬영 조건은 꼭 담당자와 직접 확인해 주세요.'
-                    : '위 내용은 제작자가 직접 등록한 정보이고, 학교·제작사 인증을 아직 받지 않은 제작진이에요. 출연료·촬영 조건은 꼭 담당자와 직접 확인해 주세요.'}
-                </p>
-              </>
-            ) : (
+          {sample ? (
+            <section className="brief-card producer-card">
+              <h3>예시 공고 안내</h3>
               <p className="producer-note">
-                이 공고는 계정에 연결되지 않은 공고입니다. 제작진 정보를 담당자에게 직접 확인해
-                주세요.
+                캐스팅플로우가 공고가 어떻게 보이는지 알려 드리려고 만든 예시예요.
+                작품·제작진·조건은 모두 가상이고, 실제로 모집하지 않아서 지원할 수 없어요.
               </p>
-            )}
-            <Link
-              href={`/contact?type=report&link=${encodeURIComponent(`/apply/${role.slug}`)}`}
-              className="account-danger"
-            >
-              이 공고 신고하기
-            </Link>
-          </section>
-          {isChildRole(role.ageMin, role.ageMax) ? (
-            <div className="child-notice" role="note">
-              <strong>만 14세 미만 아역 배역이에요</strong>
-              <p>
-                지금은 만 14세 미만의 지원서를 받을 수 없어요. 보호자가 제작진(
-                {role.contactName || '공고 담당자'})에게 직접 문의해 주세요.
-              </p>
-            </div>
-          ) : appliedToken ? (
-            <>
-              <p className="small-note">
-                이미 지원한 배역이에요. 같은 배역에는 한 번만 지원할 수 있어요.
-              </p>
-              <Link
-                className="button button-primary full sticky-action"
-                href={`/status/${appliedToken}`}
-              >
-                내 지원 현황 보기
+              <Link className="button button-primary full" href={home}>
+                실제 모집 중인 배역 보기
               </Link>
-            </>
+            </section>
           ) : (
             <>
-              {guest && !closed ? (
-                <div className="join-apply">
-                  <strong>Google로 가입하고 지원하면 더 편해요</strong>
-                  <ul>
-                    <li>다음 지원부터 프로필이 자동으로 채워져요</li>
-                    <li>지원 현황과 제작진 채팅을 한곳에서 볼 수 있어요</li>
-                    <li>제작진의 출연 제안을 받을 수 있어요</li>
-                  </ul>
-                  <a
-                    className="button button-primary full"
-                    href={`/signup/actor?then=${encodeURIComponent(`/apply/${role.slug}`)}`}
-                  >
-                    Google로 가입하고 지원하기
-                  </a>
-                  <p className="join-apply-login">
-                    이미 회원이면{' '}
-                    <a href={`/login?next=${encodeURIComponent(`/apply/${role.slug}`)}`}>로그인</a>
+              <section className="brief-card producer-card">
+                <h3>이 공고를 올린 제작진</h3>
+                <TrustBadges badges={trust} withNames />
+                <div>
+                  <span>담당</span>
+                  <strong>{role.contactName || '미기재'}</strong>
+                </div>
+                {producer ? (
+                  <>
+                    <div>
+                      <span>등록자</span>
+                      <strong>
+                        {producer.name}
+                        {producer.orgName ? ` · ${producer.orgName}` : ''}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>소속 유형</span>
+                      <strong>{producer.orgType || '미기재'}</strong>
+                    </div>
+                    <div>
+                      <span>올린 공고</span>
+                      <strong>
+                        {producer.totalRoles}개
+                        {producer.totalRoles > 1 && ` · 모집 중 ${producer.openRoles}개`}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>가입</span>
+                      <strong>
+                        {producer.memberSince.slice(0, 4)}년{' '}
+                        {Number(producer.memberSince.slice(5, 7))}월
+                      </strong>
+                    </div>
+                    <p className="producer-note">
+                      {trust?.school || trust?.business
+                        ? '인증 표시는 재학증명서·학교 이메일·사업자등록증을 확인한 결과예요. 나머지 내용은 제작자가 직접 등록한 정보이니, 출연료·촬영 조건은 꼭 담당자와 직접 확인해 주세요.'
+                        : '위 내용은 제작자가 직접 등록한 정보이고, 학교·제작사 인증을 아직 받지 않은 제작진이에요. 출연료·촬영 조건은 꼭 담당자와 직접 확인해 주세요.'}
+                    </p>
+                  </>
+                ) : (
+                  <p className="producer-note">
+                    이 공고는 계정에 연결되지 않은 공고입니다. 제작진 정보를 담당자에게 직접 확인해
+                    주세요.
+                  </p>
+                )}
+                <Link
+                  href={`/contact?type=report&link=${encodeURIComponent(`/apply/${role.slug}`)}`}
+                  className="account-danger"
+                >
+                  이 공고 신고하기
+                </Link>
+              </section>
+              {isChildRole(role.ageMin, role.ageMax) ? (
+                <div className="child-notice" role="note">
+                  <strong>만 14세 미만 아역 배역이에요</strong>
+                  <p>
+                    지금은 만 14세 미만의 지원서를 받을 수 없어요. 보호자가 제작진(
+                    {role.contactName || '공고 담당자'})에게 직접 문의해 주세요.
                   </p>
                 </div>
+              ) : appliedToken ? (
+                <>
+                  <p className="small-note">
+                    이미 지원한 배역이에요. 같은 배역에는 한 번만 지원할 수 있어요.
+                  </p>
+                  <Link
+                    className="button button-primary full sticky-action"
+                    href={`/status/${appliedToken}`}
+                  >
+                    내 지원 현황 보기
+                  </Link>
+                </>
               ) : (
-                <p className="small-note">지원 후 접수 상태를 확인할 수 있습니다.</p>
+                <>
+                  {guest && !closed ? (
+                    <div className="join-apply">
+                      <strong>Google로 가입하고 지원하면 더 편해요</strong>
+                      <ul>
+                        <li>다음 지원부터 프로필이 자동으로 채워져요</li>
+                        <li>지원 현황과 제작진 채팅을 한곳에서 볼 수 있어요</li>
+                        <li>제작진의 출연 제안을 받을 수 있어요</li>
+                      </ul>
+                      <a
+                        className="button button-primary full"
+                        href={`/signup/actor?then=${encodeURIComponent(`/apply/${role.slug}`)}`}
+                      >
+                        Google로 가입하고 지원하기
+                      </a>
+                      <p className="join-apply-login">
+                        이미 회원이면{' '}
+                        <a href={`/login?next=${encodeURIComponent(`/apply/${role.slug}`)}`}>
+                          로그인
+                        </a>
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="small-note">지원 후 접수 상태를 확인할 수 있습니다.</p>
+                  )}
+                  <button
+                    className={`button ${guest && !closed ? 'button-soft' : 'button-primary sticky-action'} full`}
+                    onClick={begin}
+                    disabled={closed}
+                  >
+                    {closed
+                      ? '지원이 마감되었습니다'
+                      : guest
+                        ? '가입 없이 지원하기'
+                        : '이 배역에 지원하기'}
+                  </button>
+                </>
               )}
-              <button
-                className={`button ${guest && !closed ? 'button-soft' : 'button-primary sticky-action'} full`}
-                onClick={begin}
-                disabled={closed}
-              >
-                {closed
-                  ? '지원이 마감되었습니다'
-                  : guest
-                    ? '가입 없이 지원하기'
-                    : '이 배역에 지원하기'}
-              </button>
             </>
           )}
         </div>
