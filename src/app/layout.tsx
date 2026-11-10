@@ -4,6 +4,7 @@ import './globals.css';
 import { NAV_BOOT_SCRIPT } from '@/components/nav-collapse';
 import InAppGate from '@/components/in-app-gate';
 import PilotBanner from '@/components/pilot-banner';
+import SiteNotice from '@/components/site-notice';
 
 const DESCRIPTION =
   '학생·독립영화 제작팀과 신인 배우를 위한 캐스팅 플랫폼. 공고부터 최종 합격까지 한곳에서.';
@@ -56,6 +57,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {/* 잠시 막음: 크롬·삼성 인터넷이 링크를 열자마자 띄우는 '앱 설치' 안내. 브라우저 메뉴의
             '홈 화면에 추가'로는 계속 설치할 수 있다. 다시 띄우려면 BLOCK_INSTALL_PROMPT를 false로. */}
         {BLOCK_INSTALL_PROMPT && <script dangerouslySetInnerHTML={{ __html: NO_INSTALL_PROMPT }} />}
+        {/* 관리자가 /admin/notice에서 켜는 공지 띠 */}
+        <SiteNotice />
         {PILOT_NOTICE && <PilotBanner />}
         <NavTracker />
         {children}

@@ -43,7 +43,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: TOO_MANY }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const role = await getRole(requiredText(body.roleSlug, 100));
-  if (!role) return NextResponse.json({ error: '배역을 찾을 수 없습니다.' }, { status: 404 });
+  if (!role || role.adminHidden)
+    return NextResponse.json({ error: '배역을 찾을 수 없습니다.' }, { status: 404 });
   if (role.isClosed || (role.deadline && role.deadline < new Date().toISOString().slice(0, 10))) {
     return NextResponse.json({ error: '지원이 마감된 배역입니다.' }, { status: 409 });
   }

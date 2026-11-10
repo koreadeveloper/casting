@@ -37,6 +37,8 @@ export type Role = {
   announcementDate: string;
   requirement: string;
   isClosed: boolean;
+  /** 관리자가 내린 공고(/admin/roles). 배우 쪽 목록·지원 링크·지원 접수에서 모두 막힌다. */
+  adminHidden?: boolean;
   createdAt: string;
   applicationCount?: number;
   newCount?: number;

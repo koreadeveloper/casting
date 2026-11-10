@@ -82,3 +82,15 @@ export function matchesMember(
   if (filter.status === 'suspended' && !member.suspendedAt) return false;
   return true;
 }
+
+/** CSV 한 칸. 쉼표·따옴표·줄바꿈이 있으면 따옴표로 감싼다. 엑셀이 수식으로 읽지 않게 =,+,-,@로 시작하면 앞에 '를 붙인다. */
+export function csvCell(value: unknown) {
+  let text = String(value ?? '');
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+/** 엑셀에서 한글이 깨지지 않도록 맨 앞에 BOM을 붙인 CSV */
+export function toCsv(rows: unknown[][]) {
+  return '﻿' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
+}

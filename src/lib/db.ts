@@ -61,7 +61,7 @@ async function initialize(database: Conn) {
   const migrated = await database
     .prepare(
       `SELECT 1 FROM information_schema.columns
-       WHERE table_schema = current_schema() AND table_name='users' AND column_name='suspended_at'`,
+       WHERE table_schema = current_schema() AND table_name='roles' AND column_name='admin_hidden_at'`,
     )
     .get();
   if (!migrated) {
@@ -329,8 +329,24 @@ async function initialize(database: Conn) {
       attempts INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL
     );`);
     // 관리자가 정지한 시각(/admin/members). 비어 있으면 정상 계정. 정지되면 로그인과 기존 세션이 모두 막힌다.
-    // 이 칸이 구조 변경 기준(맨 위 migrated)이다. 구조를 바꿀 때는 이 기준도 새로 만든 것으로 옮긴다.
     await addColumn(database, 'users', 'suspended_at', 'TEXT');
+    // 문의 처리함(/admin/inquiries): 상태 new(새 문의) | doing(처리 중) | done(완료), 관리자 메모, 처리한 시각.
+    await addColumn(database, 'inquiries', 'status', "TEXT NOT NULL DEFAULT 'new'");
+    await addColumn(database, 'inquiries', 'admin_note', text);
+    await addColumn(database, 'inquiries', 'handled_at', 'TEXT');
+    await database.exec(`
+    -- 관리자 작업 기록(/admin/logs): 누가 언제 누구에게 무엇을 했는지. 회원이 지워져도 남도록 이름·이메일을 글자로 둔다.
+    CREATE TABLE IF NOT EXISTS admin_logs (
+      id TEXT PRIMARY KEY, admin_id TEXT NOT NULL, admin_email TEXT NOT NULL,
+      action TEXT NOT NULL, target_type TEXT NOT NULL, target_id TEXT NOT NULL DEFAULT '',
+      target_label TEXT NOT NULL DEFAULT '', detail TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS admin_logs_created ON admin_logs(created_at);
+    CREATE INDEX IF NOT EXISTS admin_logs_target ON admin_logs(target_type, target_id);
+  `);
+    // 관리자가 내린 공고(/admin/roles): 내린 시각. 비어 있으면 정상. 내리면 배우 쪽 목록과 지원 링크에서 모두 사라진다.
+    // 이 칸이 구조 변경 기준(맨 위 migrated)이다. 구조를 바꿀 때는 이 기준도 새로 만든 것으로 옮긴다.
+    await addColumn(database, 'roles', 'admin_hidden_at', 'TEXT');
     await enableRowLevelSecurity(database);
   }
   await moveOldPrivateChats(database);
@@ -440,6 +456,7 @@ function roleFromRow(row: Record<string, unknown>): Role {
     announcementDate: String(row.announcement_date),
     requirement: String(row.requirement),
     isClosed: Boolean(row.is_closed),
+    adminHidden: Boolean(row.admin_hidden_at),
     createdAt: String(row.created_at),
     applicationCount: Number(row.application_count || 0),
     newCount: Number(row.new_count || 0),

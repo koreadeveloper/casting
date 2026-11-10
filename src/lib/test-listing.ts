@@ -26,6 +26,8 @@ export function isHiddenListing(title: string, createdAt: string, from = LISTING
 export function hiddenRoleSql(roleAlias: string, from = LISTINGS_VISIBLE_FROM) {
   const title = `LOWER(LTRIM(COALESCE((SELECT tp.title FROM projects tp WHERE tp.id=${roleAlias}.project_id), ${roleAlias}.project_title, '')))`;
   const conditions = TEST_TITLE_PREFIXES.map((prefix) => `${title} LIKE '${prefix}%'`);
+  // 관리자가 내린 공고(/admin/roles)
+  conditions.push(`${roleAlias}.admin_hidden_at IS NOT NULL`);
   if (/^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(from))
     conditions.push(`${roleAlias}.created_at < '${from}'`);
   return `(${conditions.join(' OR ')})`;

@@ -19,7 +19,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const role = await getRole(slug);
-  if (!role) return { title: '공고를 찾을 수 없어요 · 캐스팅플로우' };
+  if (!role || role.adminHidden) return { title: '공고를 찾을 수 없어요 · 캐스팅플로우' };
   const title = `${role.projectTitle} · ${role.title} 배우 모집`;
   const facts = [
     role.isClosed ? '모집 마감' : `${role.deadline.slice(5).replace('-', '.')} 마감`,
@@ -53,7 +53,8 @@ export default async function ApplyPage({
   const { slug } = await params;
   const { proposal } = await searchParams;
   const role = await getRole(slug);
-  if (!role) notFound();
+  // 관리자가 내린 공고는 지원 링크로 들어와도 없는 공고처럼 보인다.
+  if (!role || role.adminHidden) notFound();
   const actorId = await getActorId();
   // 로그인하지 않은 사람에게는 'Google로 가입하고 지원하기'를 먼저 보여 준다.
   const guest = !(await getSession());

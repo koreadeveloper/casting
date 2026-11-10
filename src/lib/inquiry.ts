@@ -37,3 +37,18 @@ export function parseInquiry(raw: Record<string, unknown>): InquiryInput | { err
   if (raw.agree !== true) return { error: '개인정보 수집·이용에 동의해 주세요.' };
   return { kind: raw.kind, email, body, link };
 }
+
+/** 관리자 문의 처리함(/admin/inquiries)의 처리 상태 */
+export const INQUIRY_STATUS = {
+  new: '새 문의',
+  doing: '처리 중',
+  done: '완료',
+} as const;
+
+export type InquiryStatus = keyof typeof INQUIRY_STATUS;
+
+export function isInquiryStatus(value: unknown): value is InquiryStatus {
+  return typeof value === 'string' && Object.hasOwn(INQUIRY_STATUS, value);
+}
+
+export const INQUIRY_NOTE_MAX = 2000;

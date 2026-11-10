@@ -74,3 +74,20 @@ test('Supabase Session 풀러(5432)는 Transaction 풀러(6543)로 바꿔 쓴다
   assert.equal(transactionPoolerUrl(local), local);
   assert.equal(transactionPoolerUrl('not a url'), 'not a url');
 });
+
+test('CSV: 쉼표·따옴표·줄바꿈을 감싸고, 수식으로 읽히는 값은 막는다', async () => {
+  const { csvCell, toCsv } = await import('../src/lib/admin-rules.ts');
+  assert.equal(csvCell('김배우'), '김배우');
+  assert.equal(csvCell('a,b'), '"a,b"');
+  assert.equal(csvCell('say "hi"'), '"say ""hi"""');
+  assert.equal(csvCell('=HYPERLINK("x")'), `"'=HYPERLINK(""x"")"`);
+  assert.equal(csvCell('+82 10'), "'+82 10");
+  assert.equal(csvCell(null), '');
+  assert.equal(
+    toCsv([
+      ['a', 'b'],
+      ['1', '2'],
+    ]),
+    '﻿a,b\r\n1,2\r\n',
+  );
+});

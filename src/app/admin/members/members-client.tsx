@@ -1,8 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Brand } from '@/components/brand';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import type { Member } from '@/lib/admin';
 import {
   LOGIN_METHODS,
@@ -11,6 +10,7 @@ import {
   type LoginMethod,
   type MemberFilter,
 } from '@/lib/admin-rules';
+import { useAutoRefresh } from '../use-auto-refresh';
 
 type Pending =
   | { kind: 'suspend' | 'unsuspend'; member: Member }
@@ -39,8 +39,6 @@ function day(iso: string | null) {
 
 const ROLE_LABEL = { producer: '제작진', actor: '배우' } as const;
 
-/** 새로 가입한 회원이 바로 보이도록 목록을 다시 읽는 간격 */
-const REFRESH_MS = 30_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const timeFormat = new Intl.DateTimeFormat('ko-KR', {
@@ -61,7 +59,6 @@ export default function MembersClient({
   /** 서버가 목록을 읽은 시각. '새 가입' 표시와 마지막 갱신 시각의 기준 */
   loadedAt: string;
 }) {
-  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<MemberFilter>({
     query: '',
@@ -100,21 +97,15 @@ export default function MembersClient({
     };
   }, [members]);
 
-  // 확인창이 열려 있거나 화면을 보고 있지 않을 때는 다시 읽지 않는다.
-  const paused = useRef(false);
-  paused.current = Boolean(pending) || busy;
-  useEffect(() => {
-    const refresh = () => {
-      if (!paused.current && document.visibilityState === 'visible') router.refresh();
-    };
-    const timer = setInterval(refresh, REFRESH_MS);
-    document.addEventListener('visibilitychange', refresh);
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', refresh);
-    };
-  }, [router]);
+  // 확인창이 열려 있거나 처리 중일 때는 다시 읽지 않는다.
+  const router = useAutoRefresh(Boolean(pending) || busy);
   useEffect(() => setRefreshing(false), [loadedAt]);
+  const exportHref = `/api/admin/members/export?${new URLSearchParams({
+    q: filter.query,
+    method: filter.method,
+    role: filter.role,
+    status: filter.status,
+  })}`;
 
   const loadedTime = new Date(loadedAt).getTime();
   const isNew = (member: Member) => loadedTime - new Date(member.createdAt).getTime() < DAY_MS;
@@ -177,13 +168,7 @@ export default function MembersClient({
   }
 
   return (
-    <main className="admin-page">
-      <header className="auth-top">
-        <Brand />
-        <a href="/studio" className="text-button">
-          스튜디오로
-        </a>
-      </header>
+    <>
       <section className="admin-body">
         <h1 className="page-title">회원 관리</h1>
         <p className="muted admin-lead">
@@ -268,6 +253,9 @@ export default function MembersClient({
             >
               {refreshing ? '불러오는 중…' : '새로고침'}
             </button>
+            <a className="button button-outline admin-refresh" href={exportHref} download>
+              CSV 내려받기
+            </a>
           </div>
         </div>
 
@@ -281,7 +269,9 @@ export default function MembersClient({
                 <li key={member.id} className={member.suspendedAt ? 'admin-row off' : 'admin-row'}>
                   <div className="admin-main">
                     <div className="admin-name">
-                      <strong>{member.name || '(이름 없음)'}</strong>
+                      <Link href={`/admin/members/${member.id}`} className="admin-name-link">
+                        <strong>{member.name || '(이름 없음)'}</strong>
+                      </Link>
                       <span className="status-chip">{ROLE_LABEL[member.role]}</span>
                       {isNew(member) && <span className="status-chip admin-chip-new">새 가입</span>}
                       {member.admin && <span className="status-chip chip-new">관리자</span>}
@@ -495,7 +485,7 @@ export default function MembersClient({
           {toast}
         </div>
       )}
-    </main>
+    </>
   );
 }
 
