@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Brand } from '@/components/brand';
 import type { Member } from '@/lib/admin';
 import {
@@ -34,14 +34,30 @@ function day(iso: string | null) {
 
 const ROLE_LABEL = { producer: '제작진', actor: '배우' } as const;
 
+/** 새로 가입한 회원이 바로 보이도록 목록을 다시 읽는 간격 */
+const REFRESH_MS = 30_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const timeFormat = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+});
+
 export default function MembersClient({
   members,
   adminId,
+  loadedAt,
 }: {
   members: Member[];
   adminId: string;
+  /** 서버가 목록을 읽은 시각. '새 가입' 표시와 마지막 갱신 시각의 기준 */
+  loadedAt: string;
 }) {
   const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<MemberFilter>({
     query: '',
     method: '',
@@ -72,6 +88,26 @@ export default function MembersClient({
       suspended: members.filter((member) => member.suspendedAt).length,
     };
   }, [members]);
+
+  // 확인창이 열려 있거나 화면을 보고 있지 않을 때는 다시 읽지 않는다.
+  const paused = useRef(false);
+  paused.current = Boolean(pending) || busy;
+  useEffect(() => {
+    const refresh = () => {
+      if (!paused.current && document.visibilityState === 'visible') router.refresh();
+    };
+    const timer = setInterval(refresh, REFRESH_MS);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [router]);
+  useEffect(() => setRefreshing(false), [loadedAt]);
+
+  const loadedTime = new Date(loadedAt).getTime();
+  const isNew = (member: Member) => loadedTime - new Date(member.createdAt).getTime() < DAY_MS;
+  const newCount = members.filter(isNew).length;
 
   const set = (patch: Partial<MemberFilter>) => setFilter((current) => ({ ...current, ...patch }));
 
@@ -141,6 +177,9 @@ export default function MembersClient({
               {METHOD_LABEL[method]} {counts.byMethod[method]}
             </span>
           ))}
+          {newCount > 0 && (
+            <span className="count-pill admin-pill-new">최근 24시간 가입 {newCount}</span>
+          )}
           {counts.suspended > 0 && (
             <span className="count-pill admin-pill-warn">정지 {counts.suspended}</span>
           )}
@@ -194,7 +233,20 @@ export default function MembersClient({
               <option value="active">정상</option>
               <option value="suspended">정지</option>
             </select>
-            <span className="small-note">{shown.length}명 표시</span>
+            <span className="small-note">
+              {shown.length}명 표시 · {timeFormat.format(new Date(loadedAt))} 기준 (30초마다 갱신)
+            </span>
+            <button
+              type="button"
+              className="button button-outline admin-refresh"
+              disabled={refreshing}
+              onClick={() => {
+                setRefreshing(true);
+                router.refresh();
+              }}
+            >
+              {refreshing ? '불러오는 중…' : '새로고침'}
+            </button>
           </div>
         </div>
 
@@ -210,6 +262,7 @@ export default function MembersClient({
                     <div className="admin-name">
                       <strong>{member.name || '(이름 없음)'}</strong>
                       <span className="status-chip">{ROLE_LABEL[member.role]}</span>
+                      {isNew(member) && <span className="status-chip admin-chip-new">새 가입</span>}
                       {member.admin && <span className="status-chip chip-new">관리자</span>}
                       {member.demo && <span className="status-chip">체험</span>}
                       {member.suspendedAt && (

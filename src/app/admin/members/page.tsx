@@ -17,5 +17,5 @@ export default async function AdminMembersPage() {
   const admin = await getAdmin();
   if (!admin) notFound();
   const members = await listMembers();
-  return <MembersClient members={members} adminId={admin.id} />;
+  return <MembersClient members={members} adminId={admin.id} loadedAt={new Date().toISOString()} />;
 }

@@ -7208,3 +7208,12 @@ html[data-pilot] {
     flex: 1;
   }
 }
+.admin-pill-new,
+.admin-chip-new {
+  background: var(--lime) !important;
+  color: var(--obsidian) !important;
+}
+.admin-refresh {
+  padding: 9px 14px;
+  font-size: 12px;
+}
