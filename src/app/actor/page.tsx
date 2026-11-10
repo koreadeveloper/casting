@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { BrandLogo } from '@/components/brand';
 import { redirect } from 'next/navigation';
 import RoleCard from '@/components/role-card';
+import { sampleRole } from '@/lib/sample-role';
 import RoleSearchForm from '@/components/role-search-form';
 import { getProducerOrgLines } from '@/lib/accounts';
 import { getProducerBadges } from '@/lib/verifications';
@@ -24,7 +25,8 @@ export default async function ActorHome({
   const filters = parseRoleFilters(await searchParams, ROLE_FILTER_OPTIONS);
   const searching = hasRoleFilters(filters);
   // 로그인 전이라 출연 불가일을 모른다('출연 불가일 피하기'는 숨긴다).
-  const { all, roles } = await searchOpenRoles(new Date().toISOString().slice(0, 10), filters);
+  const today = new Date().toISOString().slice(0, 10);
+  const { all, roles } = await searchOpenRoles(today, filters);
   const orgLines = await getProducerOrgLines(roles.map((role) => role.ownerId));
   const badges = await getProducerBadges(roles.map((role) => role.ownerId));
   return (
@@ -70,7 +72,7 @@ export default async function ActorHome({
           </span>
         </div>
         <RoleSearchForm initial={filters} unavailableCount={null} />
-        {roles.length === 0 ? (
+        {roles.length === 0 && (
           <div className="empty-card">
             {searching ? (
               <>
@@ -82,16 +84,17 @@ export default async function ActorHome({
               '지금 모집 중인 배역이 없습니다.'
             )}
           </div>
-        ) : (
-          roles.map((role) => (
-            <RoleCard
-              key={role.id}
-              role={role}
-              orgLine={role.ownerId ? orgLines.get(role.ownerId) : undefined}
-              trust={(role.ownerId && badges.get(role.ownerId)) || null}
-            />
-          ))
         )}
+        {roles.map((role) => (
+          <RoleCard
+            key={role.id}
+            role={role}
+            orgLine={role.ownerId ? orgLines.get(role.ownerId) : undefined}
+            trust={(role.ownerId && badges.get(role.ownerId)) || null}
+          />
+        ))}
+        {/* 공고가 어떻게 보이는지 알려 주는 예시 공고. 검색할 때는 결과에 섞지 않는다. */}
+        {!searching && <RoleCard role={sampleRole(today)} sample />}
       </div>
     </main>
   );

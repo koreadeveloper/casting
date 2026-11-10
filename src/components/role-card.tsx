@@ -20,8 +20,11 @@ export default function RoleCard({
   orgLine,
   trust,
   fit,
+  sample = false,
 }: {
   role: OpenRoleListing;
+  /** 코드에 둔 예시 공고(lib/sample-role.ts). 마감일 대신 '예시 공고'를 표시한다. */
+  sample?: boolean;
   /** 로그인한 배우의 프로필과 맞는 조건. 맞는 성별·연령 칩은 색을 채워 보여 준다. */
   fit?: { gender?: boolean; age?: boolean };
   applied?: boolean;
@@ -46,8 +49,8 @@ export default function RoleCard({
           />
         </div>
         <div className="pcard-info">
-          <span className="badge-soft">
-            {applied ? '지원함' : `${shortDate(role.deadline)} 마감`}
+          <span className={sample ? 'badge-soft state-off' : 'badge-soft'}>
+            {sample ? '예시 공고' : applied ? '지원함' : `${shortDate(role.deadline)} 마감`}
           </span>
           <h3>{role.projectTitle}</h3>
           <p className="sub">{role.title}</p>

@@ -8,6 +8,7 @@ import { RECENT_ROLES } from '@/lib/recent';
 import { getProducerOrgLines, getProfile, listActorProposals } from '@/lib/accounts';
 import { getCurrentUser } from '@/lib/auth';
 import RoleCard from '@/components/role-card';
+import { sampleRole } from '@/lib/sample-role';
 import TrustBadges from '@/components/trust-badges';
 import { getProducerBadges } from '@/lib/verifications';
 import RoleSearchForm from '@/components/role-search-form';
@@ -220,7 +221,7 @@ export default async function ActorHome({
           initial={filters}
           unavailableCount={profile?.unavailableDates.length ?? 0}
         />
-        {roles.length === 0 ? (
+        {roles.length === 0 && (
           <div className="empty-card">
             {searching ? (
               <>
@@ -232,7 +233,8 @@ export default async function ActorHome({
               '지금 모집 중인 배역이 없습니다.'
             )}
           </div>
-        ) : (
+        )}
+        {(roles.length > 0 || !searching) && (
           <div className="role-grid">
             {roles.map((role) => (
               <RoleCard
@@ -244,6 +246,8 @@ export default async function ActorHome({
                 fit={profile ? roleFit(profile, role) : undefined}
               />
             ))}
+            {/* 공고가 어떻게 보이는지 알려 주는 예시 공고. 검색할 때는 결과에 섞지 않는다. */}
+            {!searching && <RoleCard role={sampleRole(today)} sample />}
           </div>
         )}
       </div>
