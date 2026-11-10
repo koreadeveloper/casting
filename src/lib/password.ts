@@ -1,4 +1,5 @@
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { hasMailTransport } from './mail-config.ts';
 
 const KEY_LENGTH = 32;
 
@@ -18,15 +19,11 @@ export function verifyPassword(password: string, stored: string) {
 
 /**
  * 이메일·비밀번호 가입·로그인·재설정을 열지.
- * 이메일 가입 인증번호와 재설정 링크를 메일로 보내야 해서, 운영에서는 메일 발송(Resend) 설정이 있을 때만 연다.
+ * 이메일 가입 인증번호와 재설정 링크를 메일로 보내야 해서, 운영에서는 메일 발송(Resend 또는 Gmail) 설정이 있을 때만 연다.
  * 체험 사이트(DEMO_MODE)는 공개된 체험 계정으로, 개발 중에는 테스트 계정으로 들어가야 해서 연다.
  */
 export function passwordLoginEnabled(env: Record<string, string | undefined> = process.env) {
-  return (
-    env.NODE_ENV !== 'production' ||
-    env.DEMO_MODE === 'true' ||
-    Boolean(env.RESEND_API_KEY && env.MAIL_FROM)
-  );
+  return env.NODE_ENV !== 'production' || env.DEMO_MODE === 'true' || hasMailTransport(env);
 }
 
 /**
@@ -34,10 +31,7 @@ export function passwordLoginEnabled(env: Record<string, string | undefined> = p
  * (체험 사이트는 비밀번호 로그인은 되지만 메일 설정이 없으면 이 둘은 닫는다. 개발 중에는 서버 로그로 대신한다.)
  */
 export function emailSignupEnabled(env: Record<string, string | undefined> = process.env) {
-  return (
-    passwordLoginEnabled(env) &&
-    (env.NODE_ENV !== 'production' || Boolean(env.RESEND_API_KEY && env.MAIL_FROM))
-  );
+  return passwordLoginEnabled(env) && (env.NODE_ENV !== 'production' || hasMailTransport(env));
 }
 
 /** 비밀번호가 있는 계정인지. 소셜 로그인으로만 가입한 계정은 저장된 값이 빈 문자열이다. */
