@@ -25,7 +25,9 @@ export default function ActorNav({
   return (
     <nav className="pnav" aria-label="배우 메뉴">
       <div className="pnav-brand">
-        <BrandLogo />
+        <Link href="/" className="pnav-brand-link" aria-label="캐스팅플로우 첫 화면으로">
+          <BrandLogo />
+        </Link>
         <NavCollapse />
       </div>
       <Link href="/me" data-label="홈" className={active === 'home' ? 'active' : ''}>
