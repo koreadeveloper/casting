@@ -67,6 +67,8 @@ export async function POST(request: NextRequest) {
     phone: requiredText(body.phone, 30),
     orgType: requiredText(body.orgType, 40),
     orgName: requiredText(body.orgName, 100),
+    // 제공자가 확인한 이메일을 그대로 쓴 경우만 메일 주인 확인으로 본다.
+    emailVerified: Boolean(pending.email),
   });
   await linkOAuthAccount(user.id, pending.provider, pending.subject, email);
   await startSession({ userId: user.id, role: user.role });

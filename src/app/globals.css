@@ -1800,6 +1800,14 @@ input[type='date'] {
   border-radius: 12px;
   padding: 12px;
 }
+.form-ok {
+  font-size: 12px;
+  color: #1f6f46;
+  background: #ebf8f0;
+  border-radius: 12px;
+  padding: 12px;
+  margin: 0;
+}
 .toast {
   position: fixed;
   z-index: 40;

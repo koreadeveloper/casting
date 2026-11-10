@@ -1,7 +1,9 @@
 import test from 'node:test';
+import { createHmac } from 'node:crypto';
 import assert from 'node:assert/strict';
 import {
   hashPassword,
+  emailSignupEnabled,
   passwordLoginEnabled,
   passwordProblem,
   verifyPassword,
@@ -39,11 +41,23 @@ test('비밀번호 규칙: 8자 이상, 영문과 숫자 포함', () => {
 test('세션 토큰은 서명·역할·만료를 검증한다', () => {
   const session = { userId: '5b0c1c3e-1111-2222-3333-444455556666', role: 'producer' };
   const token = createSessionToken(session, SECRET, 1000);
-  assert.deepEqual(readSessionToken(token, SECRET, 2000), session);
+  assert.deepEqual(readSessionToken(token, SECRET, 2000), { ...session, version: 0 });
   assert.equal(readSessionToken(token, 'y'.repeat(32), 2000), null);
   assert.equal(readSessionToken(token.replace('.producer.', '.actor.'), SECRET, 2000), null);
   assert.equal(readSessionToken(token, SECRET, 1000 + 8 * 24 * 3600 * 1000), null);
   assert.equal(readSessionToken(token, 'short', 2000), null);
+});
+
+test('세션 토큰은 버전을 담고, 버전 없는 예전 토큰은 0으로 읽는다', () => {
+  const session = { userId: '5b0c1c3e-1111-2222-3333-444455556666', role: 'actor', version: 3 };
+  const token = createSessionToken(session, SECRET, 1000);
+  assert.deepEqual(readSessionToken(token, SECRET, 2000), session);
+  // 버전을 바꿔치기하면 서명이 맞지 않는다
+  assert.equal(readSessionToken(token.replace('.actor.3.', '.actor.4.'), SECRET, 2000), null);
+  // 예전 형식(아이디.역할.만료.서명)
+  const payload = `${session.userId}.actor.${1000 + 7 * 24 * 3600 * 1000}`;
+  const legacy = `${payload}.${createHmac('sha256', SECRET).update(payload).digest('hex')}`;
+  assert.deepEqual(readSessionToken(legacy, SECRET, 2000), { ...session, version: 0 });
 });
 
 const base = {
@@ -193,8 +207,24 @@ test('회원 탈퇴 본인 확인: 비밀번호 계정과 소셜 로그인 계�
   assert.equal(deletionConfirmed({ password: 'anything1' }, social), false);
 });
 
-test('비밀번호 로그인은 운영에서 막고, 체험 사이트·개발 중에만 연다', () => {
+test('비밀번호 로그인은 메일 설정이 없는 운영에서 막고, 체험 사이트·개발 중·메일 설정 시 연다', () => {
   assert.equal(passwordLoginEnabled({ NODE_ENV: 'production' }), false);
   assert.equal(passwordLoginEnabled({ NODE_ENV: 'production', DEMO_MODE: 'true' }), true);
   assert.equal(passwordLoginEnabled({ NODE_ENV: 'development' }), true);
+  // 운영이라도 메일 발송 설정이 있으면 연다(인증번호·재설정 링크를 보낼 수 있어서)
+  assert.equal(
+    passwordLoginEnabled({ NODE_ENV: 'production', RESEND_API_KEY: 'k', MAIL_FROM: 'a@b.c' }),
+    true,
+  );
+  assert.equal(passwordLoginEnabled({ NODE_ENV: 'production', RESEND_API_KEY: 'k' }), false);
+});
+
+test('이메일 가입·재설정은 메일을 실제로 보낼 수 있을 때만(체험 사이트라도 메일 설정이 없으면 닫음)', () => {
+  assert.equal(emailSignupEnabled({ NODE_ENV: 'production', DEMO_MODE: 'true' }), false);
+  assert.equal(
+    emailSignupEnabled({ NODE_ENV: 'production', RESEND_API_KEY: 'k', MAIL_FROM: 'a@b.c' }),
+    true,
+  );
+  assert.equal(emailSignupEnabled({ NODE_ENV: 'production' }), false);
+  assert.equal(emailSignupEnabled({ NODE_ENV: 'development' }), true);
 });

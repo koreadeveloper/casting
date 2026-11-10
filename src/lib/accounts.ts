@@ -47,6 +47,10 @@ export type User = {
   orgType: string;
   orgName: string;
   createdAt: string;
+  /** 비밀번호를 바꿀 때마다 올라간다(다른 기기 로그인 끊기) */
+  sessionVersion: number;
+  /** 메일 주인임을 확인한 계정인지 */
+  emailVerified: boolean;
 };
 
 export type Project = {
@@ -171,6 +175,8 @@ function userFromRow(row: Row): User {
     orgType: String(row.org_type),
     orgName: String(row.org_name),
     createdAt: String(row.created_at),
+    sessionVersion: Number(row.session_version ?? 0),
+    emailVerified: Number(row.email_verified ?? 0) === 1,
   };
 }
 
@@ -320,7 +326,13 @@ export async function linkExistingAccount(
   email: string,
 ) {
   await linkOAuthAccount(userId, provider, subject, email);
-  await db().prepare("UPDATE users SET password_hash='' WHERE id=?").run(userId);
+  // 메일 주인을 확인하지 않은 예전 계정은 남이 먼저 만든 계정일 수 있어 비밀번호를 지운다.
+  // 메일 인증으로 가입한 계정은 비밀번호를 그대로 둔다(이메일·구글 둘 다로 로그인 가능).
+  await db()
+    .prepare(
+      "UPDATE users SET password_hash = CASE WHEN email_verified=1 THEN password_hash ELSE '' END, email_verified=1 WHERE id=?",
+    )
+    .run(userId);
 }
 
 export async function createUser(input: {
@@ -332,13 +344,15 @@ export async function createUser(input: {
   phone: string;
   orgType?: string;
   orgName?: string;
+  /** 메일 주인임을 확인했는지(구글 로그인·메일 인증번호로 가입하면 true) */
+  emailVerified?: boolean;
 }) {
   const id = randomUUID();
   const now = new Date().toISOString();
   await db()
     .prepare(
-      `INSERT INTO users (id,email,password_hash,role,name,phone,org_type,org_name,created_at)
-      VALUES (?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO users (id,email,password_hash,role,name,phone,org_type,org_name,created_at,email_verified)
+      VALUES (?,?,?,?,?,?,?,?,?,?)`,
     )
     .run(
       id,
@@ -350,6 +364,7 @@ export async function createUser(input: {
       input.orgType || '',
       input.orgName || '',
       now,
+      input.emailVerified ? 1 : 0,
     );
   if (input.role === 'actor')
     await db().prepare('INSERT INTO actor_profiles (user_id,updated_at) VALUES (?,?)').run(id, now);

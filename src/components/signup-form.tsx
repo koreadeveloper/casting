@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Brand } from './brand';
 import LegalModal from './legal-modal';
 import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal';
@@ -22,13 +22,18 @@ const DOCS = {
   privacy: { title: '개인정보처리방침', src: PRIVACY_PATH },
 };
 
-// 소셜 계정을 연결한 뒤 나머지 정보와 약관 동의를 한 화면에서 받아 가입을 마무리한다.
+const CODE_COOLDOWN = 60;
+
+// 가입 마무리 화면.
+// - 소셜(mode 'social'): 구글 계정을 연결한 뒤 나머지 정보와 약관 동의를 받는다.
+// - 이메일(mode 'email'): 메일로 받은 인증번호와 비밀번호까지 받아 비밀번호가 있는 계정을 만든다.
 export default function SignupForm({
   role,
   providerLabel,
   name,
   email,
   then = '',
+  mode = 'social',
 }: {
   role: Role;
   providerLabel: string;
@@ -36,16 +41,56 @@ export default function SignupForm({
   email: string;
   /** 가입을 마친 뒤 돌아갈 화면(배우만, 서버가 다시 검사한다) */
   then?: string;
+  mode?: 'social' | 'email';
 }) {
+  const byEmail = mode === 'email';
   const [form, setForm] = useState({
     name,
     email,
     phone: '',
     orgType: '',
     orgName: '',
+    code: '',
+    password: '',
+    confirm: '',
     agreeTerms: false,
     agreePrivacy: false,
   });
+  // 인증번호 보내기: 같은 이메일로 60초 안에 다시 누르지 못하게 버튼을 잠근다.
+  const [codeNote, setCodeNote] = useState('');
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [waitUntil, setWaitUntil] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (waitUntil <= Date.now()) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [waitUntil]);
+  const codeWait = Math.max(0, Math.ceil((waitUntil - now) / 1000));
+
+  async function sendCode() {
+    if (codeWait > 0) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      return setError('이메일 형식을 확인해 주세요.');
+    setCodeBusy(true);
+    setError('');
+    try {
+      const response = await fetch('/api/auth/email-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || '인증번호를 보내지 못했어요.');
+      setCodeNote(data.message || '인증번호를 보냈어요. 메일함을 확인해 주세요.');
+      setWaitUntil(Date.now() + CODE_COOLDOWN * 1000);
+      setNow(Date.now());
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '인증번호를 보내지 못했어요.');
+    } finally {
+      setCodeBusy(false);
+    }
+  }
   const [doc, setDoc] = useState<keyof typeof DOCS | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -63,6 +108,9 @@ export default function SignupForm({
   function problem() {
     if (!form.name.trim()) return '이름을 입력해 주세요.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return '이메일 형식을 확인해 주세요.';
+    if (byEmail && !/^\d{6}$/.test(form.code)) return '메일로 받은 인증번호 6자리를 입력해 주세요.';
+    if (byEmail && form.password.length < 8) return '비밀번호는 8자 이상이어야 합니다.';
+    if (byEmail && form.password !== form.confirm) return '비밀번호와 확인 입력이 서로 달라요.';
     if (role === 'producer' && !form.orgType) return '소속 유형을 선택해 주세요.';
     if (!form.agreeTerms || !form.agreePrivacy) return '필수 약관에 동의해 주세요.';
     return '';
@@ -75,11 +123,14 @@ export default function SignupForm({
     setError('');
     setBusy(true);
     try {
-      const response = await fetch('/api/auth/social/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, role, then }),
-      });
+      const response = await fetch(
+        byEmail ? '/api/auth/email-signup' : '/api/auth/social/complete',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...form, role, then }),
+        },
+      );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || '가입하지 못했습니다.');
       location.href = data.next;
@@ -106,7 +157,11 @@ export default function SignupForm({
       <section className="auth-card">
         <form className="auth-form wizard-body" onSubmit={submit}>
           <h1>{role === 'producer' ? '제작자 회원가입' : '배우 회원가입'}</h1>
-          <p className="muted">{providerLabel} 계정으로 연결했어요. 나머지 정보를 입력해 주세요.</p>
+          <p className="muted">
+            {byEmail
+              ? '이메일로 가입해요. 메일로 받은 인증번호로 이메일을 확인해요.'
+              : `${providerLabel} 계정으로 연결했어요. 나머지 정보를 입력해 주세요.`}
+          </p>
           <label>
             이름 <em>*</em>
             <input
@@ -124,10 +179,63 @@ export default function SignupForm({
               value={form.email}
               onChange={set('email')}
               autoComplete="email"
-              readOnly={!!email}
+              readOnly={!byEmail && !!email}
               placeholder="minsu@example.com"
             />
           </label>
+          {byEmail && (
+            <>
+              <button
+                type="button"
+                className="button button-soft full"
+                onClick={() => void sendCode()}
+                disabled={codeBusy || codeWait > 0}
+              >
+                {codeBusy
+                  ? '보내는 중…'
+                  : codeWait > 0
+                    ? `${codeWait}초 뒤에 다시 받을 수 있어요`
+                    : '인증번호 받기'}
+              </button>
+              {codeNote && (
+                <p className="form-ok" role="status">
+                  {codeNote}
+                </p>
+              )}
+              <label>
+                인증번호 <em>*</em>
+                <input
+                  value={form.code}
+                  onChange={set('code')}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  placeholder="메일로 받은 6자리"
+                />
+              </label>
+              <label>
+                비밀번호 <em>*</em>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={set('password')}
+                  autoComplete="new-password"
+                  minLength={8}
+                  placeholder="8자 이상, 영문과 숫자 섞기"
+                />
+              </label>
+              <label>
+                비밀번호 확인 <em>*</em>
+                <input
+                  type="password"
+                  value={form.confirm}
+                  onChange={set('confirm')}
+                  autoComplete="new-password"
+                  minLength={8}
+                />
+              </label>
+            </>
+          )}
           <label>
             연락처
             <input

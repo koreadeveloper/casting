@@ -9,12 +9,15 @@ export default function LoginForm({
   notice = '',
   social = null,
   password = false,
+  forgot = false,
 }: {
   next: string;
   notice?: string;
   social?: React.ReactNode;
   /** 이메일·비밀번호 칸을 보일지(체험 사이트·개발 중에만) */
   password?: boolean;
+  /** '비밀번호를 잊으셨나요?'(메일을 보낼 수 있을 때만) */
+  forgot?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(notice);
@@ -91,6 +94,11 @@ export default function LoginForm({
               {busy ? '로그인 중…' : '로그인'}
             </button>
           </form>
+        )}
+        {password && forgot && (
+          <p className="small-note center">
+            <Link href="/forgot-password">비밀번호를 잊으셨나요?</Link>
+          </p>
         )}
         {password && social && (
           <>
