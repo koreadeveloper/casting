@@ -1,6 +1,7 @@
 // 관리자 대시보드(/admin) 숫자. 모두 지금 DB에서 바로 센다.
 
 import { db, listOpenRoles } from './db';
+import { countUnreviewedBusiness } from './admin-verifications';
 import { countNewInquiries } from './admin-inquiries';
 
 export const SIGNUP_DAYS = 14;
@@ -79,6 +80,7 @@ export async function dashboardStats(now = new Date()) {
       ),
     },
     newInquiries: await countNewInquiries(),
+    unreviewedBusiness: await countUnreviewedBusiness(),
     signups: days.map((day) => ({ day, ...byDay.get(day)! })),
     latest: latest.map((row) => ({
       id: row.id,

@@ -329,6 +329,8 @@ export default function VerifyClient({
   orgName,
   ready,
   ntsReady,
+  businessOpen,
+  admin,
   mailReady,
   school,
   business,
@@ -337,6 +339,10 @@ export default function VerifyClient({
   orgName: string;
   ready: boolean;
   ntsReady: boolean;
+  /** 제작사 인증을 일반 회원에게 열었는지 */
+  businessOpen: boolean;
+  /** 관리자는 닫혀 있어도 시험해 볼 수 있다 */
+  admin: boolean;
   mailReady: boolean;
   school: Slot;
   business: Slot;
@@ -423,12 +429,27 @@ export default function VerifyClient({
           </div>
           <StatusLine slot={business} kind="business" />
           <p className="small-note">인디 제작사·프로덕션용이에요.</p>
-          {!ntsReady && (
-            <p className="small-note">
-              국세청 사업자 조회를 준비 중이에요. 잠시 뒤에 다시 와 주세요.
+          {!businessOpen && !admin ? (
+            <p className="verify-warn">
+              제작사 인증은 아직 준비 중이에요. 국세청 사업자 조회 연결을 점검하고 있어요. 열리면
+              공지로 알려 드릴게요. 그동안 학교 팀은 위의 학교 인증을 이용해 주세요.
             </p>
+          ) : (
+            <>
+              {!businessOpen && (
+                <p className="verify-warn">
+                  관리자 시험용으로 열려 있어요. 일반 회원에게는 &lsquo;준비 중&rsquo;으로 보여요.
+                  조회가 되는지만 볼 때는 일부러 틀린 정보를 넣어 주세요.
+                </p>
+              )}
+              {!ntsReady && (
+                <p className="small-note">
+                  국세청 사업자 조회를 준비 중이에요. 잠시 뒤에 다시 와 주세요.
+                </p>
+              )}
+              <BusinessForm disabled={!ntsReady} orgName={orgName} onVerdict={show} />
+            </>
           )}
-          <BusinessForm disabled={!ntsReady} orgName={orgName} onVerdict={show} />
         </section>
 
         <p className="small-note verify-privacy">

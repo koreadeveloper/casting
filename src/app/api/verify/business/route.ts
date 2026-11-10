@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { setOrgName } from '@/lib/accounts';
 import { getCurrentUser } from '@/lib/auth';
-import { NtsUnavailable, validateBusiness } from '@/lib/nts';
+import { isAdminAccount } from '@/lib/admin-rules';
+import { businessVerifyOpen, NtsUnavailable, validateBusiness } from '@/lib/nts';
 import { businessInputProblems, judgeBusiness } from '@/lib/nts-rules';
 import { overLimit, TOO_MANY } from '@/lib/rate-limit';
 import { kstToday } from '@/lib/result-deadline';
@@ -16,6 +17,11 @@ export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user || user.role !== 'producer')
     return NextResponse.json({ error: '제작자로 로그인해 주세요.' }, { status: 401 });
+  if (!businessVerifyOpen() && !isAdminAccount(user))
+    return NextResponse.json(
+      { error: '제작사 인증은 아직 준비 중이에요. 열리면 공지로 알려 드릴게요.' },
+      { status: 403 },
+    );
   const body = await request.json().catch(() => ({}));
   const input = {
     businessNumber: requiredText(body.businessNumber, 20),

@@ -334,6 +334,8 @@ async function initialize(database: Conn) {
     await addColumn(database, 'inquiries', 'status', "TEXT NOT NULL DEFAULT 'new'");
     await addColumn(database, 'inquiries', 'admin_note', text);
     await addColumn(database, 'inquiries', 'handled_at', 'TEXT');
+    // 관리자가 제작사 인증을 확인한 시각(/admin/verifications). 비어 있으면 아직 확인 전.
+    await addColumn(database, 'verifications', 'reviewed_at', 'TEXT');
     await database.exec(`
     -- 관리자 작업 기록(/admin/logs): 누가 언제 누구에게 무엇을 했는지. 회원이 지워져도 남도록 이름·이메일을 글자로 둔다.
     CREATE TABLE IF NOT EXISTS admin_logs (

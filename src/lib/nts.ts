@@ -14,6 +14,14 @@ const ENDPOINT = 'https://api.odcloud.kr/api/nts-businessman/v1/validate';
 
 export class NtsUnavailable extends Error {}
 
+/**
+ * 제작사 인증을 일반 회원에게 열었는지. 국세청 조회가 운영에서 되는 걸 확인한 뒤
+ * 환경변수 BUSINESS_VERIFY_OPEN=true로 연다. 닫혀 있어도 관리자는 조회를 시험해 볼 수 있다.
+ */
+export function businessVerifyOpen() {
+  return process.env.BUSINESS_VERIFY_OPEN === 'true';
+}
+
 export function ntsConfigured() {
   return Boolean(normalizeServiceKey(process.env.NTS_SERVICE_KEY || ''));
 }
