@@ -5579,6 +5579,11 @@ body:has(.save-bar) .toast {
   justify-content: space-between;
   gap: 8px;
 }
+.verify-badge-off {
+  background: var(--page);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
 .verify-head h2 {
   font-size: 16px;
   margin: 0;
