@@ -185,6 +185,10 @@ export default function ChatThread({
   onClose,
   fixedRoom,
 }: Props) {
+  // 대화 상대 신고(/report). 배우는 로그인 대신 지원 현황 토큰으로 대화에 들어오므로 토큰을 함께 넘긴다.
+  const reportHref = `/report?type=chat&id=${encodeURIComponent(applicationId)}${
+    mode === 'actor' && receipt ? `&t=${encodeURIComponent(receipt)}` : ''
+  }`;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [offerOpen, setOfferOpen] = useState(false);
@@ -462,6 +466,11 @@ export default function ChatThread({
           </button>
         )}
         {mode === 'actor' && profileHref && <a href={profileHref}>공고 보기 ›</a>}
+        {(mode === 'producer' || receipt) && (
+          <a className="chat-report" href={reportHref}>
+            신고
+          </a>
+        )}
       </div>
       {fixedRoom === undefined && rooms.length > 1 && (
         <div className="chat-rooms" role="tablist" aria-label="대화방">

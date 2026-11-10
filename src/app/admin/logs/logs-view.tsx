@@ -6,6 +6,7 @@ import { formatDateTime } from '../format';
 const TARGET_LABEL: Record<string, string> = {
   member: '회원',
   inquiry: '문의',
+  report: '신고',
   role: '공고',
   notice: '공지',
 };
@@ -26,8 +27,8 @@ export default function LogsView({ logs }: { logs: AdminLog[] }) {
       <section className="admin-body">
         <h1 className="page-title">작업 기록</h1>
         <p className="muted admin-lead">
-          관리자가 회원·문의·공고·공지에 한 작업이 최근 순으로 남아요(최근 300건). 기록은 고치거나
-          지울 수 없어요.
+          관리자가 회원·문의·신고·공고·공지에 한 작업이 최근 순으로 남아요(최근 300건). 기록은
+          고치거나 지울 수 없어요.
         </p>
         {logs.length === 0 ? (
           <div className="empty-card">아직 남은 기록이 없어요.</div>

@@ -61,7 +61,7 @@ async function initialize(database: Conn) {
   const migrated = await database
     .prepare(
       `SELECT 1 FROM information_schema.columns
-       WHERE table_schema = current_schema() AND table_name='roles' AND column_name='admin_hidden_at'`,
+       WHERE table_schema = current_schema() AND table_name='reports' AND column_name='handled_at'`,
     )
     .get();
   if (!migrated) {
@@ -345,8 +345,25 @@ async function initialize(database: Conn) {
     CREATE INDEX IF NOT EXISTS admin_logs_target ON admin_logs(target_type, target_id);
   `);
     // 관리자가 내린 공고(/admin/roles): 내린 시각. 비어 있으면 정상. 내리면 배우 쪽 목록과 지원 링크에서 모두 사라진다.
-    // 이 칸이 구조 변경 기준(맨 위 migrated)이다. 구조를 바꿀 때는 이 기준도 새로 만든 것으로 옮긴다.
     await addColumn(database, 'roles', 'admin_hidden_at', 'TEXT');
+    await database.exec(`
+    -- 신고(/report → /admin/reports). target_type: role | actor | chat (lib/report-rules.ts).
+    -- 회원·공고가 지워져도 기록이 남도록 외래 키 없이 id와 이름(target_label)을 글자로 둔다.
+    -- subject_user_id: 신고당한 회원(없으면 ''), reporter_id: 신고한 회원(로그인 안 했으면 '').
+    -- 신고한 사람은 상대에게 알리지 않는다. 1년이 지난 신고는 새 신고가 들어올 때 지운다.
+    -- 이 표의 handled_at이 구조 변경 기준(맨 위 migrated)이다. 구조를 바꿀 때는 이 기준도 새로 만든 것으로 옮긴다.
+    CREATE TABLE IF NOT EXISTS reports (
+      id TEXT PRIMARY KEY, target_type TEXT NOT NULL, target_id TEXT NOT NULL,
+      target_label TEXT NOT NULL DEFAULT '', target_link TEXT NOT NULL DEFAULT '',
+      subject_user_id TEXT NOT NULL DEFAULT '', reason TEXT NOT NULL, body TEXT NOT NULL,
+      reporter_side TEXT NOT NULL, reporter_id TEXT NOT NULL DEFAULT '', reporter_email TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'new', admin_note TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL, handled_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS reports_created ON reports(created_at);
+    CREATE INDEX IF NOT EXISTS reports_target ON reports(target_type, target_id);
+    CREATE INDEX IF NOT EXISTS reports_subject ON reports(subject_user_id);
+  `);
     await enableRowLevelSecurity(database);
   }
   await moveOldPrivateChats(database);

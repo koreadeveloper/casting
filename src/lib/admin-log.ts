@@ -15,6 +15,9 @@ export const ADMIN_ACTIONS = {
   inquiry_status: '문의 상태 변경',
   inquiry_note: '문의 메모',
   inquiry_delete: '문의 삭제',
+  report_status: '신고 상태 변경',
+  report_note: '신고 메모',
+  report_delete: '신고 삭제',
   role_hide: '공고 내림',
   role_unhide: '공고 다시 올림',
   role_close: '공고 마감',
@@ -39,7 +42,11 @@ export type AdminLog = {
 export async function logAdmin(
   admin: { id: string; email: string },
   action: AdminAction,
-  target: { type: 'member' | 'inquiry' | 'role' | 'notice'; id?: string; label?: string },
+  target: {
+    type: 'member' | 'inquiry' | 'report' | 'role' | 'notice';
+    id?: string;
+    label?: string;
+  },
   detail = '',
 ) {
   try {

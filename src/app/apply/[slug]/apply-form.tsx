@@ -418,7 +418,7 @@ export default function ApplyForm({
                     </p>
                   )}
                   <Link
-                    href={`/contact?type=report&link=${encodeURIComponent(`/apply/${role.slug}`)}`}
+                    href={`/report?type=role&id=${encodeURIComponent(role.slug)}`}
                     className="account-danger"
                   >
                     이 공고 신고하기

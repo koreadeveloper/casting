@@ -297,6 +297,14 @@ export default function ActorDetail({
                 </ul>
               </div>
             )}
+            {viewer === 'producer' && (
+              <Link
+                href={`/report?type=actor&id=${encodeURIComponent(profile.userId)}`}
+                className="account-danger"
+              >
+                이 배우 신고하기
+              </Link>
+            )}
           </div>
         </div>
       </div>
