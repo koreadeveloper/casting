@@ -15,7 +15,7 @@ function siteUrl() {
     process.env.APP_URL ||
     (process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : 'https://casting-swipe.vercel.app');
+      : 'https://castingflow-kr.vercel.app');
   return new URL(url);
 }
 

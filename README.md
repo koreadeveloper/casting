@@ -24,7 +24,7 @@
 
 <br>
 
-[운영 사이트](https://casting-swipe.vercel.app) · [체험(데모) 사이트](https://casting-swipe-demo.vercel.app) · [빠른 시작](#-빠른-시작) · [주요 기능](#-주요-기능) · [구조](#-구조) · [로드맵](#️-다음-할-일)
+[운영 사이트](https://castingflow-kr.vercel.app) · [체험(데모) 사이트](https://casting-swipe-demo.vercel.app) · [빠른 시작](#-빠른-시작) · [주요 기능](#-주요-기능) · [구조](#-구조) · [로드맵](#️-다음-할-일)
 
 ```bash
 pnpm install && cp .env.example .env.local && pnpm dev
@@ -123,7 +123,7 @@ pnpm dev                     # http://localhost:3000
 
 | Vercel 프로젝트 | 주소 | 용도 | 데이터 |
 |---|---|---|---|
-| `casting-swipe` | casting-swipe.vercel.app | 운영 (파일럿) | 운영 DB · `DEMO_MODE` 없음 |
+| `casting` | castingflow-kr.vercel.app | 운영 (파일럿) | 운영 DB · `DEMO_MODE` 없음 |
 | `casting-swipe-demo` | casting-swipe-demo.vercel.app | 체험·심사·홍보 | 데모 전용 DB · `DEMO_MODE=true` (샘플 데이터 자동 채우기는 삭제됨) |
 
 두 프로젝트 모두 `main` 브랜치에 push하면 자동 배포됩니다.
