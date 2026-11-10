@@ -6,13 +6,19 @@ import { BrandIcon } from '@/components/brand';
 import {
   ActorHomeScreen,
   ApplicantsScreen,
+  ApplicantsWeb,
   BoardScreen,
+  BoardWeb,
+  Browser,
+  type BrowserLayout,
   CompareScreen,
   Phone,
   ProducerSearchScreen,
+  ProducerSearchWeb,
   ProfileDraftScreen,
   RolesScreen,
   StatusScreen,
+  WebColumn,
 } from './previews';
 import s from './landing.module.css';
 
@@ -25,7 +31,10 @@ type Step = {
   outcome: string;
   label: string;
   tone: 'ice' | 'lime' | 'dark';
+  /** 좁은 화면(휴대폰 틀)에서 보일 화면 */
   screen: React.ReactNode;
+  /** 넓은 화면(브라우저 창)에서 보일 화면과 그 주소·레이아웃 */
+  web: { path: string; layout: BrowserLayout; screen: React.ReactNode };
 };
 
 type RoleContent = {
@@ -58,6 +67,11 @@ const CONTENT: Record<ViewRole, RoleContent> = {
         label: '지원자 화면 예시: 민수 역 공고의 지원 링크와 지원자 수',
         tone: 'ice',
         screen: <ApplicantsScreen />,
+        web: {
+          path: '/studio',
+          layout: { nav: 'producer', active: '프로젝트' },
+          screen: <ApplicantsWeb />,
+        },
       },
       {
         title: '팀원과 함께 후보 추리기',
@@ -66,6 +80,11 @@ const CONTENT: Record<ViewRole, RoleContent> = {
         label: '팀 보드 화면 예시: 단계별 후보와 팀원의 하트·메모',
         tone: 'lime',
         screen: <BoardScreen />,
+        web: {
+          path: '/studio/board',
+          layout: { nav: 'producer', active: '팀 보드' },
+          screen: <BoardWeb />,
+        },
       },
       {
         title: '두 명씩 비교해 최종 결정',
@@ -74,6 +93,15 @@ const CONTENT: Record<ViewRole, RoleContent> = {
         label: '이상형 월드컵 화면 예시: 두 후보를 나란히 비교',
         tone: 'dark',
         screen: <CompareScreen />,
+        web: {
+          path: '/studio/compare',
+          layout: { nav: 'producer', active: '이상형 월드컵' },
+          screen: (
+            <WebColumn>
+              <CompareScreen />
+            </WebColumn>
+          ),
+        },
       },
     ],
     start: { label: '제작자로 시작하기', href: '/signup/producer' },
@@ -98,6 +126,15 @@ const CONTENT: Record<ViewRole, RoleContent> = {
         label: '프로필 편집 화면 예시: PDF에서 읽은 항목 확인',
         tone: 'ice',
         screen: <ProfileDraftScreen />,
+        web: {
+          path: '/me/profile',
+          layout: { nav: 'actor', active: '프로필 관리' },
+          screen: (
+            <WebColumn>
+              <ProfileDraftScreen />
+            </WebColumn>
+          ),
+        },
       },
       {
         title: '조건을 먼저 보고 지원하기',
@@ -106,6 +143,8 @@ const CONTENT: Record<ViewRole, RoleContent> = {
         label: '모집 중인 배역 화면 예시: 인증 배지와 촬영 조건',
         tone: 'lime',
         screen: <RolesScreen />,
+        // 배역 목록·지원 현황은 실제 웹에서도 가운데 좁은 화면이다.
+        web: { path: '/actor', layout: { nav: 'none' }, screen: <RolesScreen /> },
       },
       {
         title: '진행 상황 바로 확인하기',
@@ -114,6 +153,7 @@ const CONTENT: Record<ViewRole, RoleContent> = {
         label: '지원 현황 화면 예시: 오디션 대상 단계와 결과 안내 예정일',
         tone: 'dark',
         screen: <StatusScreen />,
+        web: { path: '/status/…', layout: { nav: 'none' }, screen: <StatusScreen /> },
       },
     ],
     start: { label: '배우로 시작하기', href: '/signup/actor' },
@@ -230,15 +270,41 @@ export default function LandingGuide({
         </div>
         <div>
           <div className={s.heroVisual}>
-            <div className={`${s.heroPhone} ${role === 'producer' ? s.front : s.back}`}>
-              <Phone label="제작자의 배우 찾기 화면 예시">
-                <ProducerSearchScreen />
-              </Phone>
+            {/* 좁은 화면: 휴대폰 두 대 */}
+            <div className={s.mobile}>
+              <div className={`${s.heroPhone} ${role === 'producer' ? s.front : s.back}`}>
+                <Phone label="제작자의 배우 찾기 화면 예시">
+                  <ProducerSearchScreen />
+                </Phone>
+              </div>
+              <div className={`${s.heroPhone} ${role === 'actor' ? s.front : s.back}`}>
+                <Phone label="배우 홈 화면 예시: 프로필 완성도와 받은 캐스팅 제안">
+                  <ActorHomeScreen />
+                </Phone>
+              </div>
             </div>
-            <div className={`${s.heroPhone} ${role === 'actor' ? s.front : s.back}`}>
-              <Phone label="배우 홈 화면 예시: 프로필 완성도와 받은 캐스팅 제안">
-                <ActorHomeScreen />
-              </Phone>
+            {/* 넓은 화면: 실제 웹 화면처럼 브라우저 창 두 개 */}
+            <div className={s.web}>
+              <div className={`${s.webHero} ${role === 'producer' ? s.webFront : s.webBack}`}>
+                <Browser
+                  label="제작자의 배우 찾기 웹 화면 예시"
+                  path="/studio/actors"
+                  layout={{ nav: 'producer', active: '배우 찾기' }}
+                >
+                  <ProducerSearchWeb />
+                </Browser>
+              </div>
+              <div className={`${s.webHero} ${role === 'actor' ? s.webFront : s.webBack}`}>
+                <Browser
+                  label="배우 홈 웹 화면 예시: 프로필 완성도와 받은 캐스팅 제안"
+                  path="/me"
+                  layout={{ nav: 'actor', active: '홈' }}
+                >
+                  <WebColumn>
+                    <ActorHomeScreen />
+                  </WebColumn>
+                </Browser>
+              </div>
             </div>
           </div>
           <p className={s.heroCaption}>실제 서비스 화면 · 이름과 내용은 샘플이에요</p>
@@ -284,7 +350,14 @@ export default function LandingGuide({
                   </p>
                 </div>
                 <div className={`${s.stepVisual} ${s[`tone-${step.tone}`]}`} data-reveal="late">
-                  <Phone label={step.label}>{step.screen}</Phone>
+                  <div className={s.mobile}>
+                    <Phone label={step.label}>{step.screen}</Phone>
+                  </div>
+                  <div className={s.web}>
+                    <Browser label={step.label} path={step.web.path} layout={step.web.layout}>
+                      {step.web.screen}
+                    </Browser>
+                  </div>
                   <span className={s.sample}>화면 예시 · 샘플 데이터</span>
                 </div>
               </li>
