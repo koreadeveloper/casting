@@ -24,6 +24,8 @@ import { includesChildAge } from '@/lib/child-policy';
 import type { ProjectUsage } from '@/lib/accounts';
 import { RESULT_WARNING_DAYS, resultDueDate } from '@/lib/result-deadline';
 import { daysBetween, formatDates, formatPeriod, normalizeDates } from '@/lib/schedule';
+import type { RoleSuggestion } from '@/lib/role-draft';
+import RoleAiHelper from './role-ai-helper';
 
 // 등록과 수정이 같은 5단계를 쓴다. 배역 수정도 여기서 한다('수정'은 모두 프로젝트 수정에 모은다).
 const STEPS = ['작품 정보', '일정', '배역', '조건·담당', '확인'];
@@ -67,6 +69,8 @@ export type RoleDraft = {
   /** 특수 장면 안내(필수): '없음' 또는 종류 */
   specialScenes: string[];
   specialNote: string;
+  /** AI 초안에서 넣은 배역: 글에 보인 특수 장면(참고 표시만, 자동으로 고르지 않는다) */
+  aiSceneHints?: string[];
 };
 
 export type ProjectDraft = {
@@ -123,6 +127,27 @@ function blankRole(): RoleDraft {
     specialScenes: [],
     specialNote: '',
   };
+}
+
+/** AI 배역 초안 → 입력칸. 특수 장면과 촬영일은 비워 두고 제작진이 직접 고른다. */
+function roleFromSuggestion(suggestion: RoleSuggestion): RoleDraft {
+  return {
+    ...blankRole(),
+    title: suggestion.title,
+    description: suggestion.description,
+    requirement: suggestion.requirement,
+    roleType: suggestion.roleType,
+    gender: suggestion.gender,
+    ageMin: suggestion.ageMin ? String(suggestion.ageMin) : '',
+    ageMax: suggestion.ageMax ? String(suggestion.ageMax) : '',
+    headcount: String(suggestion.headcount || 1),
+    aiSceneHints: suggestion.sceneHints,
+  };
+}
+
+/** 저장된 배역이거나 무언가 입력한 배역(비어 있는 칸은 AI 초안으로 바꿔도 된다) */
+function isFilledRole(role: RoleDraft) {
+  return Boolean(role.id || role.title.trim() || role.description.trim());
 }
 
 function blankDraft(contactName: string): ProjectDraft {
@@ -298,6 +323,17 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
       ...current,
       roles: current.roles.map((role) => (role.key === key ? { ...role, ...patch } : role)),
     }));
+  // AI 초안에서 고른 배역을 넣는다. 비어 있는 배역 칸은 초안으로 바꾸고, 입력한 배역은 그대로 둔다.
+  const addSuggestedRoles = (suggestions: RoleSuggestion[]) => {
+    setDraft((current) => ({
+      ...current,
+      roles: [...current.roles.filter(isFilledRole), ...suggestions.map(roleFromSuggestion)].slice(
+        0,
+        MAX_ROLES,
+      ),
+    }));
+    setNotice(`배역 ${suggestions.length}개를 넣었어요. 배역마다 특수 장면 안내를 골라 주세요.`);
+  };
 
   function problem(target: number) {
     if (target === 0) {
@@ -680,6 +716,15 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
 
               {step === 2 && (
                 <>
+                  <RoleAiHelper
+                    context={{
+                      projectTitle: draft.title,
+                      format: draft.genre,
+                      logline: draft.logline,
+                    }}
+                    room={MAX_ROLES - draft.roles.filter(isFilledRole).length}
+                    onApply={addSuggestedRoles}
+                  />
                   <div className="wiz-bulk">
                     <span>
                       작품 촬영 일정: <strong>{shootSummary || '미정'}</strong>
@@ -866,6 +911,16 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                           <legend>
                             특수 장면 안내 <em>*</em>
                           </legend>
+                          {Array.isArray(role.aiSceneHints) && role.aiSceneHints.length > 0 && (
+                            <p className="role-ai-warn">
+                              AI 참고: 시놉시스에{' '}
+                              {role.aiSceneHints
+                                .map((key) => SPECIAL_SCENES[key])
+                                .filter(Boolean)
+                                .join('·')}{' '}
+                              장면이 보여요. 맞는지 확인하고 직접 골라 주세요.
+                            </p>
+                          )}
                           <div className="chip-pick">
                             <button
                               type="button"

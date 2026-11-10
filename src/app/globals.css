@@ -7021,3 +7021,105 @@ html[data-pilot] {
   font-weight: 800;
   text-decoration: underline;
 }
+
+/* 공고 작성 '배역' 단계: 시놉시스로 배역 초안 만들기(AI) */
+.role-ai {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 13px;
+  border: 1px dashed var(--lavender-strong);
+  border-radius: 14px;
+  background: var(--card);
+}
+.role-ai-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+.role-ai-head small {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.role-ai-head .wiz-note {
+  margin-top: 4px;
+}
+.role-ai textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+.role-ai-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.role-ai-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+/* 공고 폼의 label은 세로로 쌓이게 되어 있어서, 여기서는 체크박스와 내용을 나란히 둔다. */
+.role-ai .role-ai-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--page);
+  font-size: 12px;
+  cursor: pointer;
+}
+.role-ai-row:not(.on) {
+  opacity: 0.6;
+}
+.role-ai .role-ai-row input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  padding: 0;
+}
+.role-ai-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.role-ai-body strong {
+  font-size: 13px;
+}
+.role-ai-body small {
+  color: var(--muted);
+  font-weight: 600;
+}
+.role-ai-desc {
+  font-weight: 500;
+  color: var(--ink);
+}
+.role-ai-desc {
+  line-height: 1.5;
+}
+.role-ai-source {
+  color: var(--faint);
+  font-size: 10.5px;
+}
+.role-ai-warn {
+  margin: 0;
+  padding: 6px 9px;
+  border: 1px solid #f0d4d1;
+  border-radius: 10px;
+  background: #fbf1f0;
+  color: #9a3f3a;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
