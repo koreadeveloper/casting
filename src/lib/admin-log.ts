@@ -10,6 +10,7 @@ export const ADMIN_ACTIONS = {
   delete: '회원 삭제',
   verify: '인증 부여',
   unverify: '인증 취소',
+  verify_review: '인증 확인',
   role: '역할 변경',
   export: '회원 목록 내려받기',
   inquiry_status: '문의 상태 변경',

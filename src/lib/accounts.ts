@@ -338,6 +338,21 @@ export async function linkExistingAccount(
     .run(userId);
 }
 
+/** 제작자 계정 정보(이름·소속) 고치기 */
+export async function updateAccountInfo(
+  userId: string,
+  input: { name: string; orgType: string; orgName: string },
+) {
+  await db()
+    .prepare('UPDATE users SET name=?, org_type=?, org_name=? WHERE id=?')
+    .run(input.name, input.orgType, input.orgName, userId);
+}
+
+/** 제작사 인증에 성공하면 소속명을 국세청에서 확인한 상호로 맞춘다. */
+export async function setOrgName(userId: string, orgName: string) {
+  await db().prepare('UPDATE users SET org_name=? WHERE id=?').run(orgName.slice(0, 100), userId);
+}
+
 export async function createUser(input: {
   email: string;
   /** 소셜 로그인으로 가입하면 없다(비밀번호가 없는 계정). */

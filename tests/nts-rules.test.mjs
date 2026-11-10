@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  normalizeServiceKey,
+  ntsFailureCode,
   businessInputProblems,
   judgeBusiness,
+  looksLikeOwner,
   ntsRequestItem,
   readNtsItem,
 } from '../src/lib/nts-rules.ts';
@@ -14,7 +17,6 @@ const input = {
   openDate: '2020-03-02',
   companyName: '세종필름',
 };
-const account = { name: '홍길동', orgName: '' };
 const ok = { matched: true, statusCode: '01', statusText: '계속사업자' };
 
 test('입력 형식 검사', () => {
@@ -43,21 +45,40 @@ test('국세청 응답 읽기', () => {
   assert.equal(readNtsItem(null).matched, false);
 });
 
-test('일치하고 계속사업자이며 대표자가 계정 주인이면 승인', () => {
-  const verdict = judgeBusiness(input, ok, account);
+test('국세청 기록과 일치하고 계속사업자면 승인 (계정 이름·소속과는 맞춰 보지 않음)', () => {
+  const verdict = judgeBusiness(input, ok);
   assert.equal(verdict.approved, true);
   assert.equal(verdict.orgName, '세종필름');
   assert.equal(verdict.detail, '220-81-*****');
 });
 
 test('불일치·휴업·폐업은 거절', () => {
-  assert.equal(judgeBusiness(input, { ...ok, matched: false }, account).approved, false);
-  assert.match(judgeBusiness(input, { ...ok, statusCode: '02' }, account).reasons[0], /휴업/);
-  assert.match(judgeBusiness(input, { ...ok, statusCode: '03' }, account).reasons[0], /폐업/);
+  assert.equal(judgeBusiness(input, { ...ok, matched: false }).approved, false);
+  assert.match(judgeBusiness(input, { ...ok, statusCode: '02' }).reasons[0], /휴업/);
+  assert.match(judgeBusiness(input, { ...ok, statusCode: '03' }).reasons[0], /폐업/);
 });
 
-test('대표자가 계정 주인이 아니어도 상호가 가입 소속과 같으면 승인', () => {
-  const member = { name: '김팀원', orgName: '세종필름' };
-  assert.equal(judgeBusiness(input, ok, member).approved, true);
-  assert.equal(judgeBusiness(input, ok, { name: '김팀원', orgName: '다른회사' }).approved, false);
+test('서비스 키: Encoding 값·공백이 섞여도 Decoding 값으로 맞춘다', () => {
+  const decoded = 'abc+def/ghi==';
+  assert.equal(normalizeServiceKey(decoded), decoded);
+  assert.equal(normalizeServiceKey('abc%2Bdef%2Fghi%3D%3D'), decoded);
+  assert.equal(normalizeServiceKey(' abc+def/ghi==\n'), decoded);
+  // 잘못된 %는 그대로 둔다
+  assert.equal(normalizeServiceKey('abc%zz'), 'abc%zz');
+});
+
+test('국세청 실패 코드: HTTP 상태와 응답 코드를 짧게', () => {
+  assert.equal(ntsFailureCode(401, null), '401');
+  assert.equal(ntsFailureCode(200, { status_code: 'BAD_JSON_REQUEST' }), '200·BAD_JSON_REQUEST');
+  assert.equal(ntsFailureCode(401, { code: -4, msg: '등록되지 않은 인증키 입니다.' }), '401·-4');
+});
+
+test('본인 사업자로 보이는지: 대표자 성명이나 상호가 계정 정보와 맞으면 참', () => {
+  // input: 대표자 홍길동, 상호 세종필름
+  assert.equal(looksLikeOwner(input, { name: '홍길동', orgName: '' }), true);
+  assert.equal(looksLikeOwner(input, { name: '김팀원', orgName: '(주)세종필름' }), true);
+  assert.equal(looksLikeOwner(input, { name: '김팀원', orgName: '세종필름 연출팀' }), true);
+  // 둘 다 다르면 관리자가 확인한다
+  assert.equal(looksLikeOwner(input, { name: '세종마켓', orgName: '다른회사' }), false);
+  assert.equal(looksLikeOwner(input, { name: '김팀원', orgName: '' }), false);
 });

@@ -104,12 +104,15 @@ export async function saveDocumentVerdict(
   kind: VerificationKind,
   verdict: Verdict,
   method: 'document' | 'nts' = 'document',
+  /** 관리자 확인이 필요 없는 건(본인 사업자로 보임)이면 저장할 때 바로 확인 처리한다 */
+  autoReviewed = false,
 ) {
   const now = new Date();
+  const reviewed = verdict.approved && autoReviewed;
   await db()
     .prepare(
-      `INSERT INTO verifications (id,user_id,kind,method,status,org_name,detail,reason,created_at,decided_at,expires_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO verifications (id,user_id,kind,method,status,org_name,detail,reason,created_at,decided_at,expires_at,reviewed_at,auto_reviewed)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
     .run(
       randomUUID(),
@@ -123,6 +126,8 @@ export async function saveDocumentVerdict(
       now.toISOString(),
       now.toISOString(),
       verdict.approved && kind === 'school' ? addDays(now, SCHOOL_VALID_DAYS).toISOString() : null,
+      reviewed ? now.toISOString() : null,
+      reviewed ? 1 : 0,
     );
 }
 
@@ -266,5 +271,19 @@ export async function revokeVerification(
        WHERE user_id=? AND kind=? AND status='approved'`,
     )
     .run(reason, new Date().toISOString(), userId, kind);
+  return result.changes;
+}
+
+/**
+ * 이름을 바꾸면 재학증명서로 받은 학교 인증을 거둔다(서류의 이름을 계정 이름과 맞춰 본 인증이라서).
+ * 학교 메일·관리자 인증은 이름과 상관없어 그대로 둔다. 거둔 수를 돌려준다.
+ */
+export async function revokeNameCheckedSchool(userId: string) {
+  const result = await db()
+    .prepare(
+      `UPDATE verifications SET status='rejected', reason=?, decided_at=?
+       WHERE user_id=? AND kind='school' AND method='document' AND status='approved'`,
+    )
+    .run('계정 이름을 바꿔서 재학증명서 인증을 다시 받아야 해요', new Date().toISOString(), userId);
   return result.changes;
 }

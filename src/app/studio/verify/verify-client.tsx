@@ -104,17 +104,15 @@ function DocumentUpload({
 /** 사업자 정보를 입력해 국세청 진위확인으로 인증하는 칸 */
 function BusinessForm({
   disabled,
-  accountName,
   orgName,
   onVerdict,
 }: {
   disabled: boolean;
-  accountName: string;
   orgName: string;
   onVerdict: (verdict: Verdict) => void;
 }) {
   const [businessNumber, setBusinessNumber] = useState('');
-  const [ownerName, setOwnerName] = useState(accountName);
+  const [ownerName, setOwnerName] = useState('');
   const [openDate, setOpenDate] = useState('');
   const [companyName, setCompanyName] = useState(orgName);
   const [busy, setBusy] = useState(false);
@@ -144,8 +142,8 @@ function BusinessForm({
       <strong>사업자 정보로 인증 (국세청 조회)</strong>
       <p>
         사업자등록증에 적힌 그대로 입력해 주세요. 국세청 기록과 맞고 계속사업자이면 바로 인증돼요.
-        대표자 성명이 계정 이름({accountName})과 같거나, 상호가 가입 정보의 소속(
-        {orgName || '미기재'})과 같아야 해요.
+        대표자가 아니어도(직원·팀원) 인증할 수 있고, 인증되면 소속명이 상호로 바뀌어 공고에 그대로
+        보여요.
       </p>
       <label>
         사업자등록번호
@@ -331,6 +329,8 @@ export default function VerifyClient({
   orgName,
   ready,
   ntsReady,
+  businessOpen,
+  admin,
   mailReady,
   school,
   business,
@@ -339,6 +339,10 @@ export default function VerifyClient({
   orgName: string;
   ready: boolean;
   ntsReady: boolean;
+  /** 제작사 인증을 일반 회원에게 열었는지 */
+  businessOpen: boolean;
+  /** 관리자는 닫혀 있어도 시험해 볼 수 있다 */
+  admin: boolean;
   mailReady: boolean;
   school: Slot;
   business: Slot;
@@ -412,7 +416,7 @@ export default function VerifyClient({
           <DocumentUpload
             kind="school"
             label="재학증명서로 인증"
-            hint={`최근 90일 안에 발급한 재학증명서(사진 또는 PDF). 서류의 이름이 계정 이름(${accountName})과 같아야 해요.`}
+            hint={`최근 90일 안에 발급한 재학증명서(사진 또는 PDF). 서류의 이름이 계정 이름(${accountName})과 같아야 해요. 이름이 다르면 ‘내 정보 → 수정’에서 먼저 고쳐 주세요.`}
             disabled={!ready}
             onVerdict={show}
           />
@@ -425,17 +429,27 @@ export default function VerifyClient({
           </div>
           <StatusLine slot={business} kind="business" />
           <p className="small-note">인디 제작사·프로덕션용이에요.</p>
-          {!ntsReady && (
-            <p className="small-note">
-              국세청 사업자 조회를 준비 중이에요. 잠시 뒤에 다시 와 주세요.
+          {!businessOpen && !admin ? (
+            <p className="verify-warn">
+              제작사 인증은 아직 준비 중이에요. 국세청 사업자 조회 연결을 점검하고 있어요. 열리면
+              공지로 알려 드릴게요. 그동안 학교 팀은 위의 학교 인증을 이용해 주세요.
             </p>
+          ) : (
+            <>
+              {!businessOpen && (
+                <p className="verify-warn">
+                  관리자 시험용으로 열려 있어요. 일반 회원에게는 &lsquo;준비 중&rsquo;으로 보여요.
+                  조회가 되는지만 볼 때는 일부러 틀린 정보를 넣어 주세요.
+                </p>
+              )}
+              {!ntsReady && (
+                <p className="small-note">
+                  국세청 사업자 조회를 준비 중이에요. 잠시 뒤에 다시 와 주세요.
+                </p>
+              )}
+              <BusinessForm disabled={!ntsReady} orgName={orgName} onVerdict={show} />
+            </>
           )}
-          <BusinessForm
-            disabled={!ntsReady}
-            accountName={accountName}
-            orgName={orgName}
-            onVerdict={show}
-          />
         </section>
 
         <p className="small-note verify-privacy">

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { setOrgName } from '@/lib/accounts';
 import { getCurrentUser } from '@/lib/auth';
-import { NtsUnavailable, validateBusiness } from '@/lib/nts';
-import { businessInputProblems, judgeBusiness } from '@/lib/nts-rules';
+import { isAdminAccount } from '@/lib/admin-rules';
+import { businessVerifyOpen, NtsUnavailable, validateBusiness } from '@/lib/nts';
+import { businessInputProblems, judgeBusiness, looksLikeOwner } from '@/lib/nts-rules';
 import { overLimit, TOO_MANY } from '@/lib/rate-limit';
 import { kstToday } from '@/lib/result-deadline';
 import { requiredText } from '@/lib/validation';
@@ -15,6 +17,11 @@ export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user || user.role !== 'producer')
     return NextResponse.json({ error: '제작자로 로그인해 주세요.' }, { status: 401 });
+  if (!businessVerifyOpen() && !isAdminAccount(user))
+    return NextResponse.json(
+      { error: '제작사 인증은 아직 준비 중이에요. 열리면 공지로 알려 드릴게요.' },
+      { status: 403 },
+    );
   const body = await request.json().catch(() => ({}));
   const input = {
     businessNumber: requiredText(body.businessNumber, 20),
@@ -29,8 +36,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: TOO_MANY }, { status: 429 });
   try {
     const nts = await validateBusiness(input);
-    const verdict = judgeBusiness(input, nts, { name: user.name, orgName: user.orgName });
-    await saveDocumentVerdict(user.id, 'business', verdict, 'nts');
+    const verdict = judgeBusiness(input, nts);
+    // 대표자나 상호가 계정 정보와 맞으면 관리자 확인함에 올리지 않는다(소속명을 바꾸기 전 값으로 비교).
+    const owner = looksLikeOwner(input, { name: user.name, orgName: user.orgName });
+    await saveDocumentVerdict(user.id, 'business', verdict, 'nts', owner);
+    // 인증된 상호를 가입 정보의 소속명으로 맞춘다(공고의 소속 표기와 인증 표시가 같아지게).
+    if (verdict.approved) await setOrgName(user.id, verdict.orgName);
     return NextResponse.json({ verdict });
   } catch (error) {
     if (error instanceof NtsUnavailable)

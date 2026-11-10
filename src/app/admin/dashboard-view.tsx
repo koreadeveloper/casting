@@ -72,7 +72,12 @@ export default function DashboardView({
           <Tile
             label="인증된 제작진"
             value={stats.members.verifiedProducers}
-            sub={`제작진 ${stats.members.producers}명 중`}
+            sub={
+              stats.unreviewedBusiness
+                ? `제작사 인증 ${stats.unreviewedBusiness}건 확인이 필요해요`
+                : `제작진 ${stats.members.producers}명 중`
+            }
+            href="/admin/verifications"
           />
           <Tile
             label="공개 배우 프로필"

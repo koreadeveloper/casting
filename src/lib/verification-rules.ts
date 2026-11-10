@@ -73,7 +73,7 @@ function daysSince(date: string, today: string) {
 export function judgeDocument(
   kind: VerificationKind,
   facts: DocumentFacts,
-  account: { name: string; orgName: string },
+  account: { name: string },
   today: string,
 ): Verdict {
   const reasons: string[] = [];
@@ -107,15 +107,7 @@ export function judgeDocument(
     reasons.push('사업자등록증이 아닌 것 같아요. 사업자등록증(또는 사업자등록증명)을 올려 주세요.');
   if (!isValidBusinessNumber(facts.business_number))
     reasons.push('사업자등록번호가 올바르지 않거나 읽을 수 없어요.');
-  const sameOrg =
-    Boolean(account.orgName.trim()) &&
-    Boolean(facts.organization) &&
-    (compact(facts.organization).includes(compact(account.orgName)) ||
-      compact(account.orgName).includes(compact(facts.organization)));
-  if (!namesMatch(facts.person_name, account.name) && !sameOrg)
-    reasons.push(
-      '대표자 이름이나 상호가 계정 정보(이름·소속)와 달라요. 가입 정보의 소속을 상호와 같게 맞춰 주세요.',
-    );
+  // 제작사는 계정 이름·소속과 맞춰 보지 않는다(nts-rules.ts judgeBusiness와 같은 이유).
   if (!facts.organization) reasons.push('상호를 확인할 수 없어요.');
   return {
     approved: reasons.length === 0,

@@ -61,7 +61,7 @@ async function initialize(database: Conn) {
   const migrated = await database
     .prepare(
       `SELECT 1 FROM information_schema.columns
-       WHERE table_schema = current_schema() AND table_name='reports' AND column_name='handled_at'`,
+       WHERE table_schema = current_schema() AND table_name='verifications' AND column_name='auto_reviewed'`,
     )
     .get();
   if (!migrated) {
@@ -334,6 +334,10 @@ async function initialize(database: Conn) {
     await addColumn(database, 'inquiries', 'status', "TEXT NOT NULL DEFAULT 'new'");
     await addColumn(database, 'inquiries', 'admin_note', text);
     await addColumn(database, 'inquiries', 'handled_at', 'TEXT');
+    // 관리자가 제작사 인증을 확인한 시각(/admin/verifications). 비어 있으면 아직 확인 전.
+    await addColumn(database, 'verifications', 'reviewed_at', 'TEXT');
+    // 대표자 성명이나 상호가 계정 정보와 맞아 저장할 때 자동으로 확인 처리한 인증이면 1
+    await addColumn(database, 'verifications', 'auto_reviewed', 'INTEGER NOT NULL DEFAULT 0');
     await database.exec(`
     -- 관리자 작업 기록(/admin/logs): 누가 언제 누구에게 무엇을 했는지. 회원이 지워져도 남도록 이름·이메일을 글자로 둔다.
     CREATE TABLE IF NOT EXISTS admin_logs (
