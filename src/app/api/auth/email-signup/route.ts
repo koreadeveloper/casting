@@ -3,7 +3,7 @@ import { createUser, getUserByEmail } from '@/lib/accounts';
 import { hasSetup, homeFor, startSession } from '@/lib/auth';
 import { claimApplications } from '@/lib/db';
 import { safeThen } from '@/lib/oauth';
-import { passwordLoginEnabled } from '@/lib/password';
+import { emailSignupEnabled } from '@/lib/password';
 import { consumeSignupCode } from '@/lib/password-reset';
 import { newPasswordProblem } from '@/lib/password-reset-rules';
 import { clientIp, overLimit, TOO_MANY } from '@/lib/rate-limit';
@@ -11,7 +11,7 @@ import { requiredText, validEmail } from '@/lib/validation';
 
 /** 이메일 가입 마무리: 메일로 받은 인증번호를 확인한 뒤 비밀번호가 있는 계정을 만든다. */
 export async function POST(request: NextRequest) {
-  if (!passwordLoginEnabled() || !hasSetup())
+  if (!emailSignupEnabled() || !hasSetup())
     return NextResponse.json({ error: '지금은 이메일로 가입할 수 없어요.' }, { status: 503 });
   if (await overLimit(`email-signup:${clientIp(request.headers)}`, 20, 3600))
     return NextResponse.json({ error: TOO_MANY }, { status: 429 });

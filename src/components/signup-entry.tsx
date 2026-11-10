@@ -6,7 +6,7 @@ import SignupForm from './signup-form';
 import { isProvider, openPayload, PROVIDER_LABEL, providerEnabled } from '@/lib/oauth';
 import { PENDING_COOKIE, socialSecret } from '@/lib/social-login';
 import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal';
-import { passwordLoginEnabled } from '@/lib/password';
+import { emailSignupEnabled } from '@/lib/password';
 
 type Pending = { provider: string; email: string; name: string };
 
@@ -24,7 +24,7 @@ export default async function SignupEntry({
   /** 'email'이면 이메일 가입 양식(메일 발송 설정이 있을 때만) */
   method?: string;
 }) {
-  const emailSignup = passwordLoginEnabled();
+  const emailSignup = emailSignupEnabled();
   const pending = openPayload<Pending>(
     (await cookies()).get(PENDING_COOKIE)?.value,
     socialSecret(),

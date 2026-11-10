@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserByEmail } from '@/lib/accounts';
 import { mailConfigured, sendMail } from '@/lib/mail';
-import { passwordLoginEnabled } from '@/lib/password';
+import { emailSignupEnabled } from '@/lib/password';
 import { createSignupCode } from '@/lib/password-reset';
 import {
   alreadyRegisteredMail,
@@ -17,7 +17,7 @@ import { requiredText, validEmail } from '@/lib/validation';
  * 화면에는 똑같이 안내한다(가입 여부를 화면으로 드러내지 않는다).
  */
 export async function POST(request: NextRequest) {
-  if (!passwordLoginEnabled())
+  if (!emailSignupEnabled())
     return NextResponse.json({ error: '지금은 이메일로 가입할 수 없어요.' }, { status: 503 });
   const body = await request.json().catch(() => ({}));
   const email = requiredText(body.email, 254).toLowerCase();

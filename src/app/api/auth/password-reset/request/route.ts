@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mailConfigured, sendMail } from '@/lib/mail';
-import { passwordLoginEnabled } from '@/lib/password';
+import { emailSignupEnabled } from '@/lib/password';
 import { createPasswordReset } from '@/lib/password-reset';
 import {
   RESEND_COOLDOWN_SECONDS,
@@ -16,7 +16,7 @@ import { requiredText, validEmail } from '@/lib/validation';
  * 같은 이메일은 60초에 한 번·하루 5번, 한 IP는 1시간에 10번까지만 실제로 보낸다.
  */
 export async function POST(request: NextRequest) {
-  if (!passwordLoginEnabled())
+  if (!emailSignupEnabled())
     return NextResponse.json({ error: '지금은 비밀번호 재설정을 쓸 수 없어요.' }, { status: 503 });
   const body = await request.json().catch(() => ({}));
   const email = requiredText(body.email, 254).toLowerCase();

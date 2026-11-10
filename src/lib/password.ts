@@ -29,6 +29,17 @@ export function passwordLoginEnabled(env: Record<string, string | undefined> = p
   );
 }
 
+/**
+ * 이메일 가입·비밀번호 재설정을 열지. 인증번호·재설정 링크를 실제로 메일로 보낼 수 있어야 한다.
+ * (체험 사이트는 비밀번호 로그인은 되지만 메일 설정이 없으면 이 둘은 닫는다. 개발 중에는 서버 로그로 대신한다.)
+ */
+export function emailSignupEnabled(env: Record<string, string | undefined> = process.env) {
+  return (
+    passwordLoginEnabled(env) &&
+    (env.NODE_ENV !== 'production' || Boolean(env.RESEND_API_KEY && env.MAIL_FROM))
+  );
+}
+
 /** 비밀번호가 있는 계정인지. 소셜 로그인으로만 가입한 계정은 저장된 값이 빈 문자열이다. */
 export function hasPassword(stored: string) {
   return stored.startsWith('scrypt$');

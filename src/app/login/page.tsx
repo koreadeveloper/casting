@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSession, homeFor } from '@/lib/auth';
 import { SOCIAL_NOTICE, SocialButtons } from '@/components/social-buttons';
-import { passwordLoginEnabled } from '@/lib/password';
+import { emailSignupEnabled, passwordLoginEnabled } from '@/lib/password';
 import LoginForm from './login-form';
 
 export const dynamic = 'force-dynamic';
@@ -20,6 +20,7 @@ export default async function LoginPage({
       next={safeNext}
       notice={(error && SOCIAL_NOTICE[error]) || ''}
       password={passwordLoginEnabled()}
+      forgot={emailSignupEnabled()}
       social={<SocialButtons only={['google']} next={safeNext} />}
     />
   );

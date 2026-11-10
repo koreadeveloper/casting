@@ -3,6 +3,7 @@ import { createHmac } from 'node:crypto';
 import assert from 'node:assert/strict';
 import {
   hashPassword,
+  emailSignupEnabled,
   passwordLoginEnabled,
   passwordProblem,
   verifyPassword,
@@ -216,4 +217,14 @@ test('비밀번호 로그인은 메일 설정이 없는 운영에서 막고, 체
     true,
   );
   assert.equal(passwordLoginEnabled({ NODE_ENV: 'production', RESEND_API_KEY: 'k' }), false);
+});
+
+test('이메일 가입·재설정은 메일을 실제로 보낼 수 있을 때만(체험 사이트라도 메일 설정이 없으면 닫음)', () => {
+  assert.equal(emailSignupEnabled({ NODE_ENV: 'production', DEMO_MODE: 'true' }), false);
+  assert.equal(
+    emailSignupEnabled({ NODE_ENV: 'production', RESEND_API_KEY: 'k', MAIL_FROM: 'a@b.c' }),
+    true,
+  );
+  assert.equal(emailSignupEnabled({ NODE_ENV: 'production' }), false);
+  assert.equal(emailSignupEnabled({ NODE_ENV: 'development' }), true);
 });
