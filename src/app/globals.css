@@ -7691,3 +7691,73 @@ a.admin-tile:hover {
 .admin-refresh {
   white-space: nowrap;
 }
+
+/* 공고 목록은 1024px 전까지 휴대폰 폭 카드라서, 태블릿 너비(720px~)의 2열 규칙을 따르지 않고 1열로 둔다 */
+@media (min-width: 720px) and (max-width: 1023.98px) {
+  .web-wide .role-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── 넓은 화면의 배우 쪽 화면(공고 목록·공고 상세·지원 현황) ──────────
+   휴대폰 폭(430px) 카드로 고정돼 있던 화면을 1024px 이상에서만 넓게 쓴다.
+   휴대폰·태블릿 모양과 내용 순서는 그대로다. */
+@media (min-width: 1024px) {
+  /* 화면 양옆에 24px씩은 남겨 카드 모양이 유지되게 한다 */
+  .app-shell.web-wide {
+    max-width: min(1120px, calc(100% - 48px));
+  }
+  .web-wide .home-header,
+  .web-wide .apply-header {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  .web-wide .screen-pad {
+    padding: 0 40px;
+  }
+  .web-wide .role-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* 공고 상세: 왼쪽은 공고 내용, 오른쪽은 제작진 정보와 지원 단추(스크롤해도 따라온다) */
+  .web-wide .apply-brief {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 32px;
+    align-items: start;
+    padding: 28px 40px 48px;
+  }
+  .web-wide .apply-side {
+    position: sticky;
+    top: 24px;
+  }
+  .web-wide .apply-side .producer-card {
+    margin-top: 0;
+    padding-bottom: 14px;
+  }
+  .web-wide .apply-side > * + * {
+    margin-top: 14px;
+  }
+  /* 지원서 작성은 입력 칸이 너무 길어지지 않게 가운데 적당한 폭으로 */
+  .web-wide .apply-form-step {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 40px 48px;
+  }
+
+  /* 지원 현황: 왼쪽은 진행 상황, 오른쪽은 접수 정보·안내·대화 */
+  .web-wide .status-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 32px;
+    align-items: start;
+    padding: 8px 40px 48px;
+  }
+  .web-wide .status-side {
+    position: sticky;
+    top: 74px;
+  }
+  .web-wide .status-side > .info-panel:first-child {
+    margin-top: 0;
+  }
+}

@@ -203,7 +203,7 @@ export default function ApplyForm({
   }
 
   return (
-    <main className="app-shell applicant-shell">
+    <main className="app-shell applicant-shell web-wide">
       <header className="apply-header">
         <Link href={home} className="apply-brand" style={{ color: 'inherit' }}>
           <BrandLogo size={26} />
@@ -218,273 +218,277 @@ export default function ApplyForm({
         </div>
       )}
       {step === 'brief' ? (
-        <div className="apply-content">
-          <div className={isPosterUrl(role.coverUrl) ? 'apply-cover has-poster' : 'apply-cover'}>
-            {isPosterUrl(role.coverUrl) && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                className="apply-cover-poster"
-                src={role.coverUrl}
-                alt=""
-                onError={(event) => {
-                  event.currentTarget.style.display = 'none';
-                }}
-              />
-            )}
-            <span className="cover-kicker">CASTING CALL</span>
-            {!isPosterUrl(role.coverUrl) && (
-              <span className="cover-star">
-                <BrandIcon name="sparkle" size={64} />
+        <div className="apply-content apply-brief">
+          <div className="apply-main">
+            <div className={isPosterUrl(role.coverUrl) ? 'apply-cover has-poster' : 'apply-cover'}>
+              {isPosterUrl(role.coverUrl) && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  className="apply-cover-poster"
+                  src={role.coverUrl}
+                  alt=""
+                  onError={(event) => {
+                    event.currentTarget.style.display = 'none';
+                  }}
+                />
+              )}
+              <span className="cover-kicker">CASTING CALL</span>
+              {!isPosterUrl(role.coverUrl) && (
+                <span className="cover-star">
+                  <BrandIcon name="sparkle" size={64} />
+                </span>
+              )}
+              <div>
+                <p>{role.projectTitle}</p>
+                <h1>{role.title}</h1>
+              </div>
+            </div>
+            <div className="apply-intro">
+              <span className="role-state">
+                {sample ? '예시 공고' : closed ? '지원 마감' : '지원 접수 중'}
               </span>
-            )}
-            <div>
-              <p>{role.projectTitle}</p>
-              <h1>{role.title}</h1>
+              <h2>
+                이 배역에
+                <br />
+                함께해 주세요
+              </h2>
+              {project?.logline && <p className="apply-logline">“{project.logline}”</p>}
+              <p>{role.description}</p>
             </div>
-          </div>
-          <div className="apply-intro">
-            <span className="role-state">
-              {sample ? '예시 공고' : closed ? '지원 마감' : '지원 접수 중'}
-            </span>
-            <h2>
-              이 배역에
-              <br />
-              함께해 주세요
-            </h2>
-            {project?.logline && <p className="apply-logline">“{project.logline}”</p>}
-            <p>{role.description}</p>
-          </div>
-          {/* 특수 장면 안내는 공고 필수 항목이라 항상 보여 준다. 안내 전 공고는 그렇다고 알린다. */}
-          <section
-            className={`brief-card scene-card${
-              role.specialScenes.length && !role.specialScenes.includes(NO_SPECIAL_SCENE)
-                ? ' has-scenes'
-                : ''
-            }`}
-          >
-            <h3>특수 장면 안내</h3>
-            {role.specialScenes.length === 0 ? (
-              <p className="scene-empty">
-                제작진이 아직 안내하지 않았어요. 지원 전에 담당자에게 꼭 확인해 주세요.
-              </p>
-            ) : (
-              <>
-                <div>
-                  <span>해당 장면</span>
-                  <strong>{specialScenesLabel(role.specialScenes)}</strong>
-                </div>
-                {role.specialNote && <p className="scene-note">{role.specialNote}</p>}
-              </>
-            )}
-          </section>
-          {(role.roleType || role.gender || role.ageMin > 0 || role.ageMax > 0) && (
-            <section className="brief-card">
-              <h3>배역 조건</h3>
-              <Row label="비중" value={ROLE_TYPES[role.roleType] ?? ''} />
-              <Row label="성별" value={ROLE_GENDERS[role.gender] ?? ''} />
-              <Row label="연령대" value={ageRangeLabel(role.ageMin, role.ageMax)} />
-              <Row label="모집 인원" value={role.headcount > 1 ? `${role.headcount}명` : ''} />
-            </section>
-          )}
-          {project && (
-            <section className="brief-card">
-              <h3>작품 정보</h3>
-              <Row
-                label="형식·장르"
-                value={[project.genre, project.genres.join('·')].filter(Boolean).join(' · ')}
-              />
-              <Row label="제작 구분" value={PRODUCTION_TYPES[project.productionType] ?? ''} />
-              <Row label="분량" value={project.runtime} />
-              <Row
-                label="공개"
-                value={[
-                  project.releaseChannels.map((value) => RELEASE_CHANNELS[value]).join('·'),
-                  project.releasePeriod,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              />
-              <Row
-                label="제작진"
-                value={[
-                  project.company,
-                  project.director && `연출 ${project.director}`,
-                  project.producerName && `PD ${project.producerName}`,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              />
-              <Row
-                label="오디션"
-                value={formatPeriod(project.auditionStart, project.auditionEnd)}
-              />
-              <Row label="리딩·리허설" value={formatPeriod(project.prepStart, project.prepEnd)} />
-            </section>
-          )}
-          <section className="brief-card">
-            <h3>촬영과 지원 조건</h3>
-            <div>
-              <span>촬영일</span>
-              <strong>
-                {formatDates(role.shootDates, 4) || role.shootDate}
-                {project?.shootSessions ? ` · 총 ${project.shootSessions}회차` : ''}
-              </strong>
-            </div>
-            <div>
-              <span>촬영 지역</span>
-              <strong>{role.location}</strong>
-            </div>
-            <div>
-              <span>출연료</span>
-              <strong>{role.pay}</strong>
-            </div>
-            <Row
-              label="제공"
-              value={(project?.perks ?? []).map((value) => PERKS[value]).join('·')}
-            />
-            <div>
-              <span>필수 조건</span>
-              <strong>{role.requirement || '별도 조건 없음'}</strong>
-            </div>
-            <div>
-              <span>지원 마감</span>
-              <strong>{koDate(role.deadline)}</strong>
-            </div>
-            <div>
-              <span>결과 안내 예정</span>
-              <strong>{koDate(role.announcementDate)}</strong>
-            </div>
-          </section>
-          {sample ? (
-            <section className="brief-card producer-card">
-              <h3>예시 공고 안내</h3>
-              <p className="producer-note">
-                캐스팅플로우가 공고가 어떻게 보이는지 알려 드리려고 만든 예시예요.
-                작품·제작진·조건은 모두 가상이고, 실제로 모집하지 않아서 지원할 수 없어요.
-              </p>
-              <Link className="button button-primary full" href={home}>
-                실제 모집 중인 배역 보기
-              </Link>
-            </section>
-          ) : (
-            <>
-              <section className="brief-card producer-card">
-                <h3>이 공고를 올린 제작진</h3>
-                <TrustBadges badges={trust} withNames />
-                <div>
-                  <span>담당</span>
-                  <strong>{role.contactName || '미기재'}</strong>
-                </div>
-                {producer ? (
-                  <>
-                    <div>
-                      <span>등록자</span>
-                      <strong>
-                        {producer.name}
-                        {producer.orgName ? ` · ${producer.orgName}` : ''}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>소속 유형</span>
-                      <strong>{producer.orgType || '미기재'}</strong>
-                    </div>
-                    <div>
-                      <span>올린 공고</span>
-                      <strong>
-                        {producer.totalRoles}개
-                        {producer.totalRoles > 1 && ` · 모집 중 ${producer.openRoles}개`}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>가입</span>
-                      <strong>
-                        {producer.memberSince.slice(0, 4)}년{' '}
-                        {Number(producer.memberSince.slice(5, 7))}월
-                      </strong>
-                    </div>
-                    <p className="producer-note">
-                      {trust?.school || trust?.business
-                        ? '인증 표시는 재학증명서·학교 이메일·사업자등록증을 확인한 결과예요. 나머지 내용은 제작자가 직접 등록한 정보이니, 출연료·촬영 조건은 꼭 담당자와 직접 확인해 주세요.'
-                        : '위 내용은 제작자가 직접 등록한 정보이고, 학교·제작사 인증을 아직 받지 않은 제작진이에요. 출연료·촬영 조건은 꼭 담당자와 직접 확인해 주세요.'}
-                    </p>
-                  </>
-                ) : (
-                  <p className="producer-note">
-                    이 공고는 계정에 연결되지 않은 공고입니다. 제작진 정보를 담당자에게 직접 확인해
-                    주세요.
-                  </p>
-                )}
-                <Link
-                  href={`/contact?type=report&link=${encodeURIComponent(`/apply/${role.slug}`)}`}
-                  className="account-danger"
-                >
-                  이 공고 신고하기
-                </Link>
-              </section>
-              {isChildRole(role.ageMin, role.ageMax) ? (
-                <div className="child-notice" role="note">
-                  <strong>만 14세 미만 아역 배역이에요</strong>
-                  <p>
-                    지금은 만 14세 미만의 지원서를 받을 수 없어요. 보호자가 제작진(
-                    {role.contactName || '공고 담당자'})에게 직접 문의해 주세요.
-                  </p>
-                </div>
-              ) : appliedToken ? (
-                <>
-                  <p className="small-note">
-                    이미 지원한 배역이에요. 같은 배역에는 한 번만 지원할 수 있어요.
-                  </p>
-                  <Link
-                    className="button button-primary full sticky-action"
-                    href={`/status/${appliedToken}`}
-                  >
-                    내 지원 현황 보기
-                  </Link>
-                </>
+            {/* 특수 장면 안내는 공고 필수 항목이라 항상 보여 준다. 안내 전 공고는 그렇다고 알린다. */}
+            <section
+              className={`brief-card scene-card${
+                role.specialScenes.length && !role.specialScenes.includes(NO_SPECIAL_SCENE)
+                  ? ' has-scenes'
+                  : ''
+              }`}
+            >
+              <h3>특수 장면 안내</h3>
+              {role.specialScenes.length === 0 ? (
+                <p className="scene-empty">
+                  제작진이 아직 안내하지 않았어요. 지원 전에 담당자에게 꼭 확인해 주세요.
+                </p>
               ) : (
                 <>
-                  {guest && !closed ? (
-                    <div className="join-apply">
-                      <strong>Google로 가입하고 지원하면 더 편해요</strong>
-                      <ul>
-                        <li>다음 지원부터 프로필이 자동으로 채워져요</li>
-                        <li>지원 현황과 제작진 채팅을 한곳에서 볼 수 있어요</li>
-                        <li>제작진의 출연 제안을 받을 수 있어요</li>
-                      </ul>
-                      <a
-                        className="button button-primary full"
-                        href={`/signup/actor?then=${encodeURIComponent(`/apply/${role.slug}`)}`}
-                      >
-                        Google로 가입하고 지원하기
-                      </a>
-                      <p className="join-apply-login">
-                        이미 회원이면{' '}
-                        <a href={`/login?next=${encodeURIComponent(`/apply/${role.slug}`)}`}>
-                          로그인
-                        </a>
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="small-note">지원 후 접수 상태를 확인할 수 있습니다.</p>
-                  )}
-                  <button
-                    className={`button ${guest && !closed ? 'button-soft' : 'button-primary sticky-action'} full`}
-                    onClick={begin}
-                    disabled={closed}
-                  >
-                    {closed
-                      ? '지원이 마감되었습니다'
-                      : guest
-                        ? '가입 없이 지원하기'
-                        : '이 배역에 지원하기'}
-                  </button>
+                  <div>
+                    <span>해당 장면</span>
+                    <strong>{specialScenesLabel(role.specialScenes)}</strong>
+                  </div>
+                  {role.specialNote && <p className="scene-note">{role.specialNote}</p>}
                 </>
               )}
-            </>
-          )}
+            </section>
+            {(role.roleType || role.gender || role.ageMin > 0 || role.ageMax > 0) && (
+              <section className="brief-card">
+                <h3>배역 조건</h3>
+                <Row label="비중" value={ROLE_TYPES[role.roleType] ?? ''} />
+                <Row label="성별" value={ROLE_GENDERS[role.gender] ?? ''} />
+                <Row label="연령대" value={ageRangeLabel(role.ageMin, role.ageMax)} />
+                <Row label="모집 인원" value={role.headcount > 1 ? `${role.headcount}명` : ''} />
+              </section>
+            )}
+            {project && (
+              <section className="brief-card">
+                <h3>작품 정보</h3>
+                <Row
+                  label="형식·장르"
+                  value={[project.genre, project.genres.join('·')].filter(Boolean).join(' · ')}
+                />
+                <Row label="제작 구분" value={PRODUCTION_TYPES[project.productionType] ?? ''} />
+                <Row label="분량" value={project.runtime} />
+                <Row
+                  label="공개"
+                  value={[
+                    project.releaseChannels.map((value) => RELEASE_CHANNELS[value]).join('·'),
+                    project.releasePeriod,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                />
+                <Row
+                  label="제작진"
+                  value={[
+                    project.company,
+                    project.director && `연출 ${project.director}`,
+                    project.producerName && `PD ${project.producerName}`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                />
+                <Row
+                  label="오디션"
+                  value={formatPeriod(project.auditionStart, project.auditionEnd)}
+                />
+                <Row label="리딩·리허설" value={formatPeriod(project.prepStart, project.prepEnd)} />
+              </section>
+            )}
+            <section className="brief-card">
+              <h3>촬영과 지원 조건</h3>
+              <div>
+                <span>촬영일</span>
+                <strong>
+                  {formatDates(role.shootDates, 4) || role.shootDate}
+                  {project?.shootSessions ? ` · 총 ${project.shootSessions}회차` : ''}
+                </strong>
+              </div>
+              <div>
+                <span>촬영 지역</span>
+                <strong>{role.location}</strong>
+              </div>
+              <div>
+                <span>출연료</span>
+                <strong>{role.pay}</strong>
+              </div>
+              <Row
+                label="제공"
+                value={(project?.perks ?? []).map((value) => PERKS[value]).join('·')}
+              />
+              <div>
+                <span>필수 조건</span>
+                <strong>{role.requirement || '별도 조건 없음'}</strong>
+              </div>
+              <div>
+                <span>지원 마감</span>
+                <strong>{koDate(role.deadline)}</strong>
+              </div>
+              <div>
+                <span>결과 안내 예정</span>
+                <strong>{koDate(role.announcementDate)}</strong>
+              </div>
+            </section>
+          </div>
+          <div className="apply-side">
+            {sample ? (
+              <section className="brief-card producer-card">
+                <h3>예시 공고 안내</h3>
+                <p className="producer-note">
+                  캐스팅플로우가 공고가 어떻게 보이는지 알려 드리려고 만든 예시예요.
+                  작품·제작진·조건은 모두 가상이고, 실제로 모집하지 않아서 지원할 수 없어요.
+                </p>
+                <Link className="button button-primary full" href={home}>
+                  실제 모집 중인 배역 보기
+                </Link>
+              </section>
+            ) : (
+              <>
+                <section className="brief-card producer-card">
+                  <h3>이 공고를 올린 제작진</h3>
+                  <TrustBadges badges={trust} withNames />
+                  <div>
+                    <span>담당</span>
+                    <strong>{role.contactName || '미기재'}</strong>
+                  </div>
+                  {producer ? (
+                    <>
+                      <div>
+                        <span>등록자</span>
+                        <strong>
+                          {producer.name}
+                          {producer.orgName ? ` · ${producer.orgName}` : ''}
+                        </strong>
+                      </div>
+                      <div>
+                        <span>소속 유형</span>
+                        <strong>{producer.orgType || '미기재'}</strong>
+                      </div>
+                      <div>
+                        <span>올린 공고</span>
+                        <strong>
+                          {producer.totalRoles}개
+                          {producer.totalRoles > 1 && ` · 모집 중 ${producer.openRoles}개`}
+                        </strong>
+                      </div>
+                      <div>
+                        <span>가입</span>
+                        <strong>
+                          {producer.memberSince.slice(0, 4)}년{' '}
+                          {Number(producer.memberSince.slice(5, 7))}월
+                        </strong>
+                      </div>
+                      <p className="producer-note">
+                        {trust?.school || trust?.business
+                          ? '인증 표시는 재학증명서·학교 이메일·사업자등록증을 확인한 결과예요. 나머지 내용은 제작자가 직접 등록한 정보이니, 출연료·촬영 조건은 꼭 담당자와 직접 확인해 주세요.'
+                          : '위 내용은 제작자가 직접 등록한 정보이고, 학교·제작사 인증을 아직 받지 않은 제작진이에요. 출연료·촬영 조건은 꼭 담당자와 직접 확인해 주세요.'}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="producer-note">
+                      이 공고는 계정에 연결되지 않은 공고입니다. 제작진 정보를 담당자에게 직접
+                      확인해 주세요.
+                    </p>
+                  )}
+                  <Link
+                    href={`/contact?type=report&link=${encodeURIComponent(`/apply/${role.slug}`)}`}
+                    className="account-danger"
+                  >
+                    이 공고 신고하기
+                  </Link>
+                </section>
+                {isChildRole(role.ageMin, role.ageMax) ? (
+                  <div className="child-notice" role="note">
+                    <strong>만 14세 미만 아역 배역이에요</strong>
+                    <p>
+                      지금은 만 14세 미만의 지원서를 받을 수 없어요. 보호자가 제작진(
+                      {role.contactName || '공고 담당자'})에게 직접 문의해 주세요.
+                    </p>
+                  </div>
+                ) : appliedToken ? (
+                  <>
+                    <p className="small-note">
+                      이미 지원한 배역이에요. 같은 배역에는 한 번만 지원할 수 있어요.
+                    </p>
+                    <Link
+                      className="button button-primary full sticky-action"
+                      href={`/status/${appliedToken}`}
+                    >
+                      내 지원 현황 보기
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    {guest && !closed ? (
+                      <div className="join-apply">
+                        <strong>Google로 가입하고 지원하면 더 편해요</strong>
+                        <ul>
+                          <li>다음 지원부터 프로필이 자동으로 채워져요</li>
+                          <li>지원 현황과 제작진 채팅을 한곳에서 볼 수 있어요</li>
+                          <li>제작진의 출연 제안을 받을 수 있어요</li>
+                        </ul>
+                        <a
+                          className="button button-primary full"
+                          href={`/signup/actor?then=${encodeURIComponent(`/apply/${role.slug}`)}`}
+                        >
+                          Google로 가입하고 지원하기
+                        </a>
+                        <p className="join-apply-login">
+                          이미 회원이면{' '}
+                          <a href={`/login?next=${encodeURIComponent(`/apply/${role.slug}`)}`}>
+                            로그인
+                          </a>
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="small-note">지원 후 접수 상태를 확인할 수 있습니다.</p>
+                    )}
+                    <button
+                      className={`button ${guest && !closed ? 'button-soft' : 'button-primary sticky-action'} full`}
+                      onClick={begin}
+                      disabled={closed}
+                    >
+                      {closed
+                        ? '지원이 마감되었습니다'
+                        : guest
+                          ? '가입 없이 지원하기'
+                          : '이 배역에 지원하기'}
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </div>
       ) : (
-        <div className="apply-content">
+        <div className="apply-content apply-form-step">
           <button className="back-link" onClick={() => setStep('brief')}>
             배역 정보
           </button>

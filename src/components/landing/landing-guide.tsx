@@ -17,7 +17,9 @@ import {
   ProducerSearchWeb,
   ProfileDraftScreen,
   RolesScreen,
+  RolesWeb,
   StatusScreen,
+  StatusWeb,
   WebColumn,
 } from './previews';
 import s from './landing.module.css';
@@ -143,8 +145,8 @@ const CONTENT: Record<ViewRole, RoleContent> = {
         label: '모집 중인 배역 화면 예시: 인증 배지와 촬영 조건',
         tone: 'lime',
         screen: <RolesScreen />,
-        // 배역 목록·지원 현황은 실제 웹에서도 가운데 좁은 화면이다.
-        web: { path: '/actor', layout: { nav: 'none' }, screen: <RolesScreen /> },
+        // 배역 목록·지원 현황은 실제 웹에서 왼쪽 메뉴 없이 넓은 본문이다.
+        web: { path: '/actor', layout: { nav: 'none' }, screen: <RolesWeb /> },
       },
       {
         title: '진행 상황 바로 확인하기',
@@ -153,7 +155,7 @@ const CONTENT: Record<ViewRole, RoleContent> = {
         label: '지원 현황 화면 예시: 오디션 대상 단계와 결과 안내 예정일',
         tone: 'dark',
         screen: <StatusScreen />,
-        web: { path: '/status/…', layout: { nav: 'none' }, screen: <StatusScreen /> },
+        web: { path: '/status/…', layout: { nav: 'none' }, screen: <StatusWeb /> },
       },
     ],
     start: { label: '배우로 시작하기', href: '/signup/actor' },

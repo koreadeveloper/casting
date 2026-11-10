@@ -30,7 +30,7 @@ export default async function ActorHome({
   const orgLines = await getProducerOrgLines(roles.map((role) => role.ownerId));
   const badges = await getProducerBadges(roles.map((role) => role.ownerId));
   return (
-    <main className="app-shell narrow">
+    <main className="app-shell narrow web-wide">
       <header className="home-header">
         <Link href="/" className="brand-word" style={{ color: 'inherit' }}>
           <BrandLogo />
@@ -85,16 +85,20 @@ export default async function ActorHome({
             )}
           </div>
         )}
-        {roles.map((role) => (
-          <RoleCard
-            key={role.id}
-            role={role}
-            orgLine={role.ownerId ? orgLines.get(role.ownerId) : undefined}
-            trust={(role.ownerId && badges.get(role.ownerId)) || null}
-          />
-        ))}
-        {/* 공고가 어떻게 보이는지 알려 주는 예시 공고. 검색할 때는 결과에 섞지 않는다. */}
-        {!searching && <RoleCard role={sampleRole(today)} sample />}
+        {(roles.length > 0 || !searching) && (
+          <div className="role-grid">
+            {roles.map((role) => (
+              <RoleCard
+                key={role.id}
+                role={role}
+                orgLine={role.ownerId ? orgLines.get(role.ownerId) : undefined}
+                trust={(role.ownerId && badges.get(role.ownerId)) || null}
+              />
+            ))}
+            {/* 공고가 어떻게 보이는지 알려 주는 예시 공고. 검색할 때는 결과에 섞지 않는다. */}
+            {!searching && <RoleCard role={sampleRole(today)} sample />}
+          </div>
+        )}
       </div>
     </main>
   );

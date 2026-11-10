@@ -88,7 +88,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
   // 같은 이메일로 가입하면 이 지원서가 계정에 자동으로 붙는다.
   const suggestJoin = !application.actorId && !(await getSession());
   return (
-    <main className="app-shell narrow">
+    <main className="app-shell narrow web-wide">
       <header className="sub-header">
         <Link className="sh-back" href={`/apply/${role.slug}`} aria-label="배역 정보로">
           ‹
@@ -97,103 +97,109 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
         <span className="sh-more" />
       </header>
       <div className="status-wrap">
-        {suggestJoin && (
-          <div className="join-apply">
-            <strong>가입하고 이 지원서를 계정에서 관리해 보세요</strong>
-            <p>
-              지원할 때 쓴 이메일과 <b>같은 이메일의 Google 계정</b>으로 가입하면, 이 지원서가 내
-              계정에 자동으로 연결돼요. 이 링크를 잃어버려도 지원 현황과 채팅을 다시 찾을 수 있어요.
-            </p>
-            <a className="button button-primary full" href="/signup/actor?then=%2Fme">
-              Google로 가입하기
-            </a>
-          </div>
-        )}
-        <div className="mini-proj">
-          <div className="mp-main">
-            <span className="badge-soft mp-badge">{role.isClosed ? '지원 마감' : '모집 중'}</span>
-            <strong>{role.projectTitle}</strong>
-            <span>
-              {role.title} · {application.name}
-            </span>
-          </div>
-          <div className="mp-photo">
-            {application.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={application.photoUrl} alt={`${application.name} 프로필 사진`} />
-            ) : (
-              application.name.slice(-2)
-            )}
-          </div>
-        </div>
-        {/* 배우도 먼저 문의를 시작할 수 있다. 카드 전체를 누르면 대화 화면으로 간다. */}
-        <Link href={chatHref} className="pd-card pd-card-link">
-          <div className="avatar">{role.contactName.slice(-2)}</div>
-          <div className="pd-main">
-            <strong>{role.contactName}</strong>
-            <p>프로젝트 관련 문의는 언제든지 대화로 남겨주세요.</p>
-          </div>
-          <span className="pd-go">대화하기 ›</span>
-        </Link>
-        <StageProgress
-          stage={actorStageOf(application)}
-          message={actorStageMessage(application, delayed)}
-          auto={Boolean(application.resultAutoAt) && application.publicStage === 'not_selected'}
-          delayed={delayed}
-        />
-        {nextShoot && (
-          <AttendanceCard
-            receipt={token}
-            shootDate={nextShoot}
-            dateLabel={shootDateLabel(nextShoot)}
-            dayLabel={shootDayLabel(nextShoot, today)}
-            askOpen={isAttendanceAskOpen(nextShoot, today)}
-            answer={attendance.find((item) => item.shootDate === nextShoot) ?? null}
-          />
-        )}
-        {offer && <OfferResponse applicationId={application.id} receipt={token} offer={offer} />}
-        <div className="info-panel">
-          <div>
-            <span>접수일</span>
-            <strong>{koDate(application.createdAt)}</strong>
-          </div>
-          <div>
-            <span>결과 안내 예정</span>
-            <strong>{koDate(resultDue)}</strong>
-          </div>
-        </div>
-        <p className="small-note">
-          {application.publicStage === 'received' && role.resultDueDate && !delayed && (
-            <>
-              결과 안내 예정일이 지나도록 결과가 정해지지 않으면 &lsquo;결과 안내 지연&rsquo;으로
-              표시하고, 제작진에게 결과 입력을 요청해요.
-              <br />
-            </>
+        {/* 넓은 화면에서는 왼쪽(진행 상황)·오른쪽(접수 정보·대화) 두 칸. 휴대폰은 위에서 아래로 이 순서 그대로. */}
+        <div className="status-main">
+          {suggestJoin && (
+            <div className="join-apply">
+              <strong>가입하고 이 지원서를 계정에서 관리해 보세요</strong>
+              <p>
+                지원할 때 쓴 이메일과 <b>같은 이메일의 Google 계정</b>으로 가입하면, 이 지원서가 내
+                계정에 자동으로 연결돼요. 이 링크를 잃어버려도 지원 현황과 채팅을 다시 찾을 수
+                있어요.
+              </p>
+              <a className="button button-primary full" href="/signup/actor?then=%2Fme">
+                Google로 가입하기
+              </a>
+            </div>
           )}
-          이 페이지 주소를 보관하면 공개된 진행 상태를 다시 확인할 수 있습니다. 제작진의 내부 검토
-          상태와 메모는 공개되지 않습니다.
-        </p>
-        {
-          <Link href={chatHref} className="status-chat-link">
-            <span className="scl-icon" aria-hidden>
-              💬
-            </span>
-            <span className="scl-main">
-              <strong>제작진과의 대화</strong>
+          <div className="mini-proj">
+            <div className="mp-main">
+              <span className="badge-soft mp-badge">{role.isClosed ? '지원 마감' : '모집 중'}</span>
+              <strong>{role.projectTitle}</strong>
               <span>
-                {lastMessage
-                  ? `${lastMessage.sender === 'producer' ? role.contactName : '나'}: ${
-                      lastMessage.kind === 'offer'
-                        ? '오디션 일정 제안'
-                        : lastMessage.body ||
-                          (lastMessage.attachment ? `📎 ${lastMessage.attachment.name}` : '')
-                    }`
-                  : '궁금한 점을 제작진에게 물어보세요.'}
+                {role.title} · {application.name}
               </span>
-            </span>
-            <span className="scl-go">대화 열기 ›</span>
+            </div>
+            <div className="mp-photo">
+              {application.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={application.photoUrl} alt={`${application.name} 프로필 사진`} />
+              ) : (
+                application.name.slice(-2)
+              )}
+            </div>
+          </div>
+          {/* 배우도 먼저 문의를 시작할 수 있다. 카드 전체를 누르면 대화 화면으로 간다. */}
+          <Link href={chatHref} className="pd-card pd-card-link">
+            <div className="avatar">{role.contactName.slice(-2)}</div>
+            <div className="pd-main">
+              <strong>{role.contactName}</strong>
+              <p>프로젝트 관련 문의는 언제든지 대화로 남겨주세요.</p>
+            </div>
+            <span className="pd-go">대화하기 ›</span>
           </Link>
-        }
+          <StageProgress
+            stage={actorStageOf(application)}
+            message={actorStageMessage(application, delayed)}
+            auto={Boolean(application.resultAutoAt) && application.publicStage === 'not_selected'}
+            delayed={delayed}
+          />
+          {nextShoot && (
+            <AttendanceCard
+              receipt={token}
+              shootDate={nextShoot}
+              dateLabel={shootDateLabel(nextShoot)}
+              dayLabel={shootDayLabel(nextShoot, today)}
+              askOpen={isAttendanceAskOpen(nextShoot, today)}
+              answer={attendance.find((item) => item.shootDate === nextShoot) ?? null}
+            />
+          )}
+          {offer && <OfferResponse applicationId={application.id} receipt={token} offer={offer} />}
+        </div>
+        <div className="status-side">
+          <div className="info-panel">
+            <div>
+              <span>접수일</span>
+              <strong>{koDate(application.createdAt)}</strong>
+            </div>
+            <div>
+              <span>결과 안내 예정</span>
+              <strong>{koDate(resultDue)}</strong>
+            </div>
+          </div>
+          <p className="small-note">
+            {application.publicStage === 'received' && role.resultDueDate && !delayed && (
+              <>
+                결과 안내 예정일이 지나도록 결과가 정해지지 않으면 &lsquo;결과 안내 지연&rsquo;으로
+                표시하고, 제작진에게 결과 입력을 요청해요.
+                <br />
+              </>
+            )}
+            이 페이지 주소를 보관하면 공개된 진행 상태를 다시 확인할 수 있습니다. 제작진의 내부 검토
+            상태와 메모는 공개되지 않습니다.
+          </p>
+          {
+            <Link href={chatHref} className="status-chat-link">
+              <span className="scl-icon" aria-hidden>
+                💬
+              </span>
+              <span className="scl-main">
+                <strong>제작진과의 대화</strong>
+                <span>
+                  {lastMessage
+                    ? `${lastMessage.sender === 'producer' ? role.contactName : '나'}: ${
+                        lastMessage.kind === 'offer'
+                          ? '오디션 일정 제안'
+                          : lastMessage.body ||
+                            (lastMessage.attachment ? `📎 ${lastMessage.attachment.name}` : '')
+                      }`
+                    : '궁금한 점을 제작진에게 물어보세요.'}
+                </span>
+              </span>
+              <span className="scl-go">대화 열기 ›</span>
+            </Link>
+          }
+        </div>
       </div>
     </main>
   );
