@@ -4575,9 +4575,13 @@ body:has(.save-bar) .toast {
   text-overflow: ellipsis;
 }
 /* 빈 화면 안내 아래 이동 버튼 */
+/* 빈 상태 안내 아래에 따로 한 줄로 두는 단추(글 옆에 붙지 않게) */
 .empty-cta {
-  display: inline-flex;
-  margin-top: 12px;
+  display: flex;
+  width: fit-content;
+  margin: 16px auto 0;
+  padding: 11px 18px;
+  font-size: 13px;
 }
 
 /* ══ 메탈릭 퓨처리즘 + 사이버 UI ═══════════════════════════

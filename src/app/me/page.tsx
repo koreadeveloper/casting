@@ -139,11 +139,11 @@ export default async function ActorHome({
         </div>
         {applications.length === 0 ? (
           <div className="empty-card">
-            아직 지원한 배역이 없습니다.
+            아직 지원한 배역이 없어요.
             <br />
             아래 공고에서 첫 지원을 시작해 보세요.
             <a href="#open-roles" className="button button-soft empty-cta">
-              모집 중인 배역 보기
+              모집 중인 배역 보기 ↓
             </a>
           </div>
         ) : (
