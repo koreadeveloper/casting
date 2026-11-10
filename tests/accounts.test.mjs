@@ -227,4 +227,13 @@ test('이메일 가입·재설정은 메일을 실제로 보낼 수 있을 때�
   );
   assert.equal(emailSignupEnabled({ NODE_ENV: 'production' }), false);
   assert.equal(emailSignupEnabled({ NODE_ENV: 'development' }), true);
+  // 도메인 없이 Gmail로 보내도 켜진다
+  assert.equal(
+    emailSignupEnabled({
+      NODE_ENV: 'production',
+      GMAIL_USER: 'a@gmail.com',
+      GMAIL_APP_PASSWORD: 'p',
+    }),
+    true,
+  );
 });
