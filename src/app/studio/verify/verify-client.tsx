@@ -324,6 +324,19 @@ function StatusLine({ slot, kind }: { slot: Slot; kind: 'school' | 'business' })
   return <p className="verify-status">아직 인증하지 않았어요.</p>;
 }
 
+/**
+ * 카드 제목 옆 표시. 인증됐을 때만 실제 배지를 보이고, 아니면 회색 '미인증'을 보인다.
+ * (배우에게 보이는 모습은 화면 위 미리보기에서 따로 보여 준다)
+ */
+function HeadBadge({ on, kind }: { on: boolean; kind: 'school' | 'business' }) {
+  if (!on) return <span className="trust-badge verify-badge-off">미인증</span>;
+  return kind === 'school' ? (
+    <span className="trust-badge trust-school">학교 인증</span>
+  ) : (
+    <span className="trust-badge trust-business">제작사 인증됨</span>
+  );
+}
+
 export default function VerifyClient({
   accountName,
   orgName,
@@ -401,7 +414,7 @@ export default function VerifyClient({
         <section className="verify-card">
           <div className="verify-head">
             <h2>학교 인증</h2>
-            <span className="trust-badge trust-school">학교 인증</span>
+            <HeadBadge on={Boolean(school.approved)} kind="school" />
           </div>
           <StatusLine slot={school} kind="school" />
           <p className="small-note">
@@ -425,7 +438,7 @@ export default function VerifyClient({
         <section className="verify-card">
           <div className="verify-head">
             <h2>제작사 인증</h2>
-            <span className="trust-badge trust-business">제작사 인증됨</span>
+            <HeadBadge on={Boolean(business.approved)} kind="business" />
           </div>
           <StatusLine slot={business} kind="business" />
           <p className="small-note">인디 제작사·프로덕션용이에요.</p>
