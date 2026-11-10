@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  normalizeServiceKey,
+  ntsFailureCode,
   businessInputProblems,
   judgeBusiness,
   ntsRequestItem,
@@ -53,4 +55,19 @@ test('불일치·휴업·폐업은 거절', () => {
   assert.equal(judgeBusiness(input, { ...ok, matched: false }).approved, false);
   assert.match(judgeBusiness(input, { ...ok, statusCode: '02' }).reasons[0], /휴업/);
   assert.match(judgeBusiness(input, { ...ok, statusCode: '03' }).reasons[0], /폐업/);
+});
+
+test('서비스 키: Encoding 값·공백이 섞여도 Decoding 값으로 맞춘다', () => {
+  const decoded = 'abc+def/ghi==';
+  assert.equal(normalizeServiceKey(decoded), decoded);
+  assert.equal(normalizeServiceKey('abc%2Bdef%2Fghi%3D%3D'), decoded);
+  assert.equal(normalizeServiceKey(' abc+def/ghi==\n'), decoded);
+  // 잘못된 %는 그대로 둔다
+  assert.equal(normalizeServiceKey('abc%zz'), 'abc%zz');
+});
+
+test('국세청 실패 코드: HTTP 상태와 응답 코드를 짧게', () => {
+  assert.equal(ntsFailureCode(401, null), '401');
+  assert.equal(ntsFailureCode(200, { status_code: 'BAD_JSON_REQUEST' }), '200·BAD_JSON_REQUEST');
+  assert.equal(ntsFailureCode(401, { code: -4, msg: '등록되지 않은 인증키 입니다.' }), '401·-4');
 });

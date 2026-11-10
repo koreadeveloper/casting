@@ -24,6 +24,33 @@ export type NtsResult = {
   statusText: string;
 };
 
+/**
+ * 공공데이터포털 서비스 키를 Decoding 값으로 맞춘다.
+ * 포털은 같은 키를 Encoding(%2B·%3D 등이 섞인 값)·Decoding 두 가지로 보여 주는데, 요청할 때 한 번 더 인코딩하므로
+ * Encoding 값을 그대로 쓰면 키가 망가진다. 복사하다 딸려 온 공백·줄바꿈도 지운다.
+ */
+export function normalizeServiceKey(raw: string) {
+  const key = raw.replace(/\s/g, '');
+  if (!/%[0-9a-f]{2}/i.test(key)) return key;
+  try {
+    return decodeURIComponent(key);
+  } catch {
+    return key;
+  }
+}
+
+/** 국세청 조회 실패를 사용자에게 알릴 때 붙이는 짧은 코드. 로그를 열지 않아도 원인을 좁힐 수 있게 한다. */
+export function ntsFailureCode(httpStatus: number, body: unknown) {
+  const data = (body ?? {}) as { status_code?: unknown; code?: unknown };
+  const detail =
+    typeof data.status_code === 'string' && data.status_code !== 'OK'
+      ? data.status_code
+      : typeof data.code === 'number' || typeof data.code === 'string'
+        ? String(data.code)
+        : '';
+  return detail ? `${httpStatus}·${detail}`.slice(0, 40) : String(httpStatus);
+}
+
 export const digitsOnly = (value: string) => value.replace(/\D/g, '');
 
 /** 입력값 형식 검사. 문제가 있으면 사용자에게 보여 줄 말, 없으면 빈 목록 */
