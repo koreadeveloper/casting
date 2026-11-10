@@ -445,3 +445,276 @@ export function StatusScreen() {
     </>
   );
 }
+
+/* ── 웹(데스크톱) 화면 ─────────────────────── */
+// 넓은 화면에서 들어온 방문자에게는 휴대폰 틀 대신 브라우저 창으로 보여 준다.
+// 실제 앱처럼 제작자·배우 홈은 왼쪽 메뉴 + 넓은 본문(app-shell wide), 배역 목록·지원 현황은 가운데 좁은 화면(app-shell narrow)이다.
+
+/** 실제 앱 왼쪽 메뉴(ProducerNav·ActorNav)와 같은 항목과 순서 */
+const NAV_ITEMS = {
+  producer: [
+    '프로젝트',
+    '배우 찾기',
+    '메시지',
+    '배우 추천',
+    '이상형 월드컵',
+    '팀 보드',
+    '캘린더',
+    '프로젝트 등록',
+    '내 정보',
+  ],
+  actor: ['홈', '프로필 관리', '미리보기', '로그아웃'],
+} as const;
+
+export type BrowserLayout =
+  | { nav: 'producer'; active: (typeof NAV_ITEMS)['producer'][number] }
+  | { nav: 'actor'; active: (typeof NAV_ITEMS)['actor'][number] }
+  | { nav: 'none' };
+
+/** 브라우저 창 틀. 안쪽은 880px 너비의 웹 화면으로 그린 뒤 틀 크기에 맞춰 줄인다. 화면 읽기 프로그램에는 한 장의 그림으로 읽힌다. */
+export function Browser({
+  label,
+  path,
+  layout,
+  children,
+}: {
+  label: string;
+  /** 주소창에 보일 실제 경로. 도메인은 아직 정해지지 않아 넣지 않는다. */
+  path: string;
+  layout: BrowserLayout;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={s.browser} role="img" aria-label={label}>
+      <div className={s.chrome} aria-hidden>
+        <span className={s.dots}>
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className={s.address}>{path}</span>
+      </div>
+      <div className={s.viewport}>
+        <div className={s.desk}>
+          {layout.nav === 'none' ? (
+            <div className={s.deskNarrow}>
+              <div className={s.deskHeader}>
+                <BrandLogo size={24} />
+              </div>
+              <div className={s.deskNarrowBody}>{children}</div>
+            </div>
+          ) : (
+            <>
+              <div className={s.deskSide}>
+                <div className={s.deskBrand}>
+                  <BrandLogo size={24} />
+                </div>
+                {NAV_ITEMS[layout.nav].map((item) => (
+                  <span key={item} className={item === layout.active ? s.deskNavOn : undefined}>
+                    <i />
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <div className={s.deskMain}>{children}</div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** 웹에서 기존 화면을 본문 가운데 알맞은 너비로 둔다. */
+export function WebColumn({ children }: { children: React.ReactNode }) {
+  return <div className={s.webColumn}>{children}</div>;
+}
+
+const webSearchActors = [
+  ...searchActors,
+  { name: '윤소희', face: 10, line: '23세 · 163cm · 서울', tags: ['따뜻한', '차분한'] },
+  { name: '최유나', face: 1, line: '25세 · 167cm · 경기', tags: ['시크한', '단단한'] },
+];
+
+/** 배우 찾기(/studio/actors) 웹: 왼쪽 조건 패널 + 3열 배우 목록 */
+export function ProducerSearchWeb() {
+  const filters: [string, string][] = [
+    ['성별', '여성'],
+    ['연령', '20대'],
+    ['지역', '서울·경기'],
+    ['촬영 가능일', '11월 9일'],
+    ['특기', '전체'],
+  ];
+  return (
+    <>
+      <Title sub="조건에 맞는 배우를 찾아 직접 제안하세요">배우 찾기</Title>
+      <div className={s.webSearch}>
+        <div className={s.webFilters}>
+          <strong>조건</strong>
+          {filters.map(([label, value]) => (
+            <div key={label}>
+              <small>{label}</small>
+              <span className={value === '전체' ? undefined : s.webFilterOn}>{value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="actor-grid">
+          {webSearchActors.map((actor, index) => (
+            <div key={actor.name} className="actor-tile">
+              <div className="tile-photo">
+                <img src={demoFace(actor.face)} alt="" />
+              </div>
+              <span className={`heart${index === 1 ? ' on' : ''}`}>{index === 1 ? '♥' : '♡'}</span>
+              <div className="tile-info">
+                <strong>{actor.name}</strong>
+                <span>{actor.line}</span>
+                <span className="avail-note avail-ok">촬영일 가능</span>
+                <div className="tag-row">
+                  {actor.tags.map((tag) => (
+                    <i key={tag}>{tag}</i>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** 프로젝트 지원자(/studio) 웹: 공고 정보와 숫자를 한 줄에, 지원자는 표처럼 넓게 */
+export function ApplicantsWeb() {
+  return (
+    <>
+      <Back>프로젝트</Back>
+      <Title sub="단편영화 〈봄날〉 · 샘플">지원자</Title>
+      <div className={s.webApplicantsTop}>
+        <div className={s.uiRoleBox}>
+          <div className={s.uiRoleHead}>
+            <div>
+              <strong>민수 역 · 접수 중</strong>
+              <small>촬영 11/9 · 서울 마포구 · 11월 6일 마감</small>
+            </div>
+            <span className={s.uiLive}>모집 중</span>
+          </div>
+          <div className={s.uiBtnRow}>
+            <span>지원 링크 복사</span>
+            <span>지원 화면 보기</span>
+            <span>접수 마감</span>
+          </div>
+        </div>
+        <div className={s.uiStats}>
+          <div>
+            <b>10</b>
+            <span>전체 지원</span>
+          </div>
+          <div>
+            <b>7</b>
+            <span>미검토</span>
+          </div>
+          <div>
+            <b>0</b>
+            <span>오디션 후보</span>
+          </div>
+        </div>
+      </div>
+      <div className={s.uiList}>
+        {applicants.map((person) => (
+          <div key={person.name} className={s.uiPerson}>
+            <img src={demoFace(person.face)} alt="" />
+            <div>
+              <strong>{person.name}</strong>
+              <small>{person.line}</small>
+            </div>
+            <span className={`status-chip ${person.chip[0]}`}>{person.chip[1]}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+type BoardCard = {
+  name: string;
+  face: number;
+  line: string;
+  hearts: string;
+  memo?: [string, string];
+};
+
+const boardColumns: { title: string; cards: BoardCard[] }[] = [
+  {
+    title: '서류 검토',
+    cards: [
+      {
+        name: '김도윤',
+        face: 2,
+        line: '26세 · 단편 3편',
+        hearts: '♥ 2 · 지현, 민지',
+        memo: ['민지', '대화 장면 톤이 배역이랑 잘 맞아요.'],
+      },
+      { name: '정민재', face: 11, line: '24세 · 웹드라마 2편', hearts: '♥ 0' },
+    ],
+  },
+  {
+    title: '서류 통과',
+    cards: [{ name: '이준호', face: 9, line: '25세 · 단편 4편', hearts: '♥ 1 · 지현' }],
+  },
+  {
+    title: '오디션 후보',
+    cards: [
+      {
+        name: '한도현',
+        face: 16,
+        line: '23세 · 단편 2편',
+        hearts: '♥ 2 · 지현, 민지',
+        memo: ['지현', '오디션 때 2장 대사로 보고 싶어요.'],
+      },
+    ],
+  },
+  { title: '보류', cards: [] },
+];
+
+/** 팀 보드(/studio/board) 웹: 단계별 칸에 후보 카드를 나란히 */
+export function BoardWeb() {
+  return (
+    <>
+      <Title sub="팀원과 함께 지원자를 검토하세요">팀 보드</Title>
+      <div className={s.uiMembers}>
+        <span className={s.uiAvatar}>지현</span>
+        <span className={`${s.uiAvatar} ${s.uiAvatarAlt}`}>민지</span>
+        <span className={s.uiInvite}>+ 팀원 초대</span>
+      </div>
+      <div className={s.webBoard}>
+        {boardColumns.map((column, index) => (
+          <div key={column.title} className={s.webColumnLane}>
+            <div className={s.webLaneHead}>
+              <small>{column.title === '보류' ? '—' : String(index + 1).padStart(2, '0')}</small>
+              <span>{column.title}</span>
+              <b>{column.cards.length}</b>
+            </div>
+            {column.cards.length === 0 && <p className={s.webLaneEmpty}>카드가 없어요</p>}
+            {column.cards.map((card) => (
+              <div key={card.name} className={s.webLaneCard}>
+                <div className={s.uiBoardCard}>
+                  <img src={demoFace(card.face)} alt="" />
+                  <div>
+                    <strong>{card.name}</strong>
+                    <small>{card.line}</small>
+                    <span className={s.uiHearts}>{card.hearts}</span>
+                  </div>
+                </div>
+                {card.memo && (
+                  <p className={s.uiMemo}>
+                    <b>{card.memo[0]}</b> {card.memo[1]}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}

@@ -1076,3 +1076,365 @@
     padding: 80px 40px;
   }
 }
+
+/* ── 브라우저 창 틀(웹 화면 미리보기) ─────────────
+   --bw(창 너비, px 숫자)는 감싸는 영역이 정한다. 안쪽은 880px 너비로 그린 뒤 창에 맞게 줄인다. */
+.browser {
+  --bw: 600;
+  width: calc(var(--bw) * 1px);
+  height: calc(var(--bw) * 0.78px);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--page);
+  box-shadow:
+    0 0 0 1px #0b0d121f,
+    0 34px 60px -24px #0b0d1266,
+    0 14px 26px -16px #0b0d1255;
+}
+.chrome {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 34px;
+  padding: 0 12px;
+  background: #eef0f5;
+  border-bottom: 1px solid var(--line);
+}
+.dots {
+  display: flex;
+  gap: 6px;
+}
+.dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d5d9e2;
+}
+.address {
+  flex: 1;
+  max-width: 62%;
+  margin: 0 auto;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: #fff;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform: translateX(-28px);
+}
+.viewport {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+.desk {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 880px;
+  height: 900px;
+  display: flex;
+  transform-origin: top left;
+  transform: scale(calc(var(--bw) / 880));
+  pointer-events: none;
+  user-select: none;
+  text-align: left;
+}
+.deskSide {
+  flex: none;
+  width: 178px;
+  padding: 22px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: #fff;
+  border-right: 1px solid var(--line);
+}
+.deskBrand {
+  padding: 0 8px 18px;
+}
+.deskSide > span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6d727d;
+}
+.deskSide > span i {
+  width: 15px;
+  height: 15px;
+  border-radius: 5px;
+  border: 1.6px solid currentColor;
+  opacity: 0.7;
+}
+.deskSide > .deskNavOn {
+  background: var(--obsidian);
+  color: var(--lime);
+}
+.deskMain {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 30px;
+}
+.deskNarrow {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.deskHeader {
+  width: 100%;
+  padding: 14px 26px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+.deskNarrowBody {
+  width: 400px;
+  min-height: 100%;
+  padding: 22px 20px;
+  background: #fff;
+  box-shadow: 0 10px 40px #0b0d120d;
+}
+.desk :global(.page-title) {
+  margin-bottom: 14px;
+}
+.desk :global(.greet-sub) {
+  margin-top: 0;
+}
+.desk :global(.pcard) {
+  margin-bottom: 10px;
+}
+.desk :global(.section-head) {
+  margin: 20px 0 10px;
+}
+.desk :global(.mini-proj) {
+  padding: 8px 0 16px;
+}
+.desk :global(.info-panel) {
+  margin: 16px 0;
+}
+.desk :global(.draft-result) {
+  margin-top: 12px;
+}
+.webColumn {
+  max-width: 560px;
+}
+
+/* 배우 찾기: 조건 패널 + 3열 */
+.webSearch {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.webSearch :global(.actor-grid) {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 12px;
+  margin: 0;
+}
+.webFilters {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.webFilters strong {
+  font-size: 14px;
+}
+.webFilters small {
+  display: block;
+  font-size: 11px;
+  color: var(--faint);
+  margin-bottom: 4px;
+}
+.webFilters span {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.webFilters .webFilterOn {
+  background: var(--obsidian);
+  border-color: var(--obsidian);
+  color: var(--lime);
+}
+
+/* 지원자: 공고 정보와 숫자를 한 줄에 */
+.webApplicantsTop {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+.webApplicantsTop .uiStats {
+  margin: 0;
+}
+.webApplicantsTop .uiStats div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 팀 보드: 단계별 칸 */
+.webBoard {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+.webColumnLane {
+  min-height: 420px;
+  border-radius: 18px;
+  padding: 10px;
+  background: #eef0f5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.webLaneHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 2px;
+}
+.webLaneHead small {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--faint);
+}
+.webLaneHead span {
+  font-size: 13px;
+  font-weight: 800;
+}
+.webLaneHead b {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fff;
+}
+.webLaneEmpty {
+  margin: 0;
+  padding: 18px 8px;
+  border: 1px dashed var(--chrome);
+  border-radius: 12px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--faint);
+}
+.webLaneCard {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+}
+.webLaneCard .uiBoardCard {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  align-items: flex-start;
+}
+.webLaneCard .uiBoardCard img {
+  width: 38px;
+  height: 46px;
+}
+.webLaneCard .uiMemo {
+  margin-top: 8px;
+  font-size: 11px;
+}
+
+/* ── 화면 너비에 따라 휴대폰 틀 / 브라우저 창 중 하나만 보인다 ── */
+.web {
+  display: none;
+}
+.webHero {
+  position: absolute;
+  top: 0;
+  transition:
+    transform 0.6s var(--ease),
+    filter 0.6s var(--ease);
+}
+.webFront {
+  z-index: 2;
+  left: 0;
+  transform: translateY(96px);
+}
+.webBack {
+  z-index: 1;
+  right: 0;
+  transform: translateY(10px) scale(0.9);
+  transform-origin: top right;
+  filter: saturate(0.85) brightness(0.97);
+}
+@media (min-width: 960px) {
+  .mobile {
+    display: none;
+  }
+  .web {
+    display: block;
+  }
+  .heroVisual .browser {
+    --bw: 380;
+  }
+  .step {
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+    gap: 56px;
+  }
+  /* 짝수 단계는 화면이 왼쪽이라 칸 비율도 뒤집는다 */
+  .step:nth-child(even) {
+    grid-template-columns: minmax(0, 1.22fr) minmax(0, 0.78fr);
+  }
+  .stepVisual {
+    padding: 52px 28px 0;
+  }
+  .stepVisual .web {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  .stepVisual .browser {
+    --bw: 440;
+    height: 560px;
+  }
+  .tone-dark .browser {
+    box-shadow:
+      0 0 0 1px #ffffff2e,
+      0 34px 60px -24px #000000;
+  }
+}
+/* 창 너비(--bw)는 오른쪽 칸 너비에서 안쪽 여백을 뺀 값에 맞춘다 */
+@media (min-width: 1060px) {
+  .heroVisual .browser {
+    --bw: 420;
+  }
+  .stepVisual .browser {
+    --bw: 500;
+  }
+}
+@media (min-width: 1160px) {
+  .heroVisual .browser {
+    --bw: 450;
+  }
+  .stepVisual .browser {
+    --bw: 570;
+  }
+}
