@@ -61,7 +61,7 @@ async function initialize(database: Conn) {
   const migrated = await database
     .prepare(
       `SELECT 1 FROM information_schema.columns
-       WHERE table_schema = current_schema() AND table_name='app_meta' AND column_name='value'`,
+       WHERE table_schema = current_schema() AND table_name='email_codes' AND column_name='code_hash'`,
     )
     .get();
   if (!migrated) {
@@ -310,11 +310,26 @@ async function initialize(database: Conn) {
       PRIMARY KEY (user_key, thread_key)
     );
   `);
-    await enableRowLevelSecurity(database);
-    // 이 표가 구조 변경 기준(맨 위 migrated)이라 반드시 마지막에 만든다.
     await database.exec(
       `CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')`,
     );
+    // 이메일 가입·비밀번호 재설정(lib/password-reset.ts).
+    // session_version: 비밀번호를 바꾸면 올라가서 다른 기기의 로그인을 끊는다.
+    // email_verified: 메일 주인임을 확인한 계정(구글 로그인·메일 인증번호·재설정 링크).
+    await addColumn(database, 'users', 'session_version', 'INTEGER NOT NULL DEFAULT 0');
+    await addColumn(database, 'users', 'email_verified', 'INTEGER NOT NULL DEFAULT 0');
+    await database.exec(
+      `UPDATE users SET email_verified=1 WHERE id IN (SELECT user_id FROM oauth_accounts)`,
+    );
+    // 이 표가 구조 변경 기준(맨 위 migrated)이다. 구조를 바꿀 때는 이 기준도 새로 만든 것으로 옮긴다.
+    // 한 트랜잭션 안에서 돌아서, 도중에 실패하면 이 표도 생기지 않고 다음 시작에 다시 시도한다.
+    await database.exec(`
+    -- 이메일 가입 인증번호. 원문은 메일로만 보내고 여기에는 해시만 둔다.
+    CREATE TABLE IF NOT EXISTS email_codes (
+      email TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL
+    );`);
+    await enableRowLevelSecurity(database);
   }
   await moveOldPrivateChats(database);
   await moveSoloPrivateChats(database);

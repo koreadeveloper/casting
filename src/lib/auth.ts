@@ -15,7 +15,10 @@ export function hasSetup() {
 export async function getSession(): Promise<Session | null> {
   const token = (await cookies()).get(COOKIE)?.value;
   const session = token ? readSessionToken(token, secret()) : null;
-  return session && (await getUserById(session.userId)) ? session : null;
+  if (!session) return null;
+  const user = await getUserById(session.userId);
+  // 비밀번호를 바꾸면 회원의 세션 버전이 올라가, 그 전에 만든 로그인(다른 기기)은 여기서 끊긴다.
+  return user && (session.version ?? 0) === user.sessionVersion ? session : null;
 }
 
 export async function getCurrentUser() {
@@ -34,7 +37,9 @@ export async function getActorId() {
 }
 
 export async function startSession(session: Session) {
-  (await cookies()).set(COOKIE, createSessionToken(session, secret()), {
+  const user = await getUserById(session.userId);
+  const version = session.version ?? user?.sessionVersion ?? 0;
+  (await cookies()).set(COOKIE, createSessionToken({ ...session, version }, secret()), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

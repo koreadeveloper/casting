@@ -16,15 +16,20 @@ export function verifyPassword(password: string, stored: string) {
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-/** 비밀번호가 있는 계정인지. 소셜 로그인으로만 가입한 계정은 저장된 값이 빈 문자열이다. */
 /**
- * 이메일·비밀번호 로그인을 받을지. 운영에서는 구글 로그인만 쓴다.
- * 체험 사이트(DEMO_MODE)는 공개된 체험 계정으로 들어가야 해서, 개발 중에는 테스트 계정으로 들어가야 해서 연다.
+ * 이메일·비밀번호 가입·로그인·재설정을 열지.
+ * 이메일 가입 인증번호와 재설정 링크를 메일로 보내야 해서, 운영에서는 메일 발송(Resend) 설정이 있을 때만 연다.
+ * 체험 사이트(DEMO_MODE)는 공개된 체험 계정으로, 개발 중에는 테스트 계정으로 들어가야 해서 연다.
  */
 export function passwordLoginEnabled(env: Record<string, string | undefined> = process.env) {
-  return env.NODE_ENV !== 'production' || env.DEMO_MODE === 'true';
+  return (
+    env.NODE_ENV !== 'production' ||
+    env.DEMO_MODE === 'true' ||
+    Boolean(env.RESEND_API_KEY && env.MAIL_FROM)
+  );
 }
 
+/** 비밀번호가 있는 계정인지. 소셜 로그인으로만 가입한 계정은 저장된 값이 빈 문자열이다. */
 export function hasPassword(stored: string) {
   return stored.startsWith('scrypt$');
 }

@@ -92,6 +92,11 @@ export default function LoginForm({
             </button>
           </form>
         )}
+        {password && (
+          <p className="small-note center">
+            <Link href="/forgot-password">비밀번호를 잊으셨나요?</Link>
+          </p>
+        )}
         {password && social && (
           <>
             <div className="divider-text">
