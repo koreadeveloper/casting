@@ -1187,11 +1187,12 @@
   min-width: 0;
   padding: 28px 30px;
 }
+/* 왼쪽 메뉴 없는 화면(배역 목록·지원 현황): 위에 로고 줄, 아래 넓은 본문 */
 .deskNarrow {
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  background: #fff;
 }
 .deskHeader {
   width: 100%;
@@ -1200,11 +1201,26 @@
   border-bottom: 1px solid var(--line);
 }
 .deskNarrowBody {
-  width: 400px;
-  min-height: 100%;
-  padding: 22px 20px;
+  width: 100%;
+  padding: 22px 28px;
   background: #fff;
-  box-shadow: 0 10px 40px #0b0d120d;
+}
+.webRoles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.webRoles :global(.pcard) {
+  margin: 0;
+}
+.webStatus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 22px;
+  align-items: start;
+}
+.webStatus :global(.info-panel) {
+  margin-top: 0;
 }
 .desk :global(.page-title) {
   margin-bottom: 14px;

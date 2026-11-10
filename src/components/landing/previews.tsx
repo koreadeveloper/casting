@@ -359,39 +359,104 @@ export function RolesScreen() {
         <h2>모집 중인 배역</h2>
       </div>
       {openRoles.map((role) => (
-        <div key={role.project} className="pcard role-link">
-          <div className="pcard-top">
-            <div className="pcard-img" style={{ width: 88, height: 112 }}>
-              <img src={projectCover(role.format)} alt="" />
-            </div>
-            <div className="pcard-info">
-              <span className="badge-soft">{role.deadline}</span>
-              <h3>{role.project}</h3>
-              <p className="sub">{role.role}</p>
-              <p className="org-line">{role.org}</p>
-              <TrustBadges
-                badges={
-                  role.verified
-                    ? { school: { name: '한빛대학교', until: '2027-10-31' } }
-                    : undefined
-                }
-              />
-              <p className="role-tags">{role.tags}</p>
-              <p className="meta">
-                {role.meta}
-                <br />
-                {role.pay}
-              </p>
-            </div>
-          </div>
-        </div>
+        <RoleCardMock key={role.project} role={role} />
       ))}
     </>
   );
 }
 
+const webOpenRoles = [
+  ...openRoles,
+  {
+    format: '뮤직비디오',
+    project: '뮤직비디오 〈파도〉',
+    role: '주인공',
+    org: '스튜디오 물결',
+    tags: '뮤직비디오 · 주연 · 성별 무관 · 20대',
+    meta: '촬영 11월 22일 · 강원 강릉시',
+    pay: '1일 30만 원',
+    deadline: '11월 14일 마감',
+    verified: true,
+  },
+];
+
+/** 배역 목록(/actor) 웹: 넓은 본문에 배역 카드 3열 */
+export function RolesWeb() {
+  return (
+    <>
+      <Title sub="배우는 언제나 무료 · 가입 없이도 지원할 수 있어요">오늘의 오디션</Title>
+      <div className={`section-head ${s.uiSection}`}>
+        <h2>모집 중인 배역</h2>
+      </div>
+      <div className={s.webRoles}>
+        {webOpenRoles.map((role) => (
+          <RoleCardMock key={role.project} role={role} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function RoleCardMock({ role }: { role: (typeof openRoles)[number] }) {
+  return (
+    <div className="pcard role-link">
+      <div className="pcard-top">
+        <div className="pcard-img" style={{ width: 88, height: 112 }}>
+          <img src={projectCover(role.format)} alt="" />
+        </div>
+        <div className="pcard-info">
+          <span className="badge-soft">{role.deadline}</span>
+          <h3>{role.project}</h3>
+          <p className="sub">{role.role}</p>
+          <p className="org-line">{role.org}</p>
+          <TrustBadges
+            badges={
+              role.verified ? { school: { name: '한빛대학교', until: '2027-10-31' } } : undefined
+            }
+          />
+          <p className="role-tags">{role.tags}</p>
+          <p className="meta">
+            {role.meta}
+            <br />
+            {role.pay}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** 지원 현황(/status/…): 지금 단계와 결과 안내 예정일, 오디션 시간 선택. */
 export function StatusScreen() {
+  return (
+    <>
+      <StatusProgress />
+      <StatusInfo />
+      <StatusSlots />
+    </>
+  );
+}
+
+/** 지원 현황(/status/…) 웹: 왼쪽은 진행 상황·오디션 시간, 오른쪽은 접수 정보 */
+export function StatusWeb() {
+  return (
+    <div className={s.webStatus}>
+      <div>
+        <StatusProgress />
+        <StatusSlots />
+      </div>
+      <div>
+        <StatusInfo />
+        <div className={s.uiCard}>
+          <strong className={s.uiCardTitle}>제작진과의 대화</strong>
+          <p className={s.uiCardNote}>이지현: 오디션 장소는 합정역 근처 연습실이에요.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatusProgress() {
   const steps = ['미열람', '검토 중', '오디션 대상', '결과'];
   return (
     <>
@@ -423,32 +488,42 @@ export function StatusScreen() {
           ))}
         </ol>
       </div>
-      <div className="info-panel">
-        <div>
-          <span>결과 안내 예정</span>
-          <strong>11월 7일</strong>
-        </div>
-        <div>
-          <span>촬영</span>
-          <strong>11월 9일 · 서울 마포구</strong>
-        </div>
-      </div>
-      <div className={s.uiCard}>
-        <strong className={s.uiCardTitle}>오디션 시간 제안</strong>
-        <p className={s.uiCardNote}>제작진이 제안한 오디션 시간입니다.</p>
-        <div className={s.uiSlots}>
-          <span className={s.uiSlotOn}>11/3 14:00</span>
-          <span>11/3 16:00</span>
-          <span>11/4 11:00</span>
-        </div>
-      </div>
     </>
+  );
+}
+
+function StatusInfo() {
+  return (
+    <div className="info-panel">
+      <div>
+        <span>결과 안내 예정</span>
+        <strong>11월 7일</strong>
+      </div>
+      <div>
+        <span>촬영</span>
+        <strong>11월 9일 · 서울 마포구</strong>
+      </div>
+    </div>
+  );
+}
+
+function StatusSlots() {
+  return (
+    <div className={s.uiCard}>
+      <strong className={s.uiCardTitle}>오디션 시간 제안</strong>
+      <p className={s.uiCardNote}>제작진이 제안한 오디션 시간입니다.</p>
+      <div className={s.uiSlots}>
+        <span className={s.uiSlotOn}>11/3 14:00</span>
+        <span>11/3 16:00</span>
+        <span>11/4 11:00</span>
+      </div>
+    </div>
   );
 }
 
 /* ── 웹(데스크톱) 화면 ─────────────────────── */
 // 넓은 화면에서 들어온 방문자에게는 휴대폰 틀 대신 브라우저 창으로 보여 준다.
-// 실제 앱처럼 제작자·배우 홈은 왼쪽 메뉴 + 넓은 본문(app-shell wide), 배역 목록·지원 현황은 가운데 좁은 화면(app-shell narrow)이다.
+// 실제 앱처럼 제작자·배우 홈은 왼쪽 메뉴 + 넓은 본문(app-shell wide), 배역 목록·지원 현황은 메뉴 없이 넓은 본문(app-shell web-wide)이다.
 
 /** 실제 앱 왼쪽 메뉴(ProducerNav·ActorNav)와 같은 항목과 순서 */
 const NAV_ITEMS = {
