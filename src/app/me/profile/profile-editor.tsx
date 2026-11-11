@@ -5,9 +5,14 @@ import { PROFILE_INTRO_MAX } from '@/lib/validation';
 import { useRef, useState } from 'react';
 import ActorNav from '@/components/actor-nav';
 import type { ActorProfileFull, ProfileDocument } from '@/lib/accounts';
-import { uploadPdfDirect } from '@/lib/direct-upload';
+import { shrinkProfilePdf, uploadPdfDirect } from '@/lib/direct-upload';
 import { readApiJson, shrinkImage } from '@/lib/image-resize';
-import { isPdfFile, PROFILE_PDF_MAX_LABEL, SERVER_UPLOAD_MAX_BYTES } from '@/lib/upload-limits';
+import {
+  formatMegabytes,
+  isPdfFile,
+  PROFILE_PDF_MAX_LABEL,
+  SERVER_UPLOAD_MAX_BYTES,
+} from '@/lib/upload-limits';
 import type { ProfileDraft } from '@/lib/profile-draft';
 import {
   currentText,
@@ -119,6 +124,8 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [docUploading, setDocUploading] = useState(false);
+  /** 큰 PDF를 줄이는 동안 단추에 보여 줄 말. */
+  const [shrinking, setShrinking] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [newDate, setNewDate] = useState('');
@@ -192,9 +199,27 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
     }
   }
 
+  /** 큰 PDF는 올리기 전에 줄인다. 줄였으면 얼마나 줄었는지 알려 줄 말도 돌려준다. */
+  async function preparePdf(file: File, purpose: 'document' | 'draft') {
+    if (!isPdfFile(file)) return { file, shrunkNote: '' };
+    setShrinking(true);
+    try {
+      const ready = await shrinkProfilePdf(file, purpose);
+      return {
+        file: ready,
+        shrunkNote:
+          ready === file
+            ? ''
+            : `PDF가 커서 ${formatMegabytes(file.size)} → ${formatMegabytes(ready.size)}로 줄였어요.`,
+      };
+    } finally {
+      setShrinking(false);
+    }
+  }
+
   async function uploadDocument(files: FileList | null) {
-    const file = files?.[0];
-    if (!file) return;
+    const picked = files?.[0];
+    if (!picked) return;
     if (profile.documents.length >= MAX_DOCUMENTS) {
       setError(`자료는 최대 ${MAX_DOCUMENTS}개까지 올릴 수 있어요.`);
       if (docInput.current) docInput.current.value = '';
@@ -203,6 +228,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
     setDocUploading(true);
     setError('');
     try {
+      const { file, shrunkNote } = await preparePdf(picked, 'document');
       // PDF는 저장소로 바로 올린다(20MB까지). 저장소를 못 쓰는 환경이면 예전처럼 서버로(4MB).
       const direct = isPdfFile(file) ? await uploadPdfDirect(file, 'document') : 'unavailable';
       let url = '';
@@ -225,12 +251,14 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
         if (!response.ok) throw new Error(data.error || '자료를 올리지 못했습니다.');
         url = data.url;
       }
-      const document: ProfileDocument = { name: file.name, url };
+      const document: ProfileDocument = { name: picked.name, url };
       setProfile((current) => ({
         ...current,
         documents: [...current.documents, document].slice(0, MAX_DOCUMENTS),
       }));
-      setNotice('자료를 올렸습니다. 저장을 눌러 프로필에 반영하세요.');
+      setNotice(
+        `${shrunkNote ? shrunkNote + ' ' : ''}자료를 올렸습니다. 저장을 눌러 프로필에 반영하세요.`,
+      );
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '자료를 올리지 못했습니다.');
     } finally {
@@ -278,10 +306,11 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
       let body: FormData | string = input instanceof File ? '' : input;
       // PDF는 저장소에 잠깐 올리고 이름만 보낸다(20MB까지, 서버가 읽은 뒤 지운다).
       if (input instanceof File) {
-        const stored = isPdfFile(input) ? await uploadPdfDirect(input, 'draft') : 'unavailable';
+        const { file } = await preparePdf(input, 'draft');
+        const stored = isPdfFile(file) ? await uploadPdfDirect(file, 'draft') : 'unavailable';
         if (stored !== 'unavailable') body = JSON.stringify({ stored });
         else {
-          const shrunk = await shrinkImage(input);
+          const shrunk = await shrinkImage(file);
           if (shrunk.size > SERVER_UPLOAD_MAX_BYTES)
             throw new Error('파일은 4MB 이하만 올릴 수 있어요.');
           body = new FormData();
@@ -451,7 +480,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                 경력기술서·프로필 PDF나 사진을 올리면 AI가 이름·나이·키·지역·특기·필모그래피를 읽어
                 입력칸 초안을 만들어요. 읽은 값은 바로 저장되지 않고, 확인한 항목만 채웁니다. 올린
                 파일은 읽는 동안에만 쓰이고 저장되지 않아요. PDF는 {PROFILE_PDF_MAX_LABEL}까지 올릴
-                수 있어요(사진은 자동으로 줄여서 올려요).
+                수 있고, 더 크면 자동으로 줄여서 올려요(사진도 자동으로 줄여요).
               </p>
               <div className="split-actions" style={{ marginTop: 12 }}>
                 <button
@@ -459,7 +488,11 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                   disabled={draftBusy}
                   onClick={() => draftInput.current?.click()}
                 >
-                  {draftBusy ? '읽는 중…' : 'PDF·사진 올려서 초안 만들기'}
+                  {draftBusy
+                    ? shrinking
+                      ? 'PDF 줄이는 중…'
+                      : '읽는 중…'
+                    : 'PDF·사진 올려서 초안 만들기'}
                 </button>
                 <button
                   className="button button-soft"
@@ -979,7 +1012,11 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                   disabled={docUploading}
                   onClick={() => docInput.current?.click()}
                 >
-                  {docUploading ? '올리는 중…' : `＋ PDF 자료 추가 (${PROFILE_PDF_MAX_LABEL}까지)`}
+                  {docUploading
+                    ? shrinking
+                      ? 'PDF 줄이는 중…'
+                      : '올리는 중…'
+                    : `＋ PDF 자료 추가 (${PROFILE_PDF_MAX_LABEL}까지)`}
                 </button>
               )}
               {profile.documents.length < MAX_DOCUMENTS && (
