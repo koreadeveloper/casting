@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/auth';
-import { readUpload } from '@/lib/storage';
+import { readUpload, signedDownloadUrl } from '@/lib/storage';
 import { NextRequest, NextResponse } from 'next/server';
 
 const TYPES: Record<string, string> = {
@@ -17,6 +17,16 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ na
   if (match[2] === 'pdf' && !(await getSession()))
     return new NextResponse('Unauthorized', { status: 401 });
   try {
+    // PDF는 20MB까지라 서버(응답 4.5MB 제한)를 거치지 않고 5분짜리 저장소 주소로 보낸다.
+    // 저장소가 없으면(로컬 개발) 아래처럼 서버가 직접 보낸다.
+    if (match[2] === 'pdf') {
+      const signed = await signedDownloadUrl(name, 300);
+      if (signed)
+        return NextResponse.redirect(signed, {
+          status: 307,
+          headers: { 'Cache-Control': 'private, no-store' },
+        });
+    }
     const body = await readUpload(name);
     if (!body) return new NextResponse('Not found', { status: 404 });
     return new NextResponse(body, {
