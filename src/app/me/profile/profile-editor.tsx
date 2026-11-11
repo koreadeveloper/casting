@@ -417,7 +417,8 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
               <p className="muted small">
                 경력기술서·프로필 PDF나 사진을 올리면 AI가 이름·나이·키·지역·특기·필모그래피를 읽어
                 입력칸 초안을 만들어요. 읽은 값은 바로 저장되지 않고, 확인한 항목만 채웁니다. 올린
-                파일은 읽는 동안에만 쓰이고 저장되지 않아요.
+                파일은 읽는 동안에만 쓰이고 저장되지 않아요. PDF는 4MB 이하만 올릴 수 있어요(사진은
+                자동으로 줄여서 올려요).
               </p>
               <div className="split-actions" style={{ marginTop: 12 }}>
                 <button
