@@ -9,11 +9,16 @@ import { extractPdfText } from '@/lib/pdf-text';
 import { draftFromText, draftSize } from '@/lib/profile-draft';
 import { profileAiConfigured, ProfileAiUnavailable, readProfileFile } from '@/lib/profile-ai';
 import { overLimit, TOO_MANY } from '@/lib/rate-limit';
+import { deleteStoredPaths, readStoredBytes } from '@/lib/storage';
+import { isStoredPdfName, PROFILE_PDF_MAX_BYTES } from '@/lib/upload-limits';
 
-// 서버리스 요청 크기 제한(4.5MB)보다 작게 둔다.
+// 서버로 바로 보내는 파일(사진)은 서버리스 요청 크기 제한(4.5MB)보다 작게 둔다.
+// PDF는 브라우저가 저장소의 tmp/에 바로 올리고 이름만 보낸다(20MB까지). 읽은 뒤 바로 지운다.
 const MAX_BYTES = CHAT_FILE_MAX_BYTES;
 const MAX_TEXT = 200_000;
 const NO_STORE = { 'Cache-Control': 'private, no-store' };
+// 큰 PDF(20MB까지)는 AI가 읽는 데 시간이 걸린다.
+export const maxDuration = 120;
 
 const QUALITY_NOTE = {
   good: '글꼴을 여러 개 쓴 PDF에서는 일부 글자가 다르게 읽힐 수 있어요. 채우기 전에 값을 확인해 주세요.',
@@ -22,6 +27,18 @@ const QUALITY_NOTE = {
 } as const;
 
 export async function POST(request: NextRequest) {
+  let temporary = '';
+  try {
+    return await handle(request, (path) => {
+      temporary = path;
+    });
+  } finally {
+    // 올린 파일은 저장하지 않는다: 저장소에 잠깐 올린 PDF는 읽고 나면 성공·실패와 상관없이 지운다.
+    if (temporary) await deleteStoredPaths([temporary]);
+  }
+}
+
+async function handle(request: NextRequest, remember: (path: string) => void) {
   const actorId = await getActorId();
   if (!actorId)
     return NextResponse.json({ error: '배우 계정으로 로그인해 주세요.' }, { status: 401 });
@@ -29,8 +46,14 @@ export async function POST(request: NextRequest) {
   const type = request.headers.get('content-type') || '';
 
   // 글자를 직접 붙여넣는 길. PDF를 못 읽는 경우에도 늘 동작한다.
-  if (type.includes('application/json')) {
-    const body = await request.json().catch(() => ({}));
+  let body: Record<string, unknown> = {};
+  if (type.includes('application/json')) body = await request.json().catch(() => ({}));
+  const stored = typeof body.stored === 'string' ? body.stored : '';
+  if (stored && !isStoredPdfName(stored))
+    return NextResponse.json({ error: '파일 이름이 맞지 않아요.' }, { status: 400 });
+  if (stored) remember(`tmp/${stored}`);
+
+  if (type.includes('application/json') && !stored) {
     const text = typeof body.text === 'string' ? body.text.slice(0, MAX_TEXT) : '';
     if (text.trim().length < 10)
       return NextResponse.json({ error: '읽을 내용이 너무 짧습니다.' }, { status: 400 });
@@ -41,15 +64,29 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const form = await request.formData().catch(() => null);
-  const file = form?.get('file');
-  if (!(file instanceof File) || file.size === 0)
-    return NextResponse.json({ error: 'PDF 또는 사진 파일을 선택해 주세요.' }, { status: 400 });
-  if (file.size > MAX_BYTES)
-    return NextResponse.json({ error: '파일은 4MB 이하만 올릴 수 있습니다.' }, { status: 413 });
-
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const ext = detectChatFile(bytes, file.name);
+  let bytes: Uint8Array;
+  let fileName = 'profile.pdf';
+  if (stored) {
+    const read = await readStoredBytes(`tmp/${stored}`, PROFILE_PDF_MAX_BYTES);
+    if (!read)
+      return NextResponse.json(
+        { error: '올린 PDF를 찾지 못했어요. 다시 올려 주세요.' },
+        { status: 404 },
+      );
+    bytes = read;
+  } else {
+    const form = await request.formData().catch(() => null);
+    const file = form?.get('file');
+    if (!(file instanceof File) || file.size === 0)
+      return NextResponse.json({ error: 'PDF 또는 사진 파일을 선택해 주세요.' }, { status: 400 });
+    if (file.size > MAX_BYTES)
+      return NextResponse.json({ error: '파일은 4MB 이하만 올릴 수 있습니다.' }, { status: 413 });
+    bytes = new Uint8Array(await file.arrayBuffer());
+    fileName = file.name;
+  }
+  const ext = detectChatFile(bytes, fileName);
+  if (stored && ext !== 'pdf')
+    return NextResponse.json({ error: 'PDF 파일만 올릴 수 있어요.' }, { status: 415 });
   if (ext !== 'pdf' && ext !== 'jpg' && ext !== 'png' && ext !== 'webp')
     return NextResponse.json(
       { error: 'PDF 또는 사진(JPG·PNG·WEBP)만 읽을 수 있습니다.' },

@@ -5,7 +5,9 @@ import { PROFILE_INTRO_MAX } from '@/lib/validation';
 import { useRef, useState } from 'react';
 import ActorNav from '@/components/actor-nav';
 import type { ActorProfileFull, ProfileDocument } from '@/lib/accounts';
+import { uploadPdfDirect } from '@/lib/direct-upload';
 import { readApiJson, shrinkImage } from '@/lib/image-resize';
+import { isPdfFile, PROFILE_PDF_MAX_LABEL, SERVER_UPLOAD_MAX_BYTES } from '@/lib/upload-limits';
 import type { ProfileDraft } from '@/lib/profile-draft';
 import {
   currentText,
@@ -201,12 +203,29 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
     setDocUploading(true);
     setError('');
     try {
-      const form = new FormData();
-      form.append('file', await shrinkImage(file));
-      const response = await fetch('/api/uploads', { method: 'POST', body: form });
-      const data = await readApiJson<{ url: string; error?: string }>(response);
-      if (!response.ok) throw new Error(data.error || '자료를 올리지 못했습니다.');
-      const document: ProfileDocument = { name: file.name, url: data.url };
+      // PDF는 저장소로 바로 올린다(20MB까지). 저장소를 못 쓰는 환경이면 예전처럼 서버로(4MB).
+      const direct = isPdfFile(file) ? await uploadPdfDirect(file, 'document') : 'unavailable';
+      let url = '';
+      if (direct !== 'unavailable') {
+        const response = await fetch('/api/uploads/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: direct }),
+        });
+        const data = await readApiJson<{ url: string; error?: string }>(response);
+        if (!response.ok) throw new Error(data.error || '자료를 올리지 못했습니다.');
+        url = data.url;
+      } else {
+        if (file.size > SERVER_UPLOAD_MAX_BYTES)
+          throw new Error('지금은 4MB 이하 파일만 올릴 수 있어요.');
+        const form = new FormData();
+        form.append('file', await shrinkImage(file));
+        const response = await fetch('/api/uploads', { method: 'POST', body: form });
+        const data = await readApiJson<{ url: string; error?: string }>(response);
+        if (!response.ok) throw new Error(data.error || '자료를 올리지 못했습니다.');
+        url = data.url;
+      }
+      const document: ProfileDocument = { name: file.name, url };
       setProfile((current) => ({
         ...current,
         documents: [...current.documents, document].slice(0, MAX_DOCUMENTS),
@@ -251,18 +270,32 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
   }
 
   /** PDF를 읽어 초안을 만든다. 저장은 하지 않고 화면에서 확인하게 한다. */
-  async function makeDraft(body: FormData | string) {
+  async function makeDraft(input: FormData | string | File) {
     setDraftBusy(true);
     setError('');
     setDraft(null);
     try {
+      let body: FormData | string = input instanceof File ? '' : input;
+      // PDF는 저장소에 잠깐 올리고 이름만 보낸다(20MB까지, 서버가 읽은 뒤 지운다).
+      if (input instanceof File) {
+        const stored = isPdfFile(input) ? await uploadPdfDirect(input, 'draft') : 'unavailable';
+        if (stored !== 'unavailable') body = JSON.stringify({ stored });
+        else {
+          const shrunk = await shrinkImage(input);
+          if (shrunk.size > SERVER_UPLOAD_MAX_BYTES)
+            throw new Error('파일은 4MB 이하만 올릴 수 있어요.');
+          body = new FormData();
+          body.append('file', shrunk);
+        }
+      }
+      const json = typeof body === 'string';
       const response = await fetch(
         '/api/profile/draft',
-        typeof body === 'string'
+        json
           ? {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ text: body }),
+              body: input instanceof File ? (body as string) : JSON.stringify({ text: body }),
             }
           : { method: 'POST', body },
       );
@@ -417,8 +450,8 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
               <p className="muted small">
                 경력기술서·프로필 PDF나 사진을 올리면 AI가 이름·나이·키·지역·특기·필모그래피를 읽어
                 입력칸 초안을 만들어요. 읽은 값은 바로 저장되지 않고, 확인한 항목만 채웁니다. 올린
-                파일은 읽는 동안에만 쓰이고 저장되지 않아요. PDF는 4MB 이하만 올릴 수 있어요(사진은
-                자동으로 줄여서 올려요).
+                파일은 읽는 동안에만 쓰이고 저장되지 않아요. PDF는 {PROFILE_PDF_MAX_LABEL}까지 올릴
+                수 있어요(사진은 자동으로 줄여서 올려요).
               </p>
               <div className="split-actions" style={{ marginTop: 12 }}>
                 <button
@@ -444,11 +477,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (!file) return;
-                  void shrinkImage(file).then((shrunk) => {
-                    const form = new FormData();
-                    form.append('file', shrunk);
-                    return makeDraft(form);
-                  });
+                  void makeDraft(file);
                 }}
               />
               {pasteOpen && (
@@ -950,7 +979,7 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                   disabled={docUploading}
                   onClick={() => docInput.current?.click()}
                 >
-                  {docUploading ? '올리는 중…' : '＋ PDF 자료 추가'}
+                  {docUploading ? '올리는 중…' : `＋ PDF 자료 추가 (${PROFILE_PDF_MAX_LABEL}까지)`}
                 </button>
               )}
               {profile.documents.length < MAX_DOCUMENTS && (
