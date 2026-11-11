@@ -742,7 +742,7 @@ export default function ChatThread({
               void send('text');
             }
           }}
-          placeholder={file ? '파일과 함께 보낼 말 (선택)' : '메시지를 입력하세요'}
+          placeholder={file ? '파일과 함께 보낼 말' : '메시지를 입력하세요'}
         />
         <button
           className="send-btn"

@@ -22,7 +22,7 @@ import {
 } from '@/lib/project-meta';
 import { includesChildAge } from '@/lib/child-policy';
 import type { ProjectUsage } from '@/lib/accounts';
-import { RESULT_WARNING_DAYS, resultDueDate } from '@/lib/result-deadline';
+import { resultDueDate } from '@/lib/result-deadline';
 import { daysBetween, formatDates, formatPeriod, normalizeDates } from '@/lib/schedule';
 
 // 등록과 수정이 같은 5단계를 쓴다. 배역 수정도 여기서 한다('수정'은 모두 프로젝트 수정에 모은다).
@@ -459,7 +459,7 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
             </p>
             <div className="role-form">
               <p className="form-legend">
-                <em>*</em> 표시는 꼭 채워야 하는 항목이에요. 나머지는 나중에 채워도 됩니다.
+                <em>*</em> 필수 항목
               </p>
 
               {step === 0 && (
@@ -467,11 +467,7 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                   <h2 className="wiz-section">작품</h2>
                   <label>
                     작품명 <em>*</em>
-                    <input
-                      value={draft.title}
-                      onChange={set('title')}
-                      placeholder="예: 단편영화 〈봄날〉"
-                    />
+                    <input value={draft.title} onChange={set('title')} />
                   </label>
                   <div className="form-two">
                     <label>
@@ -484,7 +480,7 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                       </select>
                     </label>
                     <label>
-                      제작 구분 <i>선택</i>
+                      제작 구분
                       <select value={draft.productionType} onChange={set('productionType')}>
                         <option value="">선택 안 함</option>
                         {Object.entries(PRODUCTION_TYPES).map(([value, label]) => (
@@ -520,7 +516,7 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                   </fieldset>
                   <div className="form-two">
                     <label>
-                      분량 <i>선택</i>
+                      분량
                       <input
                         value={draft.runtime}
                         onChange={set('runtime')}
@@ -528,7 +524,7 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                       />
                     </label>
                     <label>
-                      공개 예정 시기 <i>선택</i>
+                      공개 예정 시기
                       <input
                         value={draft.releasePeriod}
                         onChange={set('releasePeriod')}
@@ -557,27 +553,23 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
 
                   <h2 className="wiz-section">제작진</h2>
                   <label>
-                    제작사·단체 <i>선택</i>
-                    <input
-                      value={draft.company}
-                      onChange={set('company')}
-                      placeholder="예: 한국영화아카데미, ○○필름"
-                    />
+                    제작사·단체
+                    <input value={draft.company} onChange={set('company')} />
                   </label>
                   <div className="form-two">
                     <label>
-                      연출 <i>선택</i>
+                      연출
                       <input value={draft.director} onChange={set('director')} />
                     </label>
                     <label>
-                      프로듀서 <i>선택</i>
+                      프로듀서
                       <input value={draft.producerName} onChange={set('producerName')} />
                     </label>
                   </div>
 
                   <h2 className="wiz-section">소개</h2>
                   <label>
-                    한 줄 소개 <i>선택</i>
+                    한 줄 소개
                     <input
                       value={draft.logline}
                       onChange={set('logline')}
@@ -586,13 +578,8 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                     />
                   </label>
                   <label>
-                    시놉시스 <i>선택</i>
-                    <textarea
-                      rows={4}
-                      value={draft.description}
-                      onChange={set('description')}
-                      placeholder="줄거리와 분위기, 참고 작품을 적어 주세요."
-                    />
+                    시놉시스
+                    <textarea rows={4} value={draft.description} onChange={set('description')} />
                   </label>
 
                   <h2 className="wiz-section">촬영 지역</h2>
@@ -609,7 +596,7 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                       </select>
                     </label>
                     <label>
-                      상세 위치 {draft.region === '미정' ? <i>선택</i> : <em>*</em>}
+                      상세 위치 {draft.region !== '미정' && <em>*</em>}
                       <input
                         value={draft.locationDetail}
                         onChange={set('locationDetail')}
@@ -625,7 +612,7 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                   <h2 className="wiz-section">오디션</h2>
                   <div className="form-two">
                     <label>
-                      시작일 <i>선택</i>
+                      시작일
                       <input
                         type="date"
                         value={draft.auditionStart}
@@ -633,18 +620,18 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                       />
                     </label>
                     <label>
-                      종료일 <i>선택</i>
+                      종료일
                       <input type="date" value={draft.auditionEnd} onChange={set('auditionEnd')} />
                     </label>
                   </div>
                   <h2 className="wiz-section">리딩·리허설</h2>
                   <div className="form-two">
                     <label>
-                      시작일 <i>선택</i>
+                      시작일
                       <input type="date" value={draft.prepStart} onChange={set('prepStart')} />
                     </label>
                     <label>
-                      종료일 <i>선택</i>
+                      종료일
                       <input type="date" value={draft.prepEnd} onChange={set('prepEnd')} />
                     </label>
                   </div>
@@ -655,12 +642,12 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                       <input type="date" value={draft.shootStart} onChange={set('shootStart')} />
                     </label>
                     <label>
-                      종료일 <i>선택</i>
+                      종료일
                       <input type="date" value={draft.shootEnd} onChange={set('shootEnd')} />
                     </label>
                   </div>
                   <label>
-                    총 회차 <i>선택</i>
+                    총 회차
                     <input
                       type="number"
                       min={0}
@@ -668,12 +655,10 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                       inputMode="numeric"
                       value={draft.shootSessions}
                       onChange={set('shootSessions')}
-                      placeholder="예: 3"
                     />
                   </label>
                   <p className="wiz-note">
-                    배역 촬영일은 기본으로 이 촬영 기간을 그대로 따라요. 배역마다 날짜가 다르면 다음
-                    단계에서 따로 고를 수 있어요.
+                    배역마다 촬영일이 다르면 다음 단계에서 따로 고를 수 있어요.
                   </p>
                 </>
               )}
@@ -747,12 +732,11 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                           <input
                             value={role.title}
                             onChange={(event) => setRole(role.key, { title: event.target.value })}
-                            placeholder="예: 민수 역"
                           />
                         </label>
                         <div className="form-two">
                           <label>
-                            비중 <i>선택</i>
+                            비중
                             <select
                               value={role.roleType}
                               onChange={(event) =>
@@ -768,7 +752,7 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                             </select>
                           </label>
                           <label>
-                            성별 <i>선택</i>
+                            성별
                             <select
                               value={role.gender}
                               onChange={(event) =>
@@ -786,7 +770,7 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                         </div>
                         <div className="form-two">
                           <label>
-                            연령대 <i>선택</i>
+                            연령대
                             <span className="range-inputs">
                               <input
                                 type="number"
@@ -851,8 +835,8 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                           />
                         </label>
                         <label>
-                          {/* 항목 이름에 '필수'가 들어가 있어서, 입력 자체는 선택이라는 걸 따로 적어 준다 */}
-                          지원 필수 조건 <i>선택</i>
+                          {/* '필수 조건'이라고 쓰면 꼭 채워야 하는 칸으로 오해해서 '지원 조건'으로 부른다 */}
+                          지원 조건
                           <input
                             value={role.requirement}
                             onChange={(event) =>
@@ -909,7 +893,7 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                           </div>
                           {role.specialScenes.some((item) => item !== NO_SPECIAL_SCENE) && (
                             <label>
-                              구체적인 안내 <i>선택</i>
+                              구체적인 안내
                               <textarea
                                 rows={2}
                                 maxLength={500}
@@ -1052,11 +1036,9 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                   </div>
                   <p className="wiz-note result-rule">
                     {resultDue
-                      ? `결과 기준일은 ${formatPeriod(resultDue)}${resultDue !== draft.announcementDate ? '(오디션 종료일)' : ''}이에요. `
-                      : '결과 안내일(오디션 종료일이 더 늦으면 그날)이 결과 기준일이에요. '}
-                    배우가 무기한 기다리지 않도록 {RESULT_WARNING_DAYS}일 전부터 스튜디오와 알림에서
-                    결과 입력을 요청드려요. 이날이 지나도 결과를 정하지 않은 지원자에게는
-                    &lsquo;결과 안내 지연&rsquo;으로 보이며, 결과가 자동으로 정해지지는 않아요.
+                      ? `결과 기준일 ${formatPeriod(resultDue)}${resultDue !== draft.announcementDate ? '(오디션 종료일)' : ''}. `
+                      : '결과 기준일은 결과 안내일이에요(오디션이 더 늦게 끝나면 그날). '}
+                    이날까지 결과를 정하지 않으면 배우에게 &lsquo;결과 안내 지연&rsquo;으로 보여요.
                   </p>
                   <label>
                     출연료·교통·식비 <em>*</em>
@@ -1092,9 +1074,6 @@ export default function ProjectWizard({ contactName, editId, initial, removal }:
                       placeholder="예: 연출 이지현"
                     />
                   </label>
-                  <p className="wiz-note">
-                    지원 마감·결과 안내·출연료·담당자는 이 작품의 모든 배역에 똑같이 적용돼요.
-                  </p>
                 </>
               )}
 
@@ -1318,9 +1297,7 @@ function PosterPicker({
         <img src={projectCover(format, posterUrl)} alt="작품 이미지 미리 보기" />
       </div>
       <div className="poster-body">
-        <strong>
-          포스터 <i>선택</i>
-        </strong>
+        <strong>포스터</strong>
         <p>
           {posterUrl
             ? '프로젝트 카드와 배우와의 대화에 이 포스터가 보여요.'

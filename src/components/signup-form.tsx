@@ -156,13 +156,7 @@ export default function SignupForm({
           </p>
           <label>
             이름 <em>*</em>
-            <input
-              value={form.name}
-              onChange={set('name')}
-              autoComplete="name"
-              maxLength={60}
-              placeholder="김민수"
-            />
+            <input value={form.name} onChange={set('name')} autoComplete="name" maxLength={60} />
           </label>
           <label>
             이메일 <em>*</em>
@@ -172,7 +166,6 @@ export default function SignupForm({
               onChange={set('email')}
               autoComplete="email"
               readOnly={!byEmail && !!email}
-              placeholder="minsu@example.com"
             />
           </label>
           {byEmail && (

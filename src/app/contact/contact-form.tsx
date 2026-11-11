@@ -81,7 +81,7 @@ export default function ContactForm({
             </p>
             <form className="auth-form" onSubmit={submit}>
               <label>
-                문의 종류
+                문의 종류 <em>*</em>
                 <select
                   value={kind}
                   onChange={(event) => setKind(event.target.value as InquiryKind)}
@@ -94,18 +94,17 @@ export default function ContactForm({
                 </select>
               </label>
               <label>
-                답장 받을 이메일
+                답장 받을 이메일 <em>*</em>
                 <input
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   autoComplete="email"
-                  placeholder="example@email.com"
                   required
                 />
               </label>
               <label>
-                내용
+                내용 <em>*</em>
                 <textarea
                   value={body}
                   onChange={(event) => setBody(event.target.value)}
@@ -117,7 +116,7 @@ export default function ContactForm({
                 />
               </label>
               <label>
-                관련 링크 (선택)
+                관련 링크
                 <input
                   value={link}
                   onChange={(event) => setLink(event.target.value)}
