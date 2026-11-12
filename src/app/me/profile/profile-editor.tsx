@@ -479,8 +479,10 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
               <p className="muted small">
                 경력기술서·프로필 PDF나 사진을 올리면 AI가 이름·나이·키·지역·특기·필모그래피를 읽어
                 입력칸 초안을 만들어요. 읽은 값은 바로 저장되지 않고, 확인한 항목만 채웁니다. 올린
-                파일은 읽는 동안에만 쓰이고 저장되지 않아요. PDF는 {PROFILE_PDF_MAX_LABEL}까지 올릴
-                수 있고, 더 크면 자동으로 줄여서 올려요(사진도 자동으로 줄여요).
+                파일은 읽는 동안에만 쓰이고 저장되지 않아요.
+              </p>
+              <p className="muted small" style={{ marginTop: 6 }}>
+                용량이 커도 괜찮아요. 큰 PDF·사진은 자동으로 줄여서 올려요.
               </p>
               <div className="split-actions" style={{ marginTop: 12 }}>
                 <button
@@ -1016,8 +1018,13 @@ export default function ProfileEditor({ initial }: { initial: ActorProfile }) {
                     ? shrinking
                       ? 'PDF 줄이는 중…'
                       : '올리는 중…'
-                    : `＋ PDF 자료 추가 (${PROFILE_PDF_MAX_LABEL}까지)`}
+                    : '＋ PDF 자료 추가'}
                 </button>
+              )}
+              {profile.documents.length < MAX_DOCUMENTS && (
+                <p className="hint" style={{ marginTop: 6, textAlign: 'center' }}>
+                  {PROFILE_PDF_MAX_LABEL}가 넘는 PDF는 자동으로 줄여서 올려요.
+                </p>
               )}
               {profile.documents.length < MAX_DOCUMENTS && (
                 <div className="doc-link-add">
